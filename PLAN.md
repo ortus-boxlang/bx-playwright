@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft v8 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
+Status: draft v9 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -18,7 +18,7 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 - Maven artifacts (`com.microsoft.playwright`):
   - `playwright` (~0.7 MB): the Java API.
   - `driver` (~3.2 MB): the playwright-core JS bundle (`cli.js`).
-  - `driver-bundle` (~204 MB): Node binaries for every platform. Optional if `PLAYWRIGHT_NODEJS_PATH` points to a system Node.
+  - `driver-bundle` (~204 MB): Node binaries for every platform. Optional if `PLAYWRIGHT_NODEJS_PATH` points to a Node runtime.
 - Runtime: Java spawns `node cli.js run-driver` and talks JSON over a pipe. The driver is extracted to a temp dir on every `Playwright.create()` unless `PLAYWRIGHT_DRIVER_DIR` (or `-Dplaywright.cli.dir`) points to a pre-extracted one. `CLI install-driver <dir>` extracts it once.
 - Browsers: cached in `PLAYWRIGHT_BROWSERS_PATH` (default `~/.cache/ms-playwright`). Auto-installed on create unless `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` is set. Since 1.57 Chromium is Chrome for Testing.
 - CLI main class `com.microsoft.playwright.CLI`: `install [--with-deps]`, `install-deps`, `uninstall`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, plus (bundled, undocumented for Java) `trace ...` and `mcp`.
@@ -74,7 +74,9 @@ Confirmed:
 
 1. **BoxLang native only.** No Adobe/Lucee. Uses the BoxLang module surface: BIFs, interceptors, components when needed, module settings, CLI `main()`, closures/lambdas bridged to Java functional interfaces.
 2. **New project.** cbPlaywright and commandbox-cbplaywright are inspiration only. No compat layer, no migration shims.
-3. **Bundle all jars, including `driver-bundle` (~204 MB)**, so the module works offline out of the box. `PLAYWRIGHT_NODEJS_PATH` stays as an optional override (system Node).
+3. **Two modules on ForgeBox, one source tree** (see 4.1):
+   - **`bx-playwright`**: small (Java API + driver JS, ~4 MB). `bxPlaywright install` fetches the Node runtime for the current OS/arch, then browsers. Fast and nimble.
+   - **`bx-playwright-full`**: includes `driver-bundle` (~204 MB, Node for every platform). Works without downloading Node; browsers still install via the CLI.
 4. **TestBox adapter lives in TestBox core.** The contract is bx-playwright's public surface: the `playwright()` BIF (and the fluent objects it returns) plus the `bx:playwrightRender` component. No separate testing SPI (see 7).
 5. **One module, `bx-playwright`**, registered as `playwright`; main entry BIF `playwright()`.
 6. **Targets BoxLang 1.17.x on JRE 21.**
@@ -109,8 +111,27 @@ bx-playwright/
     bxPlaywright.bash        bash completions (generated from the verb registry)
       Profiles.bx            built-in profiles + settings merge (see 6.10, 6.11)
   src/main/java/             only if needed (e.g. image diff, event bridging)
-  libs/                      playwright, driver, driver-bundle jars (+ gson, etc.)
+  libs/                      playwright, driver jars (+ gson, etc.); driver-bundle only in the full build
 ```
+
+### 4.1 Two distributions
+
+| | `bx-playwright` | `bx-playwright-full` |
+|---|---|---|
+| Size | ~4 MB | ~208 MB |
+| Node runtime | Downloaded by `bxPlaywright install` for the current OS/arch | Bundled (all platforms) |
+| Browsers | `bxPlaywright install` | `bxPlaywright install` |
+| Best for | Developers, CI with caching, Docker images | Air-gapped or locked-down networks, zero-setup |
+
+- Same source, same version, released together. Gradle builds two zips (`-Pflavor=small|full`); the full build only adds the `driver-bundle` jar and sets `bundledNode: true` in the module.
+- Both register as module `playwright` with executable `bxPlaywright`, so code, settings, profiles and docs are identical. Install one or the other; `doctor` warns if both are present.
+- **Node resolution** (small module), first match wins:
+  1. `nodePath` setting or `PLAYWRIGHT_NODEJS_PATH`.
+  2. Previously installed runtime in `{home}/node/`.
+  3. `node` on the system PATH, if its version meets Playwright's minimum.
+  4. Otherwise `bxPlaywright install` downloads the official Node build for the OS/arch (linux x64/arm64, macOS x64/arm64, windows x64) into `{home}/node/`, verifies its checksum, with a configurable mirror (`nodeDownloadURL`) for proxies.
+- If a script runs before install, it fails fast with `Playwright.NotInstalled` and the exact command to run.
+- Pinned Node version per release: the version Playwright bundles for that release (recorded at build time), to be confirmed in the Phase 0 spike.
 
 Key internal pieces:
 
@@ -146,7 +167,8 @@ Verbs:
 
 | Verb | Purpose |
 |---|---|
-| `install [browsers...] [--with-deps] [--only-shell] [--force]` | Extract the driver (first run) and install browsers |
+| `install [browsers...] [--with-deps] [--only-shell] [--force] [--skip-node]` | Set up the driver and Node runtime (small module downloads Node), then install browsers |
+| `install-node [--force]` | Only the Node runtime (small module) |
 | `install-deps [browsers...]` | OS dependencies (Linux) |
 | `uninstall [--all]` | Remove browsers |
 | `doctor [--json]` | Versions, paths, platform, Node, installed browsers, fix hints |
@@ -329,7 +351,8 @@ Every setting has a default in `ModuleConfig.configure()` and can be overridden 
 |---|---|---|
 | `home` | `~/.boxlang/playwright` | Root for the extracted driver and browsers |
 | `browsersPath` | `{home}/browsers` | Sets `PLAYWRIGHT_BROWSERS_PATH` |
-| `nodePath` | `""` | System Node override (else bundled Node) |
+| `nodePath` | `""` | Explicit Node override |
+| `nodeDownloadURL` | official Node distribution URL | Mirror for Node downloads (small module) |
 | `defaultProfile` | `"default"` | Profile used by `playwright()` with no arguments |
 | `browser` | `"chromium"` | chromium, firefox, webkit |
 | `channel` | `""` | chrome, chrome-beta, msedge (branded browsers) |
@@ -513,12 +536,14 @@ docs/
 ### Phase 0: Foundations
 - [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
 - [ ] AGENTS.md for the module; typed error catalog.
-- [ ] Gradle: add `playwright`, `driver`, `driver-bundle` deps into `libs/`, stamp version into `box.json` and `ModuleConfig`. Check module zip size and ForgeBox limits.
+- [ ] Gradle: `playwright` + `driver` deps into `libs/`; `full` flavor adds `driver-bundle`. Build two zips, two `box.json` slugs (`bx-playwright`, `bx-playwright-full`), stamp version.
+- [ ] Release workflow publishes both to ForgeBox together. Check the full zip against ForgeBox size limits.
 - [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
 - [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
 
 ### Phase 1: Install and CLI
-- [ ] `PlaywrightService`: home resolution, one-time driver extraction from bundled jars (`install-driver`), env wiring, `PLAYWRIGHT_NODEJS_PATH` override.
+- [ ] `PlaywrightService`: home resolution, one-time driver extraction (`install-driver`), env wiring.
+- [ ] Node resolution and download (4.1): OS/arch detection incl. arm64, checksum, mirror, `install-node` verb.
 - [ ] `box.json` `boxlang.executable` (`bxPlaywright`) and `boxlang.completions`.
 - [ ] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`, `--json` on every verb.
 - [ ] Verbs: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `clean`, `run`.
@@ -576,7 +601,8 @@ docs/
 - Device descriptors are not a public Java API; extraction path from the driver bundle needs a spike.
 - Visual diff needs a pixel comparison implementation (Java has only `screenshot()`).
 - Thread confinement vs BoxLang web requests and async: needs design validation in the Phase 0 spike.
-- Bundling `driver-bundle` makes the module ~204 MB (all platforms). Confirm ForgeBox/download limits; a later option is per-platform builds.
+- `bx-playwright-full` is ~208 MB. Confirm ForgeBox size limits.
+- Small module depends on the Node download site (or a mirror) being reachable at install time; Playwright's minimum Node version must be tracked per release.
 - TestBox builds on the public API from another repo with its own release cycle: the public API must follow semver strictly from 1.0.
 - TestBox retries and artifact attachment to results: confirm what TestBox 7 exposes.
 
