@@ -236,8 +236,10 @@ task createModuleStructure(type: Copy) {
 		// Token Replacements Go Here
 		filter{ line -> line.replaceAll( '@build.version@', project.version ) }
 		if( project.flavor == 'full' ){
-			// The full flavor is published under its own ForgeBox slug
-			filter{ line -> line.contains( '"slug"' ) || line.contains( '"location"' ) ? line.replaceAll( 'bx-playwright', 'bx-playwright-full' ) : line }
+			// The full flavor is published under its own ForgeBox slug. Both zips are uploaded to the same
+			// S3 folder, so only the zip file name in the location changes
+			filter{ line -> line.contains( '"slug"' ) ? line.replaceAll( 'bx-playwright', 'bx-playwright-full' ) : line }
+			filter{ line -> line.contains( '"location"' ) ? line.replace( "/${project.name}-${project.version}.zip", "/${project.moduleSlug}-${project.version}.zip" ) : line }
 			filter{ line -> line.contains( '"name"' ) ? line.replace( 'BoxLang Playwright', 'BoxLang Playwright (Full)' ) : line }
 		}
 		if( project.branch == "development" ){
