@@ -21,3 +21,6 @@ src/test/resources/libs/*
 
 ### bxSites build output
 site/
+
+# bxSites build cache
+.cache/

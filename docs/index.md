@@ -3,6 +3,9 @@ title: BoxLang Playwright
 order: 1
 summary: Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.
 tags: [overview]
+layout: home
+toc: false
+ogImage: assets/og-image.png
 ---
 
 # BoxLang Playwright
