@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft v3 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
+Status: draft v5 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -9,7 +9,7 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 - Ships the Playwright Java bindings and manages the driver and browsers itself.
 - Provides a CLI (install browsers, codegen, show-trace, etc.).
 - Offers a fluent BoxLang DSL usable anywhere: tests, scheduled tasks, scraping, PDF/screenshot generation.
-- Exposes a testing SPI so TestBox core can build its Playwright integration (base specs, matchers, failure artifacts).
+- Is consumed by TestBox core through its public API (BIF and component) for base specs, matchers and failure artifacts.
 
 ## 2. Research Summary
 
@@ -75,7 +75,7 @@ Confirmed:
 1. **BoxLang native only.** No Adobe/Lucee. Uses the BoxLang module surface: BIFs, interceptors, components when needed, module settings, CLI `main()`, closures/lambdas bridged to Java functional interfaces.
 2. **New project.** cbPlaywright and commandbox-cbplaywright are inspiration only. No compat layer, no migration shims.
 3. **Bundle all jars, including `driver-bundle` (~204 MB)**, so the module works offline out of the box. `PLAYWRIGHT_NODEJS_PATH` stays as an optional override (system Node).
-4. **TestBox adapter lives in TestBox core.** bx-playwright provides the engine and a stable testing SPI (lifecycle, artifact hooks, assertion API). TestBox builds its specs, matchers and reporting on top (see 7).
+4. **TestBox adapter lives in TestBox core.** The contract is bx-playwright's public surface: the `playwright()` BIF (and the fluent objects it returns) plus the `bx:playwrightRender` component. No separate testing SPI (see 7).
 5. **One module, `bx-playwright`**, registered as `playwright`; main entry BIF `playwright()`.
 6. **Targets BoxLang 1.17.x on JRE 21.**
 7. **Own CLI, no CommandBox.** A `bxPlaywright` executable plus bash completions, using the module descriptor `boxlang.executable` / `boxlang.completions` fields (same pattern as bx-sites and bx-agents). See 5.
@@ -107,7 +107,7 @@ bx-playwright/
       cli/                   one class per CLI verb, each with run( options )
   completions/
     bxPlaywright.bash        bash completions (generated from the verb registry)
-      testing/               framework-agnostic testing SPI consumed by TestBox (see 7)
+      Profiles.bx            built-in profiles + settings merge (see 6.10, 6.11)
   src/main/java/             only if needed (e.g. image diff, event bridging)
   libs/                      playwright, driver, driver-bundle jars (+ gson, etc.)
 ```
@@ -158,6 +158,7 @@ Verbs:
 | `show-trace [file]` | Trace viewer |
 | `mcp [options]` | Start the Playwright MCP server (bundled in driver) |
 | `devices [--json]` | List device descriptors |
+| `profiles [name] [--json]` | List profiles or show one fully resolved |
 | `clean` | Remove extracted driver/cache in the playwright home |
 | `run <args...>` | Raw passthrough to the Playwright CLI |
 | `help` | Usage |
@@ -274,12 +275,15 @@ playwright().devices()                          // device descriptors
 playwright().browse( ( page ) => page.visit( "/" ).assertSee( "Hi" ) )
 ```
 
-Other entry ideas to decide on:
+More entry points:
 
-- `playwright().visit( url )` as the fastest path to a page (lazy launch of browser/context/page).
-- Named profiles in module settings: `playwright( "mobile" )` resolves a profile (browser, device, baseURL, locale) when the string is not a browser name.
-- `playwright().request()` for API testing without a browser.
-- `playwright().connect( wsEndpoint )` / `connectOverCDP()` for remote browsers or grids.
+- `playwright( "mobile" )`: a string argument is a profile name (see 6.11). Browser names are also built-in profiles, so `playwright( "firefox" )` works the same way.
+- `playwright( [ "mobile", "dark" ] )`: profiles merge left to right.
+- `playwright( "mobile", { locale: "es-ES" } )`: profile plus per-call overrides.
+- `playwright().visit( url )`: fastest path to a page (lazy launch of browser, context and page).
+- `playwright().request()`: API testing without a browser.
+- `playwright().connect( wsEndpoint )` / `connectOverCDP( url )`: remote browsers, Docker, grids.
+- `playwright().expect( locatorOrPage )`: expect-style assertions outside TestBox.
 
 ### 6.8 Components
 
@@ -302,36 +306,105 @@ Proposed attributes: `type` (pdf, png, jpeg, webp), `path` or `variable` (bytes)
 
 ### 6.9 Interceptors (extension points)
 
-Announced events so other modules (and TestBox) can hook in without subclassing:
-`onPlaywrightCreate`, `onBrowserLaunch`, `onContextCreate`, `onPageCreate`, `onPageClose`, `onPlaywrightAssertionFailure`, `onPlaywrightArtifact` (screenshot/trace/video written). TestBox uses these to attach artifacts and apply policies.
+Announced events so any module can hook in without subclassing:
+`onPlaywrightCreate`, `onBrowserLaunch`, `onContextCreate`, `onPageCreate`, `onPageClose`, `onPlaywrightAssertionFailure`, `onPlaywrightArtifact` (screenshot, trace or video written).
+
+### 6.10 Configuration (module settings)
+
+Every setting has a default in `ModuleConfig.configure()` and can be overridden in `boxlang.json`:
+
+```json
+"modules": {
+    "playwright": {
+        "settings": {
+            "headless": false,
+            "baseURL": "http://localhost:8080",
+            "profiles": { "staging": { "extends": "desktop", "baseURL": "https://staging.site.com" } }
+        }
+    }
+}
+```
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `home` | `~/.boxlang/playwright` | Root for the extracted driver and browsers |
+| `browsersPath` | `{home}/browsers` | Sets `PLAYWRIGHT_BROWSERS_PATH` |
+| `nodePath` | `""` | System Node override (else bundled Node) |
+| `defaultProfile` | `"default"` | Profile used by `playwright()` with no arguments |
+| `browser` | `"chromium"` | chromium, firefox, webkit |
+| `channel` | `""` | chrome, chrome-beta, msedge (branded browsers) |
+| `headless` | `true` | Headless or headed |
+| `slowMo` | `0` | Milliseconds between actions (debugging) |
+| `baseURL` | `""` | Relative URLs in `visit()` resolve against it |
+| `viewport` | `{ width: 1280, height: 720 }` | Default viewport |
+| `device` | `""` | Device descriptor name (overrides viewport, user agent, touch) |
+| `locale` / `timezone` | `""` | Emulation |
+| `colorScheme` | `"light"` | light, dark, no-preference |
+| `ignoreHTTPSErrors` | `false` | Self-signed certs in dev |
+| `timeouts` | `{ action: 30000, navigation: 30000, assertion: 5000 }` | Playwright defaults |
+| `testIdAttribute` | `"data-testid"` | Used by `byTestId()` and the `@name` smart selector |
+| `artifacts` | `{ directory: "{home}/artifacts", screenshot: "off", trace: "off", video: "off" }` | Policies: off, on, only-on-failure, retain-on-failure |
+| `render` | `{ format: "A4", printBackground: true, waitUntil: "networkidle" }` | Defaults for `bx:playwrightRender` / `render()` |
+| `launchOptions` | `{}` | Raw passthrough to `BrowserType.LaunchOptions` |
+| `contextOptions` | `{}` | Raw passthrough to `Browser.NewContextOptions` |
+| `profiles` | `{}` | User profiles, merged over the built-in ones |
+
+Environment overrides for CI (read at module load, win over settings): `BX_PLAYWRIGHT_PROFILE`, `BX_PLAYWRIGHT_BROWSER`, `BX_PLAYWRIGHT_HEADLESS`, `BX_PLAYWRIGHT_BASEURL`.
+
+Resolution order, last wins: built-in defaults, module settings, environment overrides, profile(s), per-call options.
+
+### 6.11 Profiles
+
+A profile is a named set of the settings above. It can `extends` another profile. Users add or override profiles in `settings.profiles`; a user profile with a built-in name replaces that built-in.
+
+Built-in profiles:
+
+| Profile | Settings |
+|---|---|
+| `default` | chromium, headless, 1280x720 |
+| `chromium` / `firefox` / `webkit` | That browser, otherwise default |
+| `chrome` | chromium with `channel: "chrome"` |
+| `edge` | chromium with `channel: "msedge"` |
+| `desktop` | chromium, 1920x1080 |
+| `laptop` | chromium, 1366x768 |
+| `mobile` | webkit, device `iPhone 15` |
+| `android` | chromium, device `Pixel 7` |
+| `tablet` | webkit, device `iPad Pro 11` |
+| `dark` | `colorScheme: "dark"` (meant to be merged: `[ "mobile", "dark" ]`) |
+| `headed` | `headless: false` |
+| `debug` | headed, `slowMo: 250`, all artifacts `on` |
+| `ci` | headless, screenshot `only-on-failure`, trace and video `retain-on-failure` |
+| `offline` | context `offline: true` |
+| `print` | chromium, headless, `colorScheme: "light"`, for PDF/render work |
+
+Device names must be validated against the bundled Playwright device registry during the Phase 0 spike.
+
+Tooling: `bxPlaywright profiles` lists the resolved profiles; `doctor` shows the active settings after merge.
 
 ## 7. TestBox Integration (lives in TestBox core)
 
-Split of responsibilities:
+**Contract**: TestBox uses bx-playwright exactly like any other app does, through the `playwright()` BIF, the fluent objects it returns, and the `bx:playwrightRender` component. There is no private testing SPI. This keeps one API to document and version, and anything TestBox needs becomes a public feature everyone gets.
 
-| bx-playwright provides (testing SPI) | TestBox core builds |
-|---|---|
-| Manager/context/page lifecycle API with scopes (run, bundle, spec) | Base specs or annotations that wire those scopes into spec lifecycle |
-| Artifact API: start/stop trace, video, screenshot, console log, HTML dump, with a policy object (`off, on, only-on-failure, retain-on-failure`) | Applying policies on spec pass/fail, attaching artifacts to results and reporters |
-| Web-first assertion API throwing `AssertionFailedError` | `expect( page ).toHaveTitle()`, `expect( locator ).toBeVisible()` matchers |
-| Interceptor events (6.9) | Listeners, reporting, TestBox RUN UI integration |
-| Device registry, storage-state sessions, webServer helper | Browser matrix, retries, sharding, config (`this.playwright = {}`, env vars) |
+Consequences for bx-playwright's public API (needed so TestBox can build on it):
 
-Proposed TestBox-side features (for the TestBox team to own):
+- **Explicit lifecycle**: `pw.newContext()`, `context.newPage()`, `close()` on every level, `pw.closeAll()`.
+- **Artifact policies in the API**: `artifacts` settings (6.10) apply automatically, and `context.close( { failed: true|false } )` decides what is kept (e.g. `retain-on-failure` deletes on pass). Artifact paths are returned: `context.artifacts()` gives screenshot, trace and video paths.
+- **Assertions throw a predictable error type** (`opentest4j.AssertionFailedError` or a BoxLang `Playwright.AssertionFailed`), so TestBox reports them as failures, not errors.
+- **Profiles** (6.11) cover browser matrix and CI settings.
+- **Interceptor events** (6.9) let TestBox or reporters react to artifacts.
 
-- Tiered base specs (pick how much lifecycle you want): `PlaywrightSpec` (manager), `BrowserSpec` (shared browser), `ContextSpec` (fresh context per spec), `PageSpec` (fresh page per spec, exposes `page` and `visit()`).
-- Artifacts written to `tests/results/playwright/<bundle>/<spec>/`, linked from reporters.
-- Browser matrix, retries with trace on first retry, optional `webServer` to boot the app before specs.
-- A generic "attach artifact to spec result" API in TestBox (currently not in TestBox docs), useful beyond Playwright.
+What TestBox core would build on top (TestBox's scope, listed here for alignment):
 
-Interface contract between the two repos must be agreed early (phase 0) since they release separately. bx-playwright ships a minimal internal harness for its own tests only.
+- Base specs or annotations that open a context per spec and close it with the spec result.
+- `expect( page ).toHaveTitle()`, `expect( locator ).toBeVisible()` matchers delegating to `playwright().expect()`.
+- Linking artifacts from reporters, browser matrix via profiles, retries, optional webServer boot.
 
 ## 8. Phased Roadmap and Tasks
 
 ### Phase 0: Foundations
 - [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
 - [ ] Gradle: add `playwright`, `driver`, `driver-bundle` deps into `libs/`, stamp version into `box.json` and `ModuleConfig`. Check module zip size and ForgeBox limits.
-- [ ] Draft the testing SPI contract with the TestBox team.
+- [ ] Spike device registry and validate built-in profile device names.
 - [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and system Node. Confirm thread confinement behavior under BoxLang.
 - [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time).
 
@@ -349,15 +422,17 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 - [ ] `OptionsMapper` with tests for every options class used.
 - [ ] `Manager` (thread-confined, auto cleanup), `Browser`, `Context`, `Page`, `Locator` wrappers.
 - [ ] Smart selector resolver.
-- [ ] Assertions (inline + `pwExpect`), web-first, configurable timeout.
+- [ ] Assertions (inline + `playwright().expect()`), web-first, configurable timeout, predictable failure type.
 - [ ] Network (`intercept`, events), `request()` API testing, storage state `session()`, tracing, video, screenshots, PDF, clock.
 
-### Phase 3: BIF, interceptors, testing SPI
-- [ ] `playwright()` BIF, profiles, one-shot helpers (6.7).
+### Phase 3: BIF, config, profiles, interceptors
+- [ ] Module settings and resolution order (6.10); env overrides.
+- [ ] Built-in profiles, `extends`, merging, `profiles` CLI verb (6.11).
+- [ ] `playwright()` BIF, one-shot helpers (6.7).
 - [ ] `bx:playwrightRender` component and `playwright().render()` (6.8).
 - [ ] Interceptor events (6.9).
-- [ ] Testing SPI: lifecycle scopes, artifact API and policies, device registry, webServer helper.
-- [ ] Support the TestBox team building the adapter in TestBox core (tracked in the TestBox repo).
+- [ ] Artifact policies and `close( { failed } )` semantics, `artifacts()` paths (7).
+- [ ] Hand off to TestBox core: document the public API it builds on.
 
 ### Phase 4: Advanced
 - [ ] Page objects, components, macros.
@@ -378,10 +453,10 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 - Visual diff needs a pixel comparison implementation (Java has only `screenshot()`).
 - Thread confinement vs BoxLang web requests and async: needs design validation in the Phase 0 spike.
 - Bundling `driver-bundle` makes the module ~204 MB (all platforms). Confirm ForgeBox/download limits; a later option is per-platform builds.
-- TestBox adapter lives in another repo with its own release cycle: the SPI must be versioned and stable early.
+- TestBox builds on the public API from another repo with its own release cycle: the public API must follow semver strictly from 1.0.
 - TestBox retries and artifact attachment to results: confirm what TestBox 7 exposes.
 
 ## 10. Open Questions
 
-1. Entry ideas in 6.7: named profiles, `visit()` shortcut, `connect()`. Keep all?
-2. Who on the TestBox side owns the adapter and the SPI contract?
+1. Built-in profile list (6.11): add or remove any?
+2. Environment override prefix `BX_PLAYWRIGHT_*`: OK?
