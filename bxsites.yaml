@@ -1,6 +1,6 @@
 name: "BoxLang Playwright"
 description: "Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright."
-baseURL: "/"
+baseURL: "https://bxplaywright.boxlang.io/"
 source: docs
 theme:
     name: bootstrap

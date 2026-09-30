@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Documentation site published from `docs/` to GitHub Pages at [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) by the `docs.yml` workflow
+
 ### Fixed
 
 * `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
