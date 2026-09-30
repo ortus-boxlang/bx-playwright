@@ -18,6 +18,7 @@ src/test/resources/libs/*
 
 ### AI Skills (restored from skills-lock.json)
 .claude/skills/**
+.claude/worktrees/
 
 ### bxSites build output
 site/
