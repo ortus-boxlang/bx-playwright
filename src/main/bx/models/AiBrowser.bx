@@ -156,14 +156,14 @@ class extends="Base" {
 	}
 
 	/**
-	 * Turn a snapshot ref such as e12 into a ref= selector; any other target is returned as is.
+	 * Turn a snapshot ref such as e12 (or f1e2 inside an iframe) into a ref= selector; any other target is returned as is.
 	 *
 	 * @target A snapshot ref or a selector
 	 *
 	 * @return A selector Playwright understands
 	 */
 	private string function toSelector( required string target ) {
-		return reFind( "^e[0-9]+$", arguments.target ) ? "ref=" & arguments.target : arguments.target
+		return reFind( "^(f[0-9]+)?e[0-9]+$", arguments.target ) ? "ref=" & arguments.target : arguments.target
 	}
 
 	/**

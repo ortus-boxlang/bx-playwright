@@ -1,6 +1,7 @@
 import java:ortus.boxlang.runtime.BoxRuntime;
 import java:ortus.boxlang.runtime.scopes.Key;
 import java:java.lang.System;
+import java:java.io.File;
 import java:ortus.boxlang.modules.playwright.engine.PlaywrightHome@playwright;
 
 /**
@@ -102,9 +103,15 @@ class {
 	 * @return The resolved configuration
 	 */
 	struct function resolve( any profiles = "", struct options = {} ) {
-		var config = duplicate( variables.settings )
+		// Baseline for settings structs that leave out the core keys (the module settings always have them)
+		var config = { browser : "chromium", headless : true }
+		config.append( duplicate( variables.settings ), true )
 		for ( var optionName in variables.MODULE_ONLY_KEYS ) {
 			config.delete( optionName )
+		}
+		// The viewport setting always has a value, so a device set in the module settings wins over it
+		if ( isSimpleValue( config.device ?: "" ) && len( config.device ?: "" ) ) {
+			config.delete( "viewport" )
 		}
 
 		var requested = arguments.profiles
@@ -188,12 +195,23 @@ class {
 
 	/**
 	 * The file of a saved session (see playwright().session()). Sessions hold cookies, so they live in the
-	 * playwright home, outside your project.
+	 * playwright home, outside your project. Letters, digits, `_` and `-` are kept; any other character is
+	 * written as `~` plus the hex of each UTF-8 byte, so different names never share a file.
 	 *
 	 * @name The session name
+	 *
+	 * @return The session file path
 	 */
 	string function sessionPath( required string name ) {
-		return homePath() & "/sessions/" & arguments.name.reReplace( "[^A-Za-z0-9_-]+", "-", "all" ) & ".json"
+		var fileName = ""
+		for ( var character in arguments.name.listToArray( "" ) ) {
+			if ( reFind( "^[A-Za-z0-9_-]$", character ) ) {
+				fileName &= character
+			} else {
+				fileName &= binaryEncode( charsetDecode( character, "utf-8" ), "hex" ).uCase().reReplace( "(..)", "~\1", "all" )
+			}
+		}
+		return homePath() & "/sessions/" & fileName & ".json"
 	}
 
 	/**
@@ -213,11 +231,18 @@ class {
 	 *
 	 * @config A resolved configuration whose snapshots.directory wins over the module setting
 	 *
-	 * @return The snapshots directory: the `snapshots.directory` setting or {current directory}/tests/snapshots
+	 * @return The snapshots directory: the `snapshots.directory` setting (a relative one resolves against the
+	 *         current directory) or {current directory}/tests/snapshots
 	 */
 	string function snapshotsPath( struct config = {} ) {
-		var configured = arguments.config.snapshots.directory ?: ( variables.settings.snapshots.directory ?: "" )
-		return len( trim( configured ) ) ? configured : System.getProperty( "user.dir" ) & "/tests/snapshots"
+		var configured = trim( arguments.config.snapshots.directory ?: ( variables.settings.snapshots.directory ?: "" ) )
+		if ( !len( configured ) ) {
+			return System.getProperty( "user.dir" ) & "/tests/snapshots"
+		}
+		if ( File.init( configured ).isAbsolute() ) {
+			return configured
+		}
+		return File.init( System.getProperty( "user.dir" ), configured ).toPath().normalize().toString()
 	}
 
 	/**
@@ -249,15 +274,17 @@ class {
 	 */
 	struct function contextOptions( required struct config, struct device = {} ) {
 		var options = {}
-		if ( !isNull( arguments.config.viewport ) && isStruct( arguments.config.viewport ) ) {
-			options.viewport = arguments.config.viewport
-		}
 		if ( !arguments.device.isEmpty() ) {
 			for ( var optionName in [ "userAgent", "viewport", "deviceScaleFactor", "isMobile", "hasTouch" ] ) {
 				if ( arguments.device.keyExists( optionName ) ) {
 					options[ optionName ] = arguments.device[ optionName ]
 				}
 			}
+		}
+		// Setting a device removes earlier viewports while merging (see Profiles.deepMerge), so a viewport
+		// still present was set after the device and replaces the device screen
+		if ( !isNull( arguments.config.viewport ) && isStruct( arguments.config.viewport ) ) {
+			options.viewport = arguments.config.viewport
 		}
 		var mapping = {
 			baseURL           : "baseURL",

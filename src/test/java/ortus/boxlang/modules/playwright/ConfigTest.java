@@ -16,6 +16,8 @@ package ortus.boxlang.modules.playwright;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +65,7 @@ public class ConfigTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			cfg     = new models.Config@playwright( environment = {} )
-			config  = cfg.resolve( [ "chrome", "dark" ], { slowMo : 100, timezone : "UTC" } )
+			config  = cfg.resolve( [ "chrome", "dark" ], { slowMo : 100, timezone : "UTC", device : "Pixel 7" } )
 			launch  = cfg.launchOptions( config )
 			context = cfg.contextOptions( config, { viewport : { width : 390, height : 844 }, isMobile : true } )
 			result  = launch.channel & "|" & launch.slowMo & "|" & context.colorScheme & "|" & context.timezoneId & "|" & context.viewport.width & "|" & context.isMobile
@@ -89,6 +91,101 @@ public class ConfigTest extends BaseIntegrationTest {
 		String[]	paths	= value.toString().replace( '\\', '/' ).split( "\\|" );
 		assertThat( paths[ 0 ] ).endsWith( ".boxlang/playwright" );
 		assertThat( paths[ 1 ] ).endsWith( "/tmp/pw/browsers" );
+	}
+
+	/**
+	 * The default profile adds nothing, so the browser, headless and viewport module settings apply as configured.
+	 */
+	@DisplayName( "The default profile keeps the module settings" )
+	@Test
+	public void testDefaultProfileKeepsSettings() {
+		// @formatter:off
+		Object value = run( """
+			settings = { browser : "firefox", headless : false, viewport : { width : 800, height : 600 }, defaultProfile : "default", profiles : {} }
+			config   = new models.Config@playwright( settings = settings, environment = {} ).resolve()
+			result   = config.browser & "|" & config.headless & "|" & config.viewport.width & "x" & config.viewport.height
+				& "|" & new models.Profiles@playwright().resolve( "default" ).isEmpty()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "firefox|false|800x600|true" );
+	}
+
+	/**
+	 * playwright( struct, struct ) merges the second struct over the first one.
+	 */
+	@DisplayName( "playwright() merges two option structs" )
+	@Test
+	public void testBifMergesTwoStructs() {
+		// @formatter:off
+		Object value = run( """
+			config = playwright( { locale : "de-DE", timezone : "America/Chicago" }, { timezone : "UTC" } ).getConfig()
+			result = config.locale & "|" & config.timezone
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "de-DE|UTC" );
+	}
+
+	/**
+	 * Devices and viewports follow "last wins": a viewport set after a device replaces the device screen (keeping the rest of the device),
+	 * and a device set after a viewport (or in the module settings) replaces the viewport.
+	 */
+	@DisplayName( "Devices and viewports: the last one set wins" )
+	@Test
+	public void testDeviceAndViewportOrder() {
+		// @formatter:off
+		Object value = run( """
+			cfg      = new models.Config@playwright( environment = {} )
+			device   = { viewport : { width : 412, height : 839 }, userAgent : "Pixel UA", isMobile : true, hasTouch : true }
+			screenOf = ( config ) => {
+				var options = cfg.contextOptions( config, device )
+				return options.viewport.width & "x" & options.viewport.height & "/" & options.isMobile & "/" & options.userAgent
+			}
+			settings = new models.Config@playwright( settings = { device : "Pixel 7", viewport : { width : 1280, height : 720 }, profiles : {} }, environment = {} )
+			result   = [
+				screenOf( cfg.resolve( [ "android", "desktop" ] ) ),
+				screenOf( cfg.resolve( "android", { viewport : { width : 500, height : 500 } } ) ),
+				screenOf( cfg.resolve( [ "desktop", "android" ] ) ),
+				screenOf( cfg.resolve( "desktop", { device : "Pixel 7" } ) ),
+				screenOf( cfg.resolve( "android" ) ),
+				screenOf( settings.resolve() )
+			].toList( "," )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo(
+		    "1920x1080/true/Pixel UA,500x500/true/Pixel UA,412x839/true/Pixel UA,412x839/true/Pixel UA,412x839/true/Pixel UA,412x839/true/Pixel UA" );
+	}
+
+	/**
+	 * Session names map to distinct files: simple names keep their file name, other characters are encoded instead of collapsed.
+	 */
+	@DisplayName( "Session names map to distinct files" )
+	@Test
+	public void testSessionPath() {
+		// @formatter:off
+		Object value = run( """
+			cfg    = new models.Config@playwright( settings = { home : "/tmp/pw", profiles : {} }, environment = {} )
+			result = [ "admin", "admin-test", "a b", "a-b", "a~20b" ].map( ( name ) => listLast( cfg.sessionPath( name ), "/\\" ) ).toList( "," )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "admin.json,admin-test.json,a~20b.json,a-b.json,a~7E20b.json" );
+	}
+
+	/**
+	 * A relative snapshots directory resolves against the current directory, an absolute one is kept.
+	 */
+	@DisplayName( "A relative snapshots directory resolves against the current directory" )
+	@Test
+	public void testRelativeSnapshotsPath() {
+		// @formatter:off
+		Object value = run( """
+			cfg      = new models.Config@playwright( settings = { snapshots : { directory : "relsnaps" }, profiles : {} }, environment = {} )
+			absolute = createObject( "java", "java.io.File" ).init( createObject( "java", "java.lang.System" ).getProperty( "java.io.tmpdir" ), "abs-snaps" ).getAbsolutePath()
+			result   = cfg.snapshotsPath() & "|" & cfg.snapshotsPath( { snapshots : { directory : absolute } } ) & "|" & absolute
+		""" );
+		// @formatter:on
+		String[]	parts	= value.toString().split( "\\|" );
+		assertThat( parts[ 0 ] ).isEqualTo( Path.of( System.getProperty( "user.dir" ), "relsnaps" ).toString() );
+		assertThat( parts[ 1 ] ).isEqualTo( parts[ 2 ] );
 	}
 
 }

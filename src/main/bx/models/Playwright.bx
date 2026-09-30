@@ -117,7 +117,7 @@ class extends="Base" {
 		var artifactsDir = ""
 		var artifacts    = config.artifacts ?: {}
 		if ( ( artifacts.screenshot ?: "off" ) != "off" || ( artifacts.trace ?: "off" ) != "off" || ( artifacts.video ?: "off" ) != "off" ) {
-			artifactsDir = variables.configService.artifactsPath( config ) & "/" & dateTimeFormat( now(), "yyyymmdd-HHnnss" ) & "-" & UUID.randomUUID().toString().left( 8 )
+			artifactsDir = variables.configService.artifactsPath( config ) & "/" & dateTimeFormat( now(), "yyyyMMdd-HHmmss" ) & "-" & UUID.randomUUID().toString().left( 8 )
 			directoryCreate( artifactsDir, true, true )
 			if ( ( artifacts.video ?: "off" ) != "off" ) {
 				contextOptions.recordVideoDir = artifactsDir
@@ -147,13 +147,33 @@ class extends="Base" {
 	}
 
 	/**
-	 * Open a page in a new context and go to a URL.
+	 * Open a page in a new context and go to a URL. If the navigation fails, the new context is closed
+	 * (and the manager too when this call started it) before the error is rethrown.
 	 *
 	 * @url     Absolute URL, or a path when baseURL is set
 	 * @options Navigation options: waitUntil, timeout, referer
+	 *
+	 * @return The page (models.Page)
 	 */
 	function visit( required string url, struct options = {} ) {
-		return newPage().visit( arguments.url, arguments.options )
+		var wasStarted = isStarted()
+		var page       = nullValue()
+		try {
+			page = newPage()
+			return page.visit( arguments.url, arguments.options )
+		} catch ( any e ) {
+			try {
+				if ( !isNull( page ) ) {
+					page.context().close( true )
+				}
+				if ( !wasStarted ) {
+					close()
+				}
+			} catch ( any ignored ) {
+				// Keep the navigation error
+			}
+			rethrow;
+		}
 	}
 
 	/**
@@ -175,6 +195,7 @@ class extends="Base" {
 		var params     = getMetadata( arguments.callback ).parameters ?: []
 		var pages      = []
 		var failed     = true
+		var closeError = nullValue()
 		try {
 			for ( var i = 1; i <= max( 1, params.len() ); i++ ) {
 				pages.append( newPage( arguments.options ) )
@@ -184,10 +205,20 @@ class extends="Base" {
 			return isNull( result ) ? nullValue() : result
 		} finally {
 			for ( var page in pages ) {
-				page.context().close( failed )
+				try {
+					page.context().close( failed )
+				} catch ( any e ) {
+					// Close every context, and never hide the error of the callback
+					if ( isNull( closeError ) ) {
+						closeError = e
+					}
+				}
 			}
 			if ( !wasStarted ) {
 				close()
+			}
+			if ( !failed && !isNull( closeError ) ) {
+				throw( object = closeError )
 			}
 		}
 	}
@@ -240,10 +271,13 @@ class extends="Base" {
 	 * Render HTML with the browser, to PDF or an image. Used by bx:playwrightRender.
 	 *
 	 * @html    The HTML
-	 * @options type (pdf, png, jpeg, webp), path (empty returns bytes), baseURL, waitFor (selector) or
-	 *          waitUntil (load, networkidle), viewport, device, fullPage, plus PDF or screenshot options
+	 * @options type (pdf, png, jpeg, webp), path (empty returns bytes), baseURL (relative links and assets
+	 *          resolve against it), waitFor (selector) or waitUntil (load, networkidle), viewport ({ width, height }
+	 *          or "WIDTHxHEIGHT"), device, fullPage, plus PDF or screenshot options
 	 *
 	 * @return The path, or the bytes when no path is given
+	 *
+	 * @throws Playwright.InvalidOption if the viewport is neither a struct nor "WIDTHxHEIGHT"
 	 */
 	function render( required string html, struct options = {} ) {
 		var values  = duplicate( variables.config.render ?: {} )
@@ -258,11 +292,15 @@ class extends="Base" {
 				values.delete( name )
 			}
 		}
+		if ( context.keyExists( "viewport" ) ) {
+			context.viewport = parseViewport( context.viewport )
+		}
 		var waitUntil = values.waitUntil ?: "networkidle"
 		for ( var name in [ "type", "path", "waitFor", "waitUntil" ] ) {
 			values.delete( name )
 		}
-		var markup = arguments.html
+		// setContent() loads the markup at about:blank: a <base> makes relative links and assets use the baseURL
+		var markup = withBase( arguments.html, context.baseURL ?: "" )
 		return browse( ( page ) => {
 			page.setContent( markup, { waitUntil : waitUntil } )
 			if ( len( waitFor ) ) {
@@ -291,8 +329,22 @@ class extends="Base" {
 		if ( !values.keyExists( "baseURL" ) && len( variables.config.baseURL ?: "" ) ) {
 			values.baseURL = variables.config.baseURL
 		}
-		var opts = buildOptions( "APIRequest.NewContextOptions", values )
-		return new models.Request@playwright( getJava().request().newContext( opts ), variables.config )
+		var wasStarted = isStarted()
+		try {
+			var opts = buildOptions( "APIRequest.NewContextOptions", values )
+			return new models.Request@playwright(
+				getJava().request().newContext( opts ),
+				variables.config,
+				true,
+				this,
+				!wasStarted
+			)
+		} catch ( any e ) {
+			if ( !wasStarted ) {
+				close()
+			}
+			rethrow;
+		}
 	}
 
 	/**
@@ -318,7 +370,10 @@ class extends="Base" {
 			return file
 		}
 		directoryCreate( getDirectoryFromPath( file ), true, true )
-		var context = newContext( arguments.options.context ?: {} )
+		// The setup starts clean: never load the session configured on this manager (it may not exist yet, or be stale)
+		var setupOptions = { session : "" }
+		setupOptions.append( arguments.options.context ?: {}, false )
+		var context = newContext( setupOptions )
 		var failed  = true
 		try {
 			arguments.setup( context.newPage() )
@@ -523,6 +578,54 @@ class extends="Base" {
 			variables.java.close()
 			variables.java = nullValue()
 		}
+	}
+
+	/**
+	 * Parse a render viewport: a { width, height } struct or a "WIDTHxHEIGHT" string such as "1200x630".
+	 *
+	 * @viewport The viewport value
+	 *
+	 * @return The viewport as { width, height }
+	 *
+	 * @throws Playwright.InvalidOption for any other value
+	 */
+	private struct function parseViewport( required any viewport ) {
+		if ( isStruct( arguments.viewport ) ) {
+			return arguments.viewport
+		}
+		if ( isSimpleValue( arguments.viewport ) && reFind( "^\s*[0-9]+\s*[xX]\s*[0-9]+\s*$", arguments.viewport ) ) {
+			var size = arguments.viewport.lCase().listToArray( "x" )
+			return { width : int( trim( size[ 1 ] ) ), height : int( trim( size[ 2 ] ) ) }
+		}
+		throw(
+			type    = "Playwright.InvalidOption",
+			message = "Invalid viewport [#isSimpleValue( arguments.viewport ) ? arguments.viewport : "(complex value)"#].",
+			detail  = "Use a struct such as { width : 1200, height : 630 } or a WIDTHxHEIGHT string such as ""1200x630""."
+		)
+	}
+
+	/**
+	 * Add a <base href> to markup so relative links and assets resolve against a base URL. The tag goes
+	 * inside <head>, else after <html> or the doctype, else first. Markup that already has a <base> is left alone.
+	 *
+	 * @html    The markup
+	 * @baseURL The base URL, or empty for none
+	 *
+	 * @return The markup with the <base> tag
+	 */
+	private string function withBase( required string html, string baseURL = "" ) {
+		if ( !len( trim( arguments.baseURL ) ) || reFindNoCase( "<base[\s>/]", arguments.html ) ) {
+			return arguments.html
+		}
+		var tag = "<base href=""#encodeForHTMLAttribute( arguments.baseURL )#"">"
+		for ( var pattern in [ "<head(\s[^>]*)?>", "<html(\s[^>]*)?>", "^\s*<!doctype[^>]*>" ] ) {
+			var found = reFindNoCase( pattern, arguments.html, 1, true )
+			if ( found.pos[ 1 ] ) {
+				var at = found.pos[ 1 ] + found.len[ 1 ]
+				return arguments.html.left( at - 1 ) & tag & arguments.html.mid( at, len( arguments.html ) )
+			}
+		}
+		return tag & arguments.html
 	}
 
 	/**

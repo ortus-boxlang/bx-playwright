@@ -106,4 +106,21 @@ public class ProfilesTest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "extends itself" );
 	}
 
+	/**
+	 * A profile that sets a device drops the viewport of earlier profiles, and a later viewport is kept next to the device.
+	 */
+	@DisplayName( "Devices drop earlier viewports, later viewports stay" )
+	@Test
+	public void testDeviceViewportMerge() {
+		// @formatter:off
+		Object value = run( """
+			profiles = new models.Profiles@playwright()
+			a = profiles.resolve( [ "desktop", "android" ] )
+			b = profiles.resolve( [ "android", "desktop" ] )
+			result = a.device & "|" & a.keyExists( "viewport" ) & "|" & b.device & "|" & b.viewport.width
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "Pixel 7|false|Pixel 7|1920" );
+	}
+
 }

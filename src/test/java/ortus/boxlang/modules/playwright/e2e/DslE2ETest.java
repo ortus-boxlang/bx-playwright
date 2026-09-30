@@ -16,10 +16,17 @@ package ortus.boxlang.modules.playwright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -980,6 +987,176 @@ public class DslE2ETest extends BaseIntegrationTest {
 		""" );
 		// @formatter:on
 		assertThat( value ).isEqualTo( "true|2" );
+	}
+
+	/**
+	 * The artifacts folder of a context is named after the current date and time (yyyyMMdd-HHmmss) plus a short unique id.
+	 */
+	@DisplayName( "Artifact folders are named after today's date and time" )
+	@Test
+	public void testArtifactFolderName() {
+		String	dir		= Path.of( "build", "e2e-artifacts-names" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			ctx    = pw.newContext( { artifacts : { directory : "%s", screenshot : "on" } } )
+			folder = listLast( ctx.artifacts().directory, "/" )
+			ctx.close()
+			result = folder
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "[0-9]{8}-[0-9]{6}-[0-9a-f]{8}" );
+		assertThat( value.toString() ).startsWith( LocalDate.now().format( DateTimeFormatter.BASIC_ISO_DATE ) );
+	}
+
+	/**
+	 * render() resolves relative assets against the baseURL option (with or without a head element) and accepts a WIDTHxHEIGHT viewport
+	 * string, while an invalid viewport fails with Playwright.InvalidOption.
+	 *
+	 * @throws IOException if the local server cannot start
+	 */
+	@DisplayName( "render(): baseURL resolves relative assets, WxH viewports" )
+	@Test
+	public void testRenderBaseURLAndViewport() throws IOException {
+		BufferedImage			dot		= new BufferedImage( 4, 4, BufferedImage.TYPE_INT_RGB );
+		ByteArrayOutputStream	png		= new ByteArrayOutputStream();
+		AtomicInteger			hits	= new AtomicInteger();
+		ImageIO.write( dot, "png", png );
+		HttpServer server = HttpServer.create( new InetSocketAddress( "127.0.0.1", 0 ), 0 );
+		server.createContext( "/assets/dot.png", exchange -> {
+			hits.incrementAndGet();
+			byte[] out = png.toByteArray();
+			exchange.getResponseHeaders().add( "Content-Type", "image/png" );
+			exchange.sendResponseHeaders( 200, out.length );
+			exchange.getResponseBody().write( out );
+			exchange.close();
+		} );
+		server.start();
+		try {
+			// @formatter:off
+			Object value = run( """
+				base    = "http://127.0.0.1:%d/assets/"
+				image   = playwright().render( "<html><head><title>x</title></head><body><img src=""dot.png""></body></html>", { type : "png", baseURL : base, viewport : "300x200" } )
+				plain   = playwright().render( "<p>no head</p><img src=""dot.png"">", { type : "png", baseURL : base } )
+				picture = createObject( "java", "javax.imageio.ImageIO" ).read( createObject( "java", "java.io.ByteArrayInputStream" ).init( image ) )
+				invalid = ""
+				try {
+					playwright().render( "<p>x</p>", { type : "png", viewport : "big" } )
+				} catch ( "Playwright.InvalidOption" e ) {
+					invalid = "invalid"
+				}
+				result = picture.getWidth() & "x" & picture.getHeight() & "|" & invalid
+			""".formatted( server.getAddress().getPort() ) );
+			// @formatter:on
+			assertThat( value ).isEqualTo( "300x200|invalid" );
+			assertThat( hits.get() ).isAtLeast( 2 );
+		} finally {
+			server.stop( 0 );
+		}
+	}
+
+	/**
+	 * Closing a client from playwright().request() stops the driver that request() started, and leaves a manager that was already running alone.
+	 */
+	@DisplayName( "request().close() stops the driver it started" )
+	@Test
+	public void testRequestCloseStopsDriver() {
+		// @formatter:off
+		Object value = run( """
+			fresh = playwright()
+			api   = fresh.request()
+			api.close()
+			running = playwright()
+			running.getJava()
+			try {
+				other = running.request()
+				other.close()
+				stillRunning = running.isStarted()
+			} finally {
+				running.close()
+			}
+			result = fresh.isStarted() & "|" & stillRunning
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "false|true" );
+	}
+
+	/**
+	 * visit() on a URL that fails closes the context and the manager it started, then rethrows the navigation error.
+	 */
+	@DisplayName( "visit() cleans up when the navigation fails" )
+	@Test
+	public void testVisitFailureCleansUp() {
+		// @formatter:off
+		Object value = run( """
+			manager = playwright()
+			failure = ""
+			try {
+				manager.visit( "http://127.0.0.1:1/" )
+			} catch ( any e ) {
+				failure = e.type
+			}
+			result = failure.left( 11 ) & "|" & manager.isStarted()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "Playwright.|false" );
+	}
+
+	/**
+	 * session() on a manager configured with the same session works before the session exists, and a refresh starts from a clean page
+	 * instead of the stale saved state.
+	 */
+	@DisplayName( "session() setup never loads the configured session" )
+	@Test
+	public void testSessionOnConfiguredManager() {
+		// @formatter:off
+		Object value = bx( """
+			name = "configured-session-test"
+			file = pw.getConfigService().sessionPath( name )
+			if ( fileExists( file ) ) {
+				fileDelete( file )
+			}
+			seen  = []
+			setup = ( page ) => {
+				seen.append( page.context().cookies().len() )
+				page.context().addCookies( [ { name : "auth", value : "v" & seen.len(), url : "http://app.test/" } ] )
+			}
+			configured = playwright( { session : name } )
+			try {
+				configured.session( name, setup )
+				configured.session( name, setup, { refresh : true } )
+				token = configured.newPage().context().cookies().filter( ( c ) -> c.name == "auth" )[ 1 ].value
+			} finally {
+				configured.close()
+			}
+			result = seen.toList() & "|" & token
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "0,0|v2" );
+	}
+
+	/**
+	 * The AI browser acts on refs of elements inside iframes, which ai snapshots label like f1e2.
+	 */
+	@DisplayName( "AI browser: refs inside iframes" )
+	@Test
+	public void testAiBrowserIframeRefs() {
+		// @formatter:off
+		Object value = bx( """
+			html = '<h1>Outer</h1><iframe srcdoc=''<button onclick="this.textContent=`Done`">Inner</button>''></iframe>'
+			ctx  = pw.newContext()
+			ctx.intercept( "http://frame.test/**" ).handle( ( route ) => {
+				route.fulfill( OptionsMapper.build( "Route.FulfillOptions", { status : 200, contentType : "text/html", body : html } ) )
+			} )
+			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			state   = browser.visit( "http://frame.test/" )
+			found   = reFind( "button ""Inner"" \\[ref=(f[0-9]+e[0-9]+)\\]", state, 1, true )
+			ref     = found.pos[ 1 ] ? found.match[ 2 ] : ""
+			after   = len( ref ) ? browser.click( ref ) : state
+			browser.close()
+			result  = ref & "|" & ( after contains 'button "Done"' )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "f[0-9]+e[0-9]+\\|true" );
 	}
 
 }

@@ -20,8 +20,9 @@ class {
 	 */
 	struct function builtIn() {
 		return {
+			// The module settings hold the defaults, so the default profile adds nothing on top of them
+			"default"          : {},
 			// Browsers
-			"default"          : { browser : "chromium", headless : true, viewport : { width : 1280, height : 720 } },
 			"chromium"         : { browser : "chromium" },
 			"firefox"          : { browser : "firefox" },
 			"webkit"           : { browser : "webkit" },
@@ -114,7 +115,9 @@ class {
 
 	/**
 	 * Deep merge a struct into another: nested structs are merged, everything else is replaced.
-	 * The `viewport` key is always replaced as a whole.
+	 * The `viewport` key is always replaced as a whole. A source that sets a `device` without a `viewport`
+	 * removes the viewport of the target, so the device screen wins over earlier viewports while a later
+	 * viewport still wins over the device screen.
 	 *
 	 * @target The struct to merge into (modified)
 	 * @source The struct to merge from
@@ -122,6 +125,10 @@ class {
 	 * @return The target struct
 	 */
 	struct function deepMerge( required struct target, required struct source ) {
+		var device = arguments.source.device ?: ""
+		if ( isSimpleValue( device ) && len( device ) && !arguments.source.keyExists( "viewport" ) ) {
+			arguments.target.delete( "viewport" )
+		}
 		for ( var key in arguments.source ) {
 			var value = arguments.source[ key ]
 			if (

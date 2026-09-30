@@ -45,6 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * The Node.js version probe cannot hang: a node executable that never exits is killed after the timeout
 * CLI passthrough commands no longer set `PW_LANG_NAME=java`, so Playwright's help and hints stop suggesting `mvn exec:java` commands
 * An explicit `nodePath` that does not exist or is not executable is no longer reported as available; using it fails with `Playwright.NotInstalled` naming the bad path
+* The `default` profile is empty, so the `browser`, `headless` and `viewport` module settings in `boxlang.json` are no longer ignored
+* `playwright( struct, struct )` merges the second struct over the first instead of dropping it
+* Devices and viewports follow "last wins": a viewport from a later profile or from options replaces the device screen (keeping its user agent, scale and touch), and a later device replaces earlier viewports
+* Artifact folders use the `yyyyMMdd-HHmmss` date mask (minutes were used in place of the month)
+* `render()` and `bx:playwrightRender` resolve relative links and assets against `baseURL` (a `<base href>` is added to the markup)
+* `render()` accepts a `WIDTHxHEIGHT` viewport string and throws `Playwright.InvalidOption` for other non-struct values
+* `request().close()` stops the Playwright driver that `request()` started, so API clients no longer leak a driver process
+* `visit()` closes the new context (and the manager it started) when the navigation fails, then rethrows the error
+* `session()` setup never loads the session configured on the manager: creating it no longer fails with "does not exist yet" and `refresh` starts from a clean page
+* The AI browser accepts refs of elements inside iframes, such as `f1e2`
+* `BrowserContext.close()` always closes and forgets the context even when collecting screenshots or traces fails, and `browse()` no longer hides the callback error behind a close error
+* Session names map to distinct files (`a b` and `a-b` no longer share one); simple names such as `admin` keep their file
+* A relative `snapshots.directory` resolves against the current directory instead of the module folder
 
 ### Added
 

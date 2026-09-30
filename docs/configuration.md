@@ -37,13 +37,13 @@ Override any setting in `boxlang.json`:
 | `slowMo` | `0` | Milliseconds between actions |
 | `baseURL` | | Relative URLs resolve against it |
 | `viewport` | `{ width : 1280, height : 720 }` | |
-| `device` | | A device name, see `bxPlaywright devices` |
+| `device` | | A device name, see `bxPlaywright devices`. Its screen replaces the `viewport` setting and earlier viewports; a viewport set by a later profile or by options wins |
 | `locale`, `timezone`, `colorScheme` | `colorScheme : light` | Emulation |
 | `ignoreHTTPSErrors` | `false` | |
 | `timeouts` | `{ action : 30000, navigation : 30000, assertion : 5000 }` | Milliseconds |
 | `testIdAttribute` | `data-testid` | Used by `@name` and `byTestId()` |
 | `artifacts` | all `off` | `{ directory, screenshot, trace, video }`, see [Testing](testing.md) |
-| `snapshots` | `{ threshold : 0.2 }` | Visual regression, see [Quality Checks](quality.md) |
+| `snapshots` | `{ threshold : 0.2 }` | Visual regression, see [Quality Checks](quality.md). A relative `directory` resolves against the current directory |
 | `render` | `{ format : A4, printBackground : true, waitUntil : networkidle }` | Rendering defaults |
 | `launchOptions`, `contextOptions` | `{}` | Any Playwright launch or context option |
 | `profiles` | `{}` | Your profiles, see [Profiles](profiles.md) |
