@@ -119,3 +119,30 @@ jobs:
           SLACK_USERNAME: CI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           MSG_MINIMAL: true
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup BoxLang and bxSites
+        uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-sites bx-markdown bx-esapi bx-yaml bx-image
+
+      # Build the site, then fail on lint issues, broken links or missing alt text
+      - name: Build and Check Docs
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          bxSites lint
+          bxSites build
+          bxSites audit

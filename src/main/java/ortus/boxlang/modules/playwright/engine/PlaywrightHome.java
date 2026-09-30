@@ -275,7 +275,8 @@ public class PlaywrightHome {
 			return Optional.of( new NodeRuntime( explicitNodePath, NodeRuntime.Source.EXPLICIT, probeNodeVersion( explicitNodePath.toString() ) ) );
 		}
 		if ( Files.isRegularFile( getBundledNodeExecutable() ) ) {
-			return Optional.of( new NodeRuntime( getBundledNodeExecutable(), NodeRuntime.Source.BUNDLED, null ) );
+			return Optional
+			    .of( new NodeRuntime( getBundledNodeExecutable(), NodeRuntime.Source.BUNDLED, probeNodeVersion( getBundledNodeExecutable().toString() ) ) );
 		}
 		if ( Files.isRegularFile( getDownloadedNodeExecutable() ) ) {
 			return Optional.of( new NodeRuntime( getDownloadedNodeExecutable(), NodeRuntime.Source.DOWNLOADED, nodeVersion ) );

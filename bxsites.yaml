@@ -1,0 +1,15 @@
+name: "BoxLang Playwright"
+description: "Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright."
+baseURL: "/"
+source: docs
+theme:
+    name: bootstrap
+    options: { navCollapsible: true, tocPosition: sticky }
+search: true
+mcp: true
+nav: []
+repo:
+    url: "https://github.com/ortus-boxlang/bx-playwright"
+    editUri: "edit/development/docs/"
+footer: true
+lastUpdated: true

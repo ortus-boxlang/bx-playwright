@@ -1,0 +1,26 @@
+[
+	"index.md",
+	"getting-started.md",
+	{
+		"title": "Using bx-playwright",
+		"children": [
+			"browsing.md",
+			"assertions.md",
+			"network.md",
+			"rendering.md",
+			"page-objects.md",
+			"quality.md",
+			"testing.md",
+			"ai.md"
+		]
+	},
+	{
+		"title": "Reference",
+		"children": [
+			"configuration.md",
+			"profiles.md",
+			"cli.md",
+			"errors.md"
+		]
+	}
+]
