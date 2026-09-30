@@ -538,7 +538,7 @@ docs/
 - [x] AGENTS.md for the module; typed error catalog.
 - [x] Gradle: `playwright` + `driver` deps into `libs/`; `full` flavor adds `driver-bundle`. Build two zips, two `box.json` slugs (`bx-playwright`, `bx-playwright-full`), stamp version.
 - [x] Release workflow publishes both to ForgeBox together.
-- [ ] Check the full zip (~206 MB) against ForgeBox size limits.
+- [x] Full zip size: not a ForgeBox concern. Both zips go to S3 in one upload; ForgeBox only receives the two box.json files, whose `location` points to S3.
 - [x] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
 - [x] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
 
