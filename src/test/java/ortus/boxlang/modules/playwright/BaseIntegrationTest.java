@@ -85,6 +85,16 @@ public abstract class BaseIntegrationTest {
 			    .register( context )
 			    .activate( context );
 		} else {
+			// The runtime also auto-loads modules installed in the user's BoxLang home (e.g. by install-bx-module).
+			// Testing such a copy instead of build/module silently ignores every source change, so fail loudly.
+			Path	loaded	= moduleService.getModuleRecord( moduleName ).physicalPath.toAbsolutePath().normalize();
+			Path	built	= Paths.get( "./build/module" ).toAbsolutePath().normalize();
+			if ( !loaded.equals( built ) ) {
+				throw new IllegalStateException(
+				    "The tests loaded the playwright module from [" + loaded + "] instead of [" + built
+				        + "]. Remove the installed copy (install-bx-module --remove bx-playwright) or move it out of the BoxLang modules folder."
+				);
+			}
 			System.out.println( "Module already loaded: " + moduleName );
 		}
 	}

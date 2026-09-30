@@ -206,35 +206,43 @@ class extends="Base" {
 		}
 		variables.closed = true
 
-		if ( keep( "screenshot", arguments.failed ) ) {
-			var index = 0
-			for ( var page in variables.pages ) {
-				index++
-				if ( !page.isClosed() ) {
-					var file = variables.artifactsDir & "/screenshot-#index#.png"
-					page.getJava().screenshot( buildOptions( "Page.ScreenshotOptions", { path : file, fullPage : true } ) )
-					variables.artifacts.screenshots.append( file )
+		// Collecting artifacts can fail (a crashed page, a full disk): the context is still closed and forgotten
+		var videos = []
+		try {
+			if ( keep( "screenshot", arguments.failed ) ) {
+				var index = 0
+				for ( var page in variables.pages ) {
+					index++
+					if ( !page.isClosed() ) {
+						var file = variables.artifactsDir & "/screenshot-#index#.png"
+						page.getJava().screenshot( buildOptions( "Page.ScreenshotOptions", { path : file, fullPage : true } ) )
+						variables.artifacts.screenshots.append( file )
+					}
 				}
 			}
-		}
 
-		if ( variables.tracing ) {
-			if ( keep( "trace", arguments.failed ) ) {
-				variables.artifacts.trace = variables.artifactsDir & "/trace.zip"
-				variables.java.tracing().stop( buildOptions( "Tracing.StopOptions", { path : variables.artifacts.trace } ) )
-			} else {
-				variables.java.tracing().stop()
+			if ( variables.tracing ) {
+				if ( keep( "trace", arguments.failed ) ) {
+					variables.artifacts.trace = variables.artifactsDir & "/trace.zip"
+					variables.java.tracing().stop( buildOptions( "Tracing.StopOptions", { path : variables.artifacts.trace } ) )
+				} else {
+					variables.java.tracing().stop()
+				}
+			}
+
+			if ( policy( "video" ) != "off" ) {
+				for ( var page in variables.pages ) {
+					videos.append( page.getJava().video() )
+				}
+			}
+		} finally {
+			try {
+				variables.java.close()
+			} finally {
+				variables.manager.forget( this )
 			}
 		}
 
-		var videos = []
-		if ( policy( "video" ) != "off" ) {
-			for ( var page in variables.pages ) {
-				videos.append( page.getJava().video() )
-			}
-		}
-
-		variables.java.close()
 		for ( var page in variables.pages ) {
 			announceEvent( "onPageClose", { page : page } )
 		}
@@ -256,7 +264,6 @@ class extends="Base" {
 		if ( len( variables.artifacts.trace ) ) {
 			announceEvent( "onPlaywrightArtifact", { type : "trace", path : variables.artifacts.trace } )
 		}
-		variables.manager.forget( this )
 		return variables.artifacts
 	}
 

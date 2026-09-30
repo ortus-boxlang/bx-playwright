@@ -43,20 +43,19 @@ class {
 			} )
 		}
 
-		var node = home.resolveNode()
-		if ( node.isPresent() ) {
-			var info = node.get().toMap()
+		var node = new models.cli.Terminal@playwright().node( home, arguments.config.nodePath() )
+		if ( node.ok ) {
 			checks.append( {
 				"status"  : "ok",
 				"check"   : "node",
-				"message" : "Node.js #info.version# (#info.source#) at #info.executable#"
+				"message" : "Node.js #node.version# (#node.source#) at #node.executable#"
 			} )
 		} else {
 			checks.append( {
 				"status"  : "fail",
 				"check"   : "node",
-				"message" : "No Node.js runtime available",
-				"fix"     : "bxPlaywright install (downloads Node.js #home.getNodeVersion()#), or set the 'nodePath' setting"
+				"message" : node.problem,
+				"fix"     : node.fix
 			} )
 		}
 

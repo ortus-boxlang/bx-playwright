@@ -14,12 +14,16 @@
  */
 package ortus.boxlang.modules.playwright.engine;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.TimeoutError;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.WaitForSelectorState;
 
 /**
  * Resolves the single-string selectors of the bx-playwright DSL into Playwright locators.
@@ -29,11 +33,13 @@ import com.microsoft.playwright.options.AriaRole;
  * <li>{@code ref=e12}: an element ref from an ai mode snapshot</li>
  * <li>CSS, XPath and Playwright engine selectors pass through: {@code #id}, {@code .class}, {@code input[name=email]},
  * lowercase tag names,
- * {@code //div}, {@code css=...}, {@code text=...}, {@code role=button[name="Save"]}, {@code h1}</li>
+ * {@code //div}, {@code css=...}, {@code text=...}, {@code role=button[name="Save"]}, {@code h1}, chains such as
+ * {@code div >> text=Foo}</li>
  * <li>Anything else is human text, resolved by intent:
  * <ul>
- * <li>{@code fill}: label, then placeholder, then the name attribute</li>
- * <li>{@code click}: button or link by accessible name, then exact visible text</li>
+ * <li>{@code fill}: exact label, label, exact placeholder, placeholder, then the name attribute (first match in that
+ * order)</li>
+ * <li>{@code click}: button or link by exact accessible name, then by partial name, then exact visible text</li>
  * <li>{@code any}: visible text</li>
  * </ul>
  * </li>
@@ -53,6 +59,11 @@ public final class SmartSelector {
 
 	private static final Pattern		ENGINE_PREFIX	= Pattern.compile( "^(css|xpath|text|role|id|data-testid|internal:[a-z-]+|nth|visible)=.*",
 	    Pattern.DOTALL );
+	/**
+	 * How long (ms) a smart text selector waits for its preferred element (a button or link for clicks, a field for
+	 * fills) to be attached before falling back, so an element rendered a moment later still wins.
+	 */
+	private static final double			GRACE_MS		= 1000;
 	private static final Set<String>	HTML_TAGS		= Set.of(
 	    "a", "abbr", "article", "aside", "audio", "b", "blockquote", "body", "button", "canvas", "caption", "code", "dd", "details",
 	    "dialog", "div", "dl", "dt", "em", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6",
@@ -93,21 +104,74 @@ public final class SmartSelector {
 			return root.locator( value );
 		}
 		return switch ( mode ) {
-			case FILL -> root.getByLabel( value )
-			    .or( root.getByPlaceholder( value ) )
-			    .or( root.locator( "[name=\"" + value.replace( "\"", "\\\"" ) + "\"]" ) )
-			    .first();
+			case FILL -> {
+				// Priority: exact label, label, exact placeholder, placeholder, then the name attribute.
+				// A plain or() chain would return the first match in document order instead.
+				List<Locator>	ordered		= List.of(
+				    root.getByLabel( value, new Locator.GetByLabelOptions().setExact( true ) ),
+				    root.getByLabel( value ),
+				    root.getByPlaceholder( value, new Locator.GetByPlaceholderOptions().setExact( true ) ),
+				    root.getByPlaceholder( value ),
+				    root.locator( "[name=\"" + value.replace( "\"", "\\\"" ) + "\"]" )
+				);
+				Locator			anyField	= ordered.get( 1 ).or( ordered.get( 3 ) ).or( ordered.get( 4 ) );
+				yield pick( ordered, anyField, anyField );
+			}
 			case CLICK -> {
 				// A button or link wins over any other element with the same text (e.g. a "Sign in" heading
-				// above a "Sign in" button). Text is only the fallback when no button or link matches yet.
-				Locator control = root.getByRole( AriaRole.BUTTON, new Locator.GetByRoleOptions().setName( value ) )
-				    .or( root.getByRole( AriaRole.LINK, new Locator.GetByRoleOptions().setName( value ) ) );
-				yield control.count() > 0
-				    ? control.first()
-				    : control.or( root.getByText( value, new Locator.GetByTextOptions().setExact( true ) ) ).first();
+				// above a "Sign in" button), and an exact name wins over a longer one ("Save" over "Save draft").
+				// Text is only the fallback when no button or link shows up within the grace period.
+				Locator			exactButton	= root.getByRole( AriaRole.BUTTON, new Locator.GetByRoleOptions().setName( value ).setExact( true ) );
+				Locator			exactLink	= root.getByRole( AriaRole.LINK, new Locator.GetByRoleOptions().setName( value ).setExact( true ) );
+				Locator			button		= root.getByRole( AriaRole.BUTTON, new Locator.GetByRoleOptions().setName( value ) );
+				Locator			link		= root.getByRole( AriaRole.LINK, new Locator.GetByRoleOptions().setName( value ) );
+				Locator			control		= button.or( link );
+				List<Locator>	ordered		= List.of( exactButton.or( exactLink ), control );
+				yield pick( ordered, control, control.or( root.getByText( value, new Locator.GetByTextOptions().setExact( true ) ) ) );
 			}
 			default -> root.getByText( value ).first();
 		};
+	}
+
+	/**
+	 * Pick the first locator, in priority order, that matches at least one element. When none matches yet, wait up to
+	 * {@link #GRACE_MS} for an element matching {@code waitOn} to be attached (it may still be rendering) and check the
+	 * priority order again. If nothing shows up, return {@code fallback}, which then waits with the action timeout.
+	 *
+	 * @param ordered  The candidate locators, best first
+	 * @param waitOn   The locator to wait for during the grace period
+	 * @param fallback The locator to use when no candidate matches after the grace period
+	 *
+	 * @return The first element of the chosen locator
+	 */
+	private static Locator pick( List<Locator> ordered, Locator waitOn, Locator fallback ) {
+		Locator found = firstPresent( ordered );
+		if ( found != null ) {
+			return found;
+		}
+		try {
+			waitOn.first().waitFor( new Locator.WaitForOptions().setState( WaitForSelectorState.ATTACHED ).setTimeout( GRACE_MS ) );
+		} catch ( TimeoutError e ) {
+			return fallback.first();
+		}
+		found = firstPresent( ordered );
+		return found != null ? found : fallback.first();
+	}
+
+	/**
+	 * Find the first locator that currently matches at least one element.
+	 *
+	 * @param ordered The candidate locators, best first
+	 *
+	 * @return The first element of the first matching locator, or null when none matches
+	 */
+	private static Locator firstPresent( List<Locator> ordered ) {
+		for ( Locator candidate : ordered ) {
+			if ( candidate.count() > 0 ) {
+				return candidate.first();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -129,14 +193,75 @@ public final class SmartSelector {
 		if ( ENGINE_PREFIX.matcher( trimmed ).matches() ) {
 			return true;
 		}
-		// Every whitespace separated part must look like CSS: "ul li", "div > span", "input[name=x]"
-		// while "Save changes" or "Sign in" are human text
-		for ( String part : trimmed.split( "\\s+" ) ) {
+		// Playwright chains ("div >> text=Foo", "nav >> nth=0"): every segment must be a selector
+		List<String> chain = split( trimmed, true );
+		if ( chain.size() > 1 ) {
+			for ( String segment : chain ) {
+				if ( segment.isBlank() || !isSelector( segment ) ) {
+					return false;
+				}
+			}
+			return true;
+		}
+		// Every whitespace separated part must look like CSS: "ul li", "div > span", "input[placeholder=\"Your email\"]"
+		// while "Save changes" or "Sign in" are human text. Whitespace inside quotes, [] and () does not split.
+		for ( String part : split( trimmed, false ) ) {
 			if ( !isCssToken( part ) ) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Split a selector outside quotes, brackets and parentheses, either on whitespace or on the Playwright chain
+	 * operator {@code >>}.
+	 *
+	 * @param value The selector
+	 * @param chain True to split on {@code >>}, false to split on whitespace
+	 *
+	 * @return The parts, trimmed; empty parts are dropped when splitting on whitespace
+	 */
+	private static List<String> split( String value, boolean chain ) {
+		List<String>	parts	= new ArrayList<>();
+		StringBuilder	current	= new StringBuilder();
+		char			quote	= 0;
+		int				depth	= 0;
+		for ( int i = 0; i < value.length(); i++ ) {
+			char c = value.charAt( i );
+			if ( quote != 0 ) {
+				current.append( c );
+				if ( c == '\\' && i + 1 < value.length() ) {
+					current.append( value.charAt( ++i ) );
+				} else if ( c == quote ) {
+					quote = 0;
+				}
+				continue;
+			}
+			if ( c == '"' || c == '\'' ) {
+				quote = c;
+			} else if ( c == '[' || c == '(' ) {
+				depth++;
+			} else if ( ( c == ']' || c == ')' ) && depth > 0 ) {
+				depth--;
+			} else if ( depth == 0 && chain && c == '>' && i + 1 < value.length() && value.charAt( i + 1 ) == '>' ) {
+				parts.add( current.toString().trim() );
+				current.setLength( 0 );
+				i++;
+				continue;
+			} else if ( depth == 0 && !chain && Character.isWhitespace( c ) ) {
+				if ( !current.isEmpty() ) {
+					parts.add( current.toString() );
+					current.setLength( 0 );
+				}
+				continue;
+			}
+			current.append( c );
+		}
+		if ( chain || !current.isEmpty() ) {
+			parts.add( chain ? current.toString().trim() : current.toString() );
+		}
+		return parts;
 	}
 
 	/**

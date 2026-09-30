@@ -18,6 +18,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -154,6 +155,27 @@ public class OptionsMapperTest {
 	public void testOptionNames() {
 		List<String> names = OptionsMapper.optionNames( Page.NavigateOptions.class );
 		assertThat( names ).containsAtLeast( "referer", "timeout", "waitUntil" );
+	}
+
+	/**
+	 * A null value reaches object setters, so { viewport : null } disables the fixed viewport, while nulls for primitive
+	 * setters and unknown keys are skipped.
+	 */
+	@DisplayName( "It passes null to object setters and skips it for primitives" )
+	@Test
+	public void testNullValues() {
+		Map<String, Object> values = new HashMap<>();
+		values.put( "viewport", null );
+		values.put( "javaScriptEnabled", null );
+		values.put( "notAnOption", null );
+		Browser.NewContextOptions options = OptionsMapper.map( Browser.NewContextOptions.class, values );
+		assertThat( options.viewportSize ).isNotNull();
+		assertThat( options.viewportSize.isPresent() ).isFalse();
+		assertThat( options.javaScriptEnabled ).isNull();
+
+		Map<String, Object> navigate = new HashMap<>();
+		navigate.put( "timeout", null );
+		assertThat( OptionsMapper.map( Page.NavigateOptions.class, navigate ).timeout ).isNull();
 	}
 
 }

@@ -131,17 +131,23 @@ public final class OptionsMapper {
 	public static <T> T apply( T target, Map<?, ?> options ) {
 		Map<String, List<Method>> setters = setters( target.getClass() );
 		for ( Map.Entry<String, Object> entry : normalize( options ).entrySet() ) {
-			if ( entry.getValue() == null ) {
-				continue;
-			}
 			String			name		= entry.getKey().toLowerCase( Locale.ROOT );
 			List<Method>	candidates	= setters.get( ALIASES.getOrDefault( name, name ).toLowerCase( Locale.ROOT ) );
+			if ( candidates == null && entry.getValue() == null ) {
+				// Unset (null) unknown keys were always ignored; keep structs built with optional arguments working
+				continue;
+			}
 			if ( candidates == null ) {
 				throw PlaywrightErrors.of(
 				    PlaywrightErrors.INVALID_OPTION,
 				    "Unknown option [" + entry.getKey() + "] for " + displayName( target.getClass() ) + ".",
 				    "Valid options are: " + String.join( ", ", optionNames( target.getClass() ) )
 				);
+			}
+			// null is passed on to object setters (e.g. viewport : null disables the fixed viewport) and
+			// only skipped when every setter takes a primitive, which cannot hold null
+			if ( entry.getValue() == null && candidates.stream().allMatch( method -> method.getParameterTypes()[ 0 ].isPrimitive() ) ) {
+				continue;
 			}
 			invokeBest( target, candidates, entry.getKey(), entry.getValue() );
 		}

@@ -16,10 +16,17 @@ package ortus.boxlang.modules.playwright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -98,6 +105,43 @@ public class DslE2ETest extends BaseIntegrationTest {
 			""" );
 		// @formatter:on
 		assertThat( value ).isEqualTo( true );
+	}
+
+	/**
+	 * Smart selectors: a button rendered a moment later still wins over a same text heading, an exact button name wins
+	 * over a longer one ("Save" over "Save draft"), fill() follows the label, placeholder, name priority instead of
+	 * document order, and selectors with spaces inside quotes or with the >> chain operator are used as selectors.
+	 */
+	@DisplayName( "Smart selectors: delayed buttons, exact names, fill priority and selectors with spaces" )
+	@Test
+	public void testSmartSelectorPriorities() {
+		// @formatter:off
+		Object value = bx( """
+			results = []
+			page = pw.newPage()
+			page.setContent( "<h2>Sign in</h2><div id=out></div><script>setTimeout( () => { const b = document.createElement( 'button' ); b.textContent = 'Sign in'; b.onclick = () => out.textContent = 'button'; document.body.append( b ) }, 300 )</script>" )
+			results.append( page.click( "Sign in" ).text( "##out" ) )
+
+			page.setContent( "<button>Save draft</button><button>Save</button><div id=out></div><script>document.querySelectorAll( 'button' ).forEach( b => b.onclick = () => out.textContent = 'clicked ' + b.textContent )</script>" )
+			results.append( page.click( "Save" ).text( "##out" ) )
+
+			page.setContent( "<label>Backup email <input id=a></label><label>Email <input id=b></label>" )
+			page.fill( "Email", "x" )
+			results.append( page.value( "##a" ) & "|" & page.value( "##b" ) )
+
+			page.setContent( "<input id=p placeholder='Email'><label>Email <input id=l></label>" )
+			page.fill( "Email", "y" )
+			results.append( page.value( "##p" ) & "|" & page.value( "##l" ) )
+
+			page.setContent( "<input placeholder='Your email'><div><span>Foo</span></div><nav>first</nav><nav>second</nav>" )
+			page.fill( 'input[placeholder="Your email"]', "z" )
+			results.append( page.value( "input" ) )
+			results.append( page.text( "div >> text=Foo" ) )
+			results.append( page.text( "nav >> nth=0" ) )
+			result = results.toList( ";" )
+			""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "button;clicked Save;|x;|y;z;Foo;first" );
 	}
 
 	/**
@@ -351,10 +395,22 @@ public class DslE2ETest extends BaseIntegrationTest {
 			} catch ( "Playwright.InvalidOption" e ) {
 				errors.append( "missing target" )
 			}
-			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & errors.toList()
+			bx:playwrightRender options={ type : "png" } variable="fromOptions" {
+				writeOutput( "<h1>Options</h1>" )
+			}
+			try {
+				bx:playwrightRender type="png" variable="bad" viewport="1200xabc" {
+					writeOutput( "<h1>Bad viewport</h1>" )
+				}
+			} catch ( "Playwright.InvalidOption" e ) {
+				errors.append( "bad viewport" )
+			}
+			// PNG files start with 0x89 'P' 'N' 'G'
+			isPng = fromOptions[ 2 ] == 80 && fromOptions[ 3 ] == 78 && fromOptions[ 4 ] == 71
+			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & isPng & "|" & errors.toList()
 		""".formatted( dir ) );
 		// @formatter:on
-		assertThat( value ).isEqualTo( "true|true|missing target" );
+		assertThat( value ).isEqualTo( "true|true|true|missing target,bad viewport" );
 	}
 
 	/**
@@ -690,6 +746,417 @@ public class DslE2ETest extends BaseIntegrationTest {
 		""" );
 		// @formatter:on
 		assertThat( value ).isEqualTo( "a@b.com|xyz|editor" );
+	}
+
+	/**
+	 * Visibility checks look at every match: a hidden element with the same text does not hide a visible one, and
+	 * assertMissing() passes only when no match is visible, without strict mode errors for several hidden matches.
+	 */
+	@DisplayName( "Visibility checks judge every match, not only the first one" )
+	@Test
+	public void testVisibilityChecksEveryMatch() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { action : 1000, assertion : 1000 } } )
+			page.setContent( "<span style='display:none'>Menu</span><span>Menu</span><p class=t style='display:none'>a</p><p class=t hidden>b</p>" )
+			page.assertVisible( "Menu" ).waitForText( "Menu", 1000 ).waitFor( "Menu", "visible", 1000 ).assertMissing( ".t" )
+			missingFailed = false
+			try {
+				page.assertMissing( "Menu" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				missingFailed = true
+			}
+			result = page.isVisible( "Menu" ) & "|" & page.locator( "span" ).isVisible() & "|" & page.isVisible( ".t" ) & "|" & missingFailed
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|false|true" );
+	}
+
+	/**
+	 * count( text ) and expect( text ).toHaveCount() count every element with the text, not only the first one.
+	 */
+	@DisplayName( "count() and toHaveCount() count every text match" )
+	@Test
+	public void testCountEveryTextMatch() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 1000 } } )
+			page.setContent( "<p>Apple pie</p><p>Apple tart</p><div>Pear</div>" )
+			page.expect( "Apple" ).toHaveCount( 2 ).toHaveText( "Apple pie" )
+			result = page.count( "Apple" ) & "|" & page.locator( "body" ).count( "Apple" ) & "|" & page.count( "p" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2|2|2" );
+	}
+
+	/**
+	 * assertCount() resolves @alias selectors registered by page objects and components.
+	 */
+	@DisplayName( "assertCount() honors element aliases" )
+	@Test
+	public void testAssertCountAliases() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 1000 } } )
+			page.setContent( "<div id=cart>2 items</div><p>Apple pie</p><p>Apple tart</p><b data-testid=total>3</b>" )
+			page.useElements( { cartBox : "##cart", fruit : "Apple" } )
+				.assertCount( "@cartBox", 1 )
+				.assertCount( "@fruit", 2 )
+				.assertCount( "@total", 1 )
+			result = page.count( "@fruit" )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).isEqualTo( "2" );
+	}
+
+	/**
+	 * assertPathIs() is case sensitive and works for file URLs, which have no host.
+	 */
+	@DisplayName( "assertPathIs() is case sensitive and supports file URLs" )
+	@Test
+	public void testAssertPathIsCaseAndFileUrls() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext( { timeouts : { assertion : 500 } } ) ).newPage()
+			page.visit( "/dashboard" ).assertPathIs( "/dashboard" )
+			wrongCase = false
+			try {
+				page.assertPathIs( "/Dashboard" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				wrongCase = true
+			}
+			tempFile = createObject( "java", "java.io.File" ).createTempFile( "bxpw-path", ".html" )
+			tempFile.deleteOnExit()
+			fileWrite( tempFile.getAbsolutePath(), "<p>on disk</p>" )
+			pw.newPage().visit( tempFile.toURI().toString() ).assertPathIs( tempFile.toURI().getPath() )
+			result = wrongCase
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( true );
+	}
+
+	/**
+	 * assertNoSmoke() reports JavaScript errors on every visited URL, also after a page that had errors of its own.
+	 */
+	@DisplayName( "assertNoSmoke() catches errors on every visited URL" )
+	@Test
+	public void testSmokeCatchesErrorsOnEveryUrl() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<p>start</p>" )
+			failure = ""
+			try {
+				page.assertNoSmoke( [
+					"data:text/html,<script>console.error( 'first-boom' )</script>",
+					"data:text/html,<script>console.error( 'second-boom' )</script>",
+					"data:text/html,<p>clean</p>"
+				] )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			result = ( failure contains "2 problem(s)" ) & "|" & ( failure contains "first-boom" ) & "|" & ( failure contains "second-boom" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true" );
+	}
+
+	/**
+	 * freezeTime() accepts BoxLang dates as well as ISO strings.
+	 */
+	@DisplayName( "freezeTime() accepts BoxLang dates" )
+	@Test
+	public void testFreezeTimeWithBoxLangDate() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.freezeTime( createDateTime( 2031, 6, 15, 12, 0, 0 ) )
+			page.setContent( "<p>x</p>" )
+			result = page.evaluate( "new Date().getFullYear()" )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "2031(\\.0)?" );
+	}
+
+	/**
+	 * filter( { has, hasNot } ) works with locators built from the page, and screenshots accept Locators and selectors as masks.
+	 */
+	@DisplayName( "filter( has/hasNot ) with page locators, screenshot masks with Locators" )
+	@Test
+	public void testFilterHasAndScreenshotMasks() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<ul><li>One <b>x</b></li><li>Two</li></ul>" )
+			items   = page.locator( "li" )
+			has     = items.filter( { has : page.locator( "b" ) } ).texts()
+			hasNot  = items.filter( { hasNot : page.locator( "b" ) } ).texts()
+			shot    = page.screenshot( "", { mask : [ page.locator( "b" ), "Two" ] } )
+			element = items.first().screenshot( "", { mask : page.locator( "b" ) } )
+			result  = has.toList() & "|" & hasNot.toList() & "|" & ( arrayLen( shot ) > 0 ) & "|" & ( arrayLen( element ) > 0 ) & "|" & page.count( "b" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "One x|Two|true|true|1" );
+	}
+
+	/**
+	 * assertScreenshotMatches() resolves a relative directory against the working directory, not the installed module.
+	 */
+	@DisplayName( "assertScreenshotMatches() resolves a relative directory against the working directory" )
+	@Test
+	public void testScreenshotRelativeDirectory() {
+		String	relative	= "build/e2e-relative-snapshots-" + System.nanoTime();
+		Path	expected	= Path.of( System.getProperty( "user.dir" ), relative, "relative.png" );
+		// @formatter:off
+		bx( """
+			page = pw.newPage()
+			page.setContent( "<h1>Relative</h1>" )
+			page.assertScreenshotMatches( "relative", { directory : "%s" } )
+			result = true
+		""".formatted( relative ) );
+		// @formatter:on
+		assertThat( expected.toFile().exists() ).isTrue();
+	}
+
+	/**
+	 * A nested soft() adds its failures to the outer soft(), which fails once with all of them.
+	 */
+	@DisplayName( "Nested soft() keeps the outer failures" )
+	@Test
+	public void testNestedSoftAssertions() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 300 } } )
+			page.setContent( "<h1>Home</h1>" )
+			failure = ""
+			try {
+				page.soft( ( p ) => {
+					p.assertSee( "outer-missing" )
+					p.soft( ( q ) => q.assertSee( "inner-missing" ) )
+					p.assertSee( "Home" )
+				} )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			result = ( failure contains "2 soft assertion(s)" ) & "|" & ( failure contains "outer-missing" ) & "|" & ( failure contains "inner-missing" ) & "|" & isNull( page.softCollector() )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true|true" );
+	}
+
+	/**
+	 * Locator.texts() skips hidden elements, and nth( 0 ) throws a typed error instead of returning the last element.
+	 */
+	@DisplayName( "texts() returns visible text only, nth( 0 ) throws" )
+	@Test
+	public void testTextsVisibleAndNthZero() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<ul><li>one</li><li style='display:none'>secret</li><li>three</li></ul>" )
+			items = page.locator( "li" )
+			error = ""
+			try {
+				items.nth( 0 )
+			} catch ( "Playwright.InvalidOption" e ) {
+				error = e.message
+			}
+			result = items.texts().toList() & "|" & items.nth( 3 ).getJava().textContent() & "|" & ( error contains "1-based" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "one,three|three|true" );
+	}
+
+	/**
+	 * upload( files ) on a locator sets the files of the locator itself, like fill( value ) and select( value ).
+	 */
+	@DisplayName( "Locator upload( files ) uploads to the locator itself" )
+	@Test
+	public void testLocatorUploadShortcut() {
+		// @formatter:off
+		Object value = bx( """
+			one = createObject( "java", "java.io.File" ).createTempFile( "bxpw-cv", ".pdf" )
+			two = createObject( "java", "java.io.File" ).createTempFile( "bxpw-cover", ".txt" )
+			one.deleteOnExit()
+			two.deleteOnExit()
+			page = pw.newPage()
+			page.setContent( "<label>Resume <input type=file id=cv></label><label>Docs <input type=file id=docs multiple></label>" )
+			page.byLabel( "Resume" ).upload( one.getAbsolutePath() )
+			page.byLabel( "Docs" ).upload( [ one.getAbsolutePath(), two.getAbsolutePath() ] )
+			result = page.evaluate( "document.getElementById( 'cv' ).files[ 0 ].name.endsWith( '.pdf' ) + '|' + document.getElementById( 'docs' ).files.length" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|2" );
+	}
+
+	/**
+	 * The artifacts folder of a context is named after the current date and time (yyyyMMdd-HHmmss) plus a short unique id.
+	 */
+	@DisplayName( "Artifact folders are named after today's date and time" )
+	@Test
+	public void testArtifactFolderName() {
+		String	dir		= Path.of( "build", "e2e-artifacts-names" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			ctx    = pw.newContext( { artifacts : { directory : "%s", screenshot : "on" } } )
+			folder = listLast( ctx.artifacts().directory, "/" )
+			ctx.close()
+			result = folder
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "[0-9]{8}-[0-9]{6}-[0-9a-f]{8}" );
+		assertThat( value.toString() ).startsWith( LocalDate.now().format( DateTimeFormatter.BASIC_ISO_DATE ) );
+	}
+
+	/**
+	 * render() resolves relative assets against the baseURL option (with or without a head element) and accepts a WIDTHxHEIGHT viewport
+	 * string, while an invalid viewport fails with Playwright.InvalidOption.
+	 *
+	 * @throws IOException if the local server cannot start
+	 */
+	@DisplayName( "render(): baseURL resolves relative assets, WxH viewports" )
+	@Test
+	public void testRenderBaseURLAndViewport() throws IOException {
+		BufferedImage			dot		= new BufferedImage( 4, 4, BufferedImage.TYPE_INT_RGB );
+		ByteArrayOutputStream	png		= new ByteArrayOutputStream();
+		AtomicInteger			hits	= new AtomicInteger();
+		ImageIO.write( dot, "png", png );
+		HttpServer server = HttpServer.create( new InetSocketAddress( "127.0.0.1", 0 ), 0 );
+		server.createContext( "/assets/dot.png", exchange -> {
+			hits.incrementAndGet();
+			byte[] out = png.toByteArray();
+			exchange.getResponseHeaders().add( "Content-Type", "image/png" );
+			exchange.sendResponseHeaders( 200, out.length );
+			exchange.getResponseBody().write( out );
+			exchange.close();
+		} );
+		server.start();
+		try {
+			// @formatter:off
+			Object value = run( """
+				base    = "http://127.0.0.1:%d/assets/"
+				image   = playwright().render( "<html><head><title>x</title></head><body><img src=""dot.png""></body></html>", { type : "png", baseURL : base, viewport : "300x200" } )
+				plain   = playwright().render( "<p>no head</p><img src=""dot.png"">", { type : "png", baseURL : base } )
+				picture = createObject( "java", "javax.imageio.ImageIO" ).read( createObject( "java", "java.io.ByteArrayInputStream" ).init( image ) )
+				invalid = ""
+				try {
+					playwright().render( "<p>x</p>", { type : "png", viewport : "big" } )
+				} catch ( "Playwright.InvalidOption" e ) {
+					invalid = "invalid"
+				}
+				result = picture.getWidth() & "x" & picture.getHeight() & "|" & invalid
+			""".formatted( server.getAddress().getPort() ) );
+			// @formatter:on
+			assertThat( value ).isEqualTo( "300x200|invalid" );
+			assertThat( hits.get() ).isAtLeast( 2 );
+		} finally {
+			server.stop( 0 );
+		}
+	}
+
+	/**
+	 * Closing a client from playwright().request() stops the driver that request() started, and leaves a manager that was already running alone.
+	 */
+	@DisplayName( "request().close() stops the driver it started" )
+	@Test
+	public void testRequestCloseStopsDriver() {
+		// @formatter:off
+		Object value = run( """
+			fresh = playwright()
+			api   = fresh.request()
+			api.close()
+			running = playwright()
+			running.getJava()
+			try {
+				other = running.request()
+				other.close()
+				stillRunning = running.isStarted()
+			} finally {
+				running.close()
+			}
+			result = fresh.isStarted() & "|" & stillRunning
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "false|true" );
+	}
+
+	/**
+	 * visit() on a URL that fails closes the context and the manager it started, then rethrows the navigation error.
+	 */
+	@DisplayName( "visit() cleans up when the navigation fails" )
+	@Test
+	public void testVisitFailureCleansUp() {
+		// @formatter:off
+		Object value = run( """
+			manager = playwright()
+			failure = ""
+			try {
+				manager.visit( "http://127.0.0.1:1/" )
+			} catch ( any e ) {
+				failure = e.type
+			}
+			result = failure.left( 11 ) & "|" & manager.isStarted()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "Playwright.|false" );
+	}
+
+	/**
+	 * session() on a manager configured with the same session works before the session exists, and a refresh starts from a clean page
+	 * instead of the stale saved state.
+	 */
+	@DisplayName( "session() setup never loads the configured session" )
+	@Test
+	public void testSessionOnConfiguredManager() {
+		// @formatter:off
+		Object value = bx( """
+			name = "configured-session-test"
+			file = pw.getConfigService().sessionPath( name )
+			if ( fileExists( file ) ) {
+				fileDelete( file )
+			}
+			seen  = []
+			setup = ( page ) => {
+				seen.append( page.context().cookies().len() )
+				page.context().addCookies( [ { name : "auth", value : "v" & seen.len(), url : "http://app.test/" } ] )
+			}
+			configured = playwright( { session : name } )
+			try {
+				configured.session( name, setup )
+				configured.session( name, setup, { refresh : true } )
+				token = configured.newPage().context().cookies().filter( ( c ) -> c.name == "auth" )[ 1 ].value
+			} finally {
+				configured.close()
+			}
+			result = seen.toList() & "|" & token
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "0,0|v2" );
+	}
+
+	/**
+	 * The AI browser acts on refs of elements inside iframes, which ai snapshots label like f1e2.
+	 */
+	@DisplayName( "AI browser: refs inside iframes" )
+	@Test
+	public void testAiBrowserIframeRefs() {
+		// @formatter:off
+		Object value = bx( """
+			html = '<h1>Outer</h1><iframe srcdoc=''<button onclick="this.textContent=`Done`">Inner</button>''></iframe>'
+			ctx  = pw.newContext()
+			ctx.intercept( "http://frame.test/**" ).handle( ( route ) => {
+				route.fulfill( OptionsMapper.build( "Route.FulfillOptions", { status : 200, contentType : "text/html", body : html } ) )
+			} )
+			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			state   = browser.visit( "http://frame.test/" )
+			found   = reFind( "button ""Inner"" \\[ref=(f[0-9]+e[0-9]+)\\]", state, 1, true )
+			ref     = found.pos[ 1 ] ? found.match[ 2 ] : ""
+			after   = len( ref ) ? browser.click( ref ) : state
+			browser.close()
+			result  = ref & "|" & ( after contains 'button "Done"' )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "f[0-9]+e[0-9]+\\|true" );
 	}
 
 }

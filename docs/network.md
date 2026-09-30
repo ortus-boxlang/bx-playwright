@@ -53,4 +53,4 @@ pw.session( "admin", ( page ) => {
 pw.newPage( { session : "admin" } ).visit( "/admin" ).assertSee( "Dashboard" )
 ```
 
-Options: `maxAge` (minutes, 0 = never expires), `refresh`, `context`. Sessions are stored in `{home}/sessions`, outside your project, because they hold cookies.
+Options: `maxAge` (minutes, 0 = never expires), `refresh`, `context`. The setup page always starts clean, even on a manager configured with `session`. Sessions are stored in `{home}/sessions`, outside your project, because they hold cookies.

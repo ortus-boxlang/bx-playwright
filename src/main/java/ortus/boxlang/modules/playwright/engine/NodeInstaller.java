@@ -28,13 +28,12 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * Downloads and installs the official Node.js runtime for the current platform into the
@@ -99,25 +98,69 @@ public class NodeInstaller {
 
 	/**
 	 * Download, verify and extract Node.js into the playwright home.
+	 * <p>
+	 * Installs are serialized per Node.js version (a JVM-wide lock plus a file lock in the node folder, so other
+	 * processes wait too), and every call uses its own download file and staging folder. The archive is extracted into
+	 * the staging folder, the node executable is checked (it must exist and answer {@code --version}), and only then is
+	 * the runtime moved into place, so an interrupted or failed install never leaves a partial runtime that looks
+	 * installed.
 	 *
 	 * @param force Reinstall even if the runtime is already there
 	 *
 	 * @return The node executable
 	 */
 	public Path install( boolean force ) {
-		Path executable = home.getDownloadedNodeExecutable();
+		Path	executable	= home.getDownloadedNodeExecutable();
+		Path	nodeDir		= home.getNodeDir();
 		if ( Files.isRegularFile( executable ) && !force ) {
 			logger.accept( "Node.js " + home.getNodeVersion() + " is already installed at " + executable );
 			return executable;
 		}
-
-		Platform	platform	= home.getPlatform();
-		String		archiveName	= platform.nodeArchiveName( home.getNodeVersion() );
-		Path		nodeDir		= home.getNodeDir();
-		Path		archive		= nodeDir.resolve( archiveName + ".download" );
 		try {
 			Files.createDirectories( nodeDir );
+			Path lockFile = nodeDir.resolve( ".install-" + home.getPlatform().nodeFolderName( home.getNodeVersion() ) + ".lock" );
+			return InstallLock.with( lockFile, () -> {
+				// Another thread or process may have installed it while this one waited for the lock
+				if ( Files.isRegularFile( executable ) && !force ) {
+					logger.accept( "Node.js " + home.getNodeVersion() + " is already installed at " + executable );
+					return executable;
+				}
+				return downloadAndInstall( executable );
+			} );
+		} catch ( IOException e ) {
+			throw PlaywrightErrors.of(
+			    PlaywrightErrors.NODE_INSTALL_FAILED,
+			    "Failed to install Node.js: " + e.getMessage(),
+			    "Check your network or proxy, set the 'nodeDownloadURL' setting to a mirror, or set 'nodePath' to an existing Node.js "
+			        + PlaywrightHome.MIN_NODE_MAJOR + "+ executable.",
+			    e
+			);
+		} catch ( InterruptedException e ) {
+			Thread.currentThread().interrupt();
+			throw PlaywrightErrors.of( PlaywrightErrors.NODE_INSTALL_FAILED, "Node.js installation was interrupted.", "Run the install again." );
+		}
+	}
 
+	/**
+	 * Download, verify, extract into a private staging folder, check the executable and move the runtime into place.
+	 * Called while holding the install lock.
+	 *
+	 * @param executable The final node executable path
+	 *
+	 * @return The node executable
+	 *
+	 * @throws IOException          when downloading, extracting or moving fails
+	 * @throws InterruptedException when interrupted
+	 */
+	private Path downloadAndInstall( Path executable ) throws IOException, InterruptedException {
+		Platform	platform	= home.getPlatform();
+		String		archiveName	= platform.nodeArchiveName( home.getNodeVersion() );
+		String		folderName	= platform.nodeFolderName( home.getNodeVersion() );
+		Path		nodeDir		= home.getNodeDir();
+		String		id			= UUID.randomUUID().toString();
+		Path		archive		= nodeDir.resolve( archiveName + "." + id + ".download" );
+		Path		staging		= nodeDir.resolve( ".tmp-" + id );
+		try {
 			logger.accept( "Downloading Node.js " + home.getNodeVersion() + " (" + platform.getNodeDistribution() + ") from " + archiveURL() );
 			download( archiveURL(), archive );
 
@@ -131,38 +174,32 @@ public class NodeInstaller {
 				);
 			}
 
-			Path target = nodeDir.resolve( platform.nodeFolderName( home.getNodeVersion() ) );
-			if ( Files.exists( target ) ) {
-				deleteRecursively( target );
-			}
-			extract( archive, nodeDir );
-			if ( !Files.isRegularFile( executable ) ) {
+			Files.createDirectories( staging );
+			extract( archive, staging );
+			Path	extracted			= staging.resolve( folderName );
+			Path	stagedExecutable	= extracted.resolve( platform.getNodeExecutable() );
+			if ( !Files.isRegularFile( stagedExecutable ) ) {
 				throw PlaywrightErrors.of(
 				    PlaywrightErrors.NODE_INSTALL_FAILED,
-				    "Node.js was extracted but the executable was not found at " + executable,
+				    "Node.js was extracted but the executable was not found at " + folderName + "/" + platform.getNodeExecutable(),
 				    "Run [bxPlaywright install-node --force], or set the 'nodePath' setting to an existing Node.js executable."
 				);
 			}
-			executable.toFile().setExecutable( true, true );
+			stagedExecutable.toFile().setExecutable( true, true );
+			if ( PlaywrightHome.probeNodeVersion( stagedExecutable.toString() ) == null ) {
+				throw PlaywrightErrors.of(
+				    PlaywrightErrors.NODE_INSTALL_FAILED,
+				    "The downloaded Node.js does not run: [" + stagedExecutable.getFileName() + " --version] failed.",
+				    "Run [bxPlaywright install-node --force]. If it keeps failing, set the 'nodePath' setting to an existing Node.js "
+				        + PlaywrightHome.MIN_NODE_MAJOR + "+ executable."
+				);
+			}
+			PlaywrightHome.replaceWith( extracted, nodeDir.resolve( folderName ) );
 			logger.accept( "Node.js installed at " + executable );
 			return executable;
-		} catch ( IOException e ) {
-			throw PlaywrightErrors.of(
-			    PlaywrightErrors.NODE_INSTALL_FAILED,
-			    "Failed to install Node.js: " + e.getMessage(),
-			    "Check your network or proxy, set the 'nodeDownloadURL' setting to a mirror, or set 'nodePath' to an existing Node.js "
-			        + PlaywrightHome.MIN_NODE_MAJOR + "+ executable.",
-			    e
-			);
-		} catch ( InterruptedException e ) {
-			Thread.currentThread().interrupt();
-			throw PlaywrightErrors.of( PlaywrightErrors.NODE_INSTALL_FAILED, "Node.js installation was interrupted.", "Run the install again." );
 		} finally {
-			try {
-				Files.deleteIfExists( archive );
-			} catch ( IOException e ) {
-				// Best effort cleanup of the downloaded archive
-			}
+			Files.deleteIfExists( archive );
+			PlaywrightHome.deleteQuietly( staging );
 		}
 	}
 
@@ -281,21 +318,6 @@ public class NodeInstaller {
 		}
 		if ( process.exitValue() != 0 ) {
 			throw new IOException( "tar failed (" + process.exitValue() + "): " + output.trim() );
-		}
-	}
-
-	/**
-	 * Delete a file or directory tree.
-	 *
-	 * @param path The file or directory to delete
-	 *
-	 * @throws IOException when a file cannot be deleted
-	 */
-	private static void deleteRecursively( Path path ) throws IOException {
-		try ( Stream<Path> paths = Files.walk( path ) ) {
-			for ( Path entry : paths.sorted( Comparator.reverseOrder() ).toList() ) {
-				Files.deleteIfExists( entry );
-			}
 		}
 	}
 

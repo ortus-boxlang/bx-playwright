@@ -13,14 +13,24 @@
 class extends="Base" {
 
 	/**
-	 * @java    The Playwright APIRequestContext
-	 * @config  The resolved configuration
-	 * @owned   True if close() should dispose the request context
+	 * @java         The Playwright APIRequestContext
+	 * @config       The resolved configuration
+	 * @owned        True if close() should dispose the request context
+	 * @manager      The playwright() manager that created this client, if any
+	 * @closeManager True if close() should also close the manager (it was started just for this client)
 	 */
-	function init( required any java, required struct config, boolean owned = true ) {
-		variables.java   = arguments.java
-		variables.config = arguments.config
-		variables.owned  = arguments.owned
+	function init(
+		required any java,
+		required struct config,
+		boolean owned        = true,
+		any manager,
+		boolean closeManager = false
+	) {
+		variables.java         = arguments.java
+		variables.config       = arguments.config
+		variables.owned        = arguments.owned
+		variables.manager      = arguments.manager ?: nullValue()
+		variables.closeManager = arguments.closeManager
 		return this
 	}
 
@@ -93,11 +103,18 @@ class extends="Base" {
 	}
 
 	/**
-	 * Dispose the request context.
+	 * Dispose the request context, and stop the Playwright driver when playwright().request() started it.
 	 */
 	function close() {
-		if ( variables.owned ) {
-			variables.java.dispose()
+		try {
+			if ( variables.owned ) {
+				variables.java.dispose()
+			}
+		} finally {
+			if ( variables.closeManager && !isNull( variables.manager ) ) {
+				variables.closeManager = false
+				variables.manager.close()
+			}
 		}
 	}
 

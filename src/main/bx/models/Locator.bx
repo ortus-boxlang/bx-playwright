@@ -100,11 +100,18 @@ class extends="Scope" {
 	}
 
 	/**
-	 * The element at a 1-based position (BoxLang style).
+	 * The element at a 1-based position (BoxLang style). Throws Playwright.InvalidOption for positions below 1.
 	 *
 	 * @position 1 for the first element
 	 */
 	function nth( required numeric position ) {
+		if ( arguments.position < 1 ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "nth( #arguments.position# ) is not a valid position: positions are 1-based.",
+				detail  = "Use nth( 1 ) or first() for the first element and last() for the last one."
+			)
+		}
 		return new models.Locator@playwright( variables.java.nth( javacast( "int", arguments.position - 1 ) ), variables.owner )
 	}
 
@@ -114,7 +121,8 @@ class extends="Scope" {
 	 * @options hasText, hasNotText (text or regex()), has, hasNot (a Locator), visible
 	 */
 	function filter( struct options = {} ) {
-		var values = duplicate( arguments.options )
+		// Shallow copy: has and hasNot hold Java objects that cannot be duplicated
+		var values = structCopy( arguments.options )
 		for ( var name in [ "has", "hasNot" ] ) {
 			if ( values.keyExists( name ) && isObject( values[ name ] ) && structKeyExists( values[ name ], "getJava" ) ) {
 				values[ name ] = values[ name ].getJava()
@@ -139,10 +147,10 @@ class extends="Scope" {
 	}
 
 	/**
-	 * The visible text of every matching element.
+	 * The visible text of every visible matching element (hidden elements are skipped).
 	 */
 	array function texts() {
-		return variables.java.allInnerTexts()
+		return variables.java.filter( buildOptions( "Locator.FilterOptions", { visible : true } ) ).allInnerTexts()
 	}
 
 	/**
@@ -163,10 +171,14 @@ class extends="Scope" {
 	 * Take a screenshot of the element.
 	 *
 	 * @path    The file path, or empty to return the image bytes
-	 * @options type, quality, omitBackground, timeout, ...
+	 * @options type, quality, omitBackground, timeout, mask (smart selectors or Locators to paint over), ...
 	 */
 	function screenshot( string path = "", struct options = {} ) {
-		var values = duplicate( arguments.options )
+		// Shallow copy: the options can hold Java objects (mask locators) that cannot be duplicated
+		var values = structCopy( arguments.options )
+		if ( values.keyExists( "mask" ) ) {
+			values.mask = maskLocators( values.mask )
+		}
 		if ( len( arguments.path ) ) {
 			values.path = expandPath( arguments.path )
 		}

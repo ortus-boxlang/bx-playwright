@@ -10,32 +10,31 @@ class {
 	/**
 	 * Record a browser session with Playwright codegen and translate it into the bx-playwright DSL, or pass other targets through to Playwright.
 	 *
-	 * @options CLI options, the raw arguments are in `_raw`
+	 * @options CLI options (`target`, `output`, `json`), the raw arguments are in `_raw`
 	 * @config  The models.Config
 	 * @verb    The verb registry entry
 	 *
 	 * @return { exitCode, message, data }
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var target = arguments.options.target ?: "boxlang"
+		var cli      = new models.cli.Cli@playwright()
+		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
+		var target   = arguments.options.target ?: "boxlang"
 		if ( target != "boxlang" ) {
 			var passthrough = [ "codegen" ]
-			passthrough.append( arguments.options._raw, true )
-			return { exitCode : arguments.config.home().runCli( passthrough ), message : "" }
+			passthrough.append( cli.withoutOptions( arguments.options._raw, [ "json" ], arguments.verb ), true )
+			var status = terminal.runPlaywright( arguments.config.home(), passthrough )
+			return { exitCode : status, message : "", data : { "exitCode" : status } }
 		}
 
-		var output   = arguments.options.output ?: ""
+		var output   = resolveOutput( arguments.options.output ?: "" )
 		var recorded = getTempDirectory() & "/bxplaywright-codegen-#createUUID()#.java"
 		var cliArgs  = [ "codegen", "--target=java", "--output=#recorded#" ]
-		for ( var token in arguments.options._raw ) {
-			if ( !token.startsWith( "--target" ) && !token.startsWith( "--output" ) && !token.startsWith( "-o=" ) ) {
-				cliArgs.append( token )
-			}
-		}
-		println( "Recording. Interact with the browser, then close it to get BoxLang code." )
-		var exitCode = arguments.config.home().runCli( cliArgs )
+		cliArgs.append( cli.withoutOptions( arguments.options._raw, [ "target", "output", "json" ], arguments.verb ), true )
+		terminal.progress( "Recording. Interact with the browser, then close it to get BoxLang code." )
+		var exitCode = terminal.runPlaywright( arguments.config.home(), cliArgs )
 		if ( !fileExists( recorded ) ) {
-			return { exitCode : exitCode ?: 1, message : "Nothing was recorded." }
+			return { exitCode : exitCode ?: 1, message : "Nothing was recorded.", data : { "exitCode" : exitCode ?: 1, "code" : "" } }
 		}
 		var code = new models.cli.CodegenTranslator@playwright().translate( fileRead( recorded ) )
 		fileDelete( recorded )
@@ -44,6 +43,20 @@ class {
 			return { exitCode : 0, message : "BoxLang code written to #output#", data : { "output" : output, "code" : code } }
 		}
 		return { exitCode : 0, message : code, data : { "code" : code } }
+	}
+
+	/**
+	 * Resolve the output file against the directory bxPlaywright was started from (not the module folder).
+	 *
+	 * @output The output path given with --output or -o, or empty
+	 *
+	 * @return The absolute path, or empty when no output was given
+	 */
+	string function resolveOutput( string output = "" ) {
+		if ( !len( arguments.output ) ) {
+			return ""
+		}
+		return createObject( "java", "java.io.File" ).init( arguments.output ).getAbsolutePath()
 	}
 
 }

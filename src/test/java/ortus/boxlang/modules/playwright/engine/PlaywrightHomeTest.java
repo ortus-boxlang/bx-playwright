@@ -15,15 +15,27 @@
 package ortus.boxlang.modules.playwright.engine;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 
 public class PlaywrightHomeTest {
 
@@ -104,8 +116,9 @@ public class PlaywrightHomeTest {
 	@DisplayName( "An explicit Node.js path wins" )
 	@Test
 	public void testExplicitNode() throws IOException {
-		Path			fakeNode	= Files.createFile( tempDir.resolve( "my-node" ) );
-		PlaywrightHome	home		= home( fakeNode );
+		Path fakeNode = Files.createFile( tempDir.resolve( "my-node" ) );
+		fakeNode.toFile().setExecutable( true, true );
+		PlaywrightHome home = home( fakeNode );
 		assertThat( home.resolveNode().get().getSource() ).isEqualTo( NodeRuntime.Source.EXPLICIT );
 		assertThat( home.resolveNode().get().getExecutable() ).isEqualTo( fakeNode );
 	}
@@ -161,6 +174,124 @@ public class PlaywrightHomeTest {
 		home.clean();
 		assertThat( home.isDriverInstalled() ).isFalse();
 		assertThat( home.installedBrowsers() ).containsExactly( "chromium-1200" );
+	}
+
+	/**
+	 * An explicit Node.js path that does not exist resolves to nothing (no silent fallback), and requireNode() fails with
+	 * the not installed type naming the bad path.
+	 */
+	@DisplayName( "A missing explicit Node.js path is reported" )
+	@Test
+	public void testMissingExplicitNode() {
+		Path			missing	= tempDir.resolve( "nope" ).resolve( "node" );
+		PlaywrightHome	home	= home( missing );
+		assertThat( home.resolveNode().isPresent() ).isFalse();
+		BoxRuntimeException error = assertThrows( BoxRuntimeException.class, home::requireNode );
+		assertThat( error.getType() ).isEqualTo( PlaywrightErrors.NOT_INSTALLED );
+		assertThat( error.getMessage() ).contains( missing.toString() );
+		assertThat( error.getDetail() ).contains( "nodePath" );
+	}
+
+	/**
+	 * The version probe reads the version of a working executable, and gives up (killing the process) when the
+	 * executable never exits instead of hanging the caller.
+	 */
+	@DisplayName( "The Node.js version probe reads versions and times out on hanging executables" )
+	@Test
+	public void testProbeNodeVersion() throws IOException {
+		Assumptions.assumeFalse( Platform.current().isWindows(), "Uses shell scripts" );
+		Path	working	= script( "working-node", "echo v22.3.1" );
+		Path	hanging	= script( "hanging-node", "sleep 60" );
+		assertThat( PlaywrightHome.probeNodeVersion( working.toString() ) ).isEqualTo( "22.3.1" );
+		long start = System.nanoTime();
+		assertThat( PlaywrightHome.probeNodeVersion( hanging.toString(), 500 ) ).isNull();
+		assertThat( TimeUnit.NANOSECONDS.toSeconds( System.nanoTime() - start ) ).isLessThan( 10L );
+		assertThat( PlaywrightHome.probeNodeVersion( tempDir.resolve( "missing" ).toString() ) ).isNull();
+	}
+
+	/**
+	 * CLI passthrough processes do not claim to be Playwright Java, so Playwright's own help and hints do not print Maven commands.
+	 */
+	@DisplayName( "CLI processes do not set PW_LANG_NAME" )
+	@Test
+	public void testCliProcessEnvironment() throws IOException {
+		Assumptions.assumeFalse( Platform.current().isWindows(), "Uses shell scripts" );
+		String previous = System.getProperty( "playwright.cli.dir" );
+		try {
+			PlaywrightHome	home	= home( script( "fake-node", "echo v24.21.0" ) );
+			ProcessBuilder	builder	= home.cliProcess( List.of( "--help" ) );
+			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME" );
+			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME_VERSION" );
+			assertThat( builder.environment() ).containsKey( "PLAYWRIGHT_BROWSERS_PATH" );
+		} finally {
+			if ( previous == null ) {
+				System.clearProperty( "playwright.cli.dir" );
+			} else {
+				System.setProperty( "playwright.cli.dir", previous );
+			}
+		}
+	}
+
+	/**
+	 * Concurrent driver installs on the same fresh home extract once and all succeed (no closed jar file system, no
+	 * driver deleted under another thread), and installs on separate homes run side by side.
+	 */
+	@DisplayName( "Concurrent driver installs are safe" )
+	@Test
+	public void testConcurrentInstallDriver() throws Exception {
+		int				threads		= 6;
+		PlaywrightHome	shared		= home( null );
+		ExecutorService	executor	= Executors.newFixedThreadPool( threads * 2 );
+		try {
+			CountDownLatch			start	= new CountDownLatch( 1 );
+			List<Future<Path>>		results	= new ArrayList<>();
+			List<PlaywrightHome>	homes	= new ArrayList<>();
+			for ( int i = 0; i < threads; i++ ) {
+				PlaywrightHome separate = new PlaywrightHome( tempDir.resolve( "home-" + i ), null, PLAYWRIGHT_VERSION, NODE_VERSION, null,
+				    Platform.current() );
+				homes.add( separate );
+				results.add( executor.submit( () -> {
+					start.await();
+					return shared.installDriver( false );
+				} ) );
+				results.add( executor.submit( () -> {
+					start.await();
+					return separate.installDriver( false );
+				} ) );
+			}
+			start.countDown();
+			for ( Future<Path> result : results ) {
+				Path driverDir = result.get( 5, TimeUnit.MINUTES );
+				assertThat( Files.isRegularFile( driverDir.resolve( "package" ).resolve( "cli.js" ) ) ).isTrue();
+			}
+			assertThat( shared.isDriverInstalled() ).isTrue();
+			for ( PlaywrightHome separate : homes ) {
+				assertThat( separate.isDriverInstalled() ).isTrue();
+			}
+			// No staging or replaced folders are left behind
+			try ( Stream<Path> entries = Files.list( shared.getDriverDir().getParent() ) ) {
+				assertThat( entries.map( path -> path.getFileName().toString() ).filter( name -> !name.startsWith( "." ) ).toList() )
+				    .containsExactly( PLAYWRIGHT_VERSION );
+			}
+		} finally {
+			executor.shutdownNow();
+		}
+	}
+
+	/**
+	 * Write an executable shell script in the temporary folder.
+	 *
+	 * @param name The file name
+	 * @param body The script body, after the shebang line
+	 *
+	 * @return The script path
+	 *
+	 * @throws IOException when the file cannot be written
+	 */
+	private Path script( String name, String body ) throws IOException {
+		Path file = Files.writeString( tempDir.resolve( name ), "#!/bin/sh\n" + body + "\n" );
+		file.toFile().setExecutable( true, true );
+		return file;
 	}
 
 }

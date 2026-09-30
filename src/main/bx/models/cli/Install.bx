@@ -12,31 +12,37 @@ class {
 	/**
 	 * Extract the driver, make sure Node.js is available and install the requested browsers.
 	 *
-	 * @options CLI options: _positionals (browsers), with-deps, only-shell, force, skip-node
+	 * @options CLI options: _positionals (browsers), with-deps, only-shell, force, skip-node, json
 	 * @config  The models.Config
 	 * @verb    The verb registry entry
 	 *
 	 * @return { exitCode, message, data }
+	 *
+	 * @throws Playwright.NotInstalled when the configured Node.js cannot run
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var home = arguments.config.home()
-		var data = { "driver" : "", "node" : {}, "browsers" : [] }
+		var home     = arguments.config.home()
+		var data     = { "driver" : "", "node" : {}, "browsers" : [] }
+		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
 
-		println( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
+		terminal.progress( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
 		data.driver = home.installDriver( arguments.options.force ?: false ).toString()
 
 		if ( !( arguments.options[ "skip-node" ] ?: false ) ) {
-			var node = home.resolveNode()
-			if ( !node.isPresent() ) {
+			var node = terminal.node( home, arguments.config.nodePath() )
+			if ( !node.found ) {
 				new NodeInstaller(
 					home,
 					arguments.config.getSettings().nodeDownloadURL ?: "",
-					( message ) => println( message )
+					( message ) => terminal.progress( message )
 				).install( false )
-				node = home.resolveNode()
+				node = terminal.node( home, arguments.config.nodePath() )
 			}
-			data.node = node.get().toMap()
-			println( "Using Node.js #data.node.version# (#data.node.source#) at #data.node.executable#" )
+			if ( !node.ok ) {
+				throw( type = "Playwright.NotInstalled", message = "#node.problem#.", detail = node.fix )
+			}
+			data.node = { "executable" : node.executable, "source" : node.source, "version" : node.version }
+			terminal.progress( "Using Node.js #data.node.version# (#data.node.source#) at #data.node.executable#" )
 		}
 
 		var browsers = arguments.options._positionals.len() ? arguments.options._positionals : [ "chromium" ]
@@ -55,7 +61,7 @@ class {
 			cliArgs.append( "--force" )
 		}
 
-		var exitCode  = home.runCli( cliArgs )
+		var exitCode  = terminal.runPlaywright( home, cliArgs )
 		data.browsers = home.installedBrowsers()
 		return {
 			exitCode : exitCode,
