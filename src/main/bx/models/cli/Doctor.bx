@@ -7,6 +7,8 @@ import java:java.lang.System;
 class {
 
 	/**
+	 * Check the module, platform, driver, Node.js and browsers, and report how to fix anything missing.
+	 *
 	 * @options CLI options
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

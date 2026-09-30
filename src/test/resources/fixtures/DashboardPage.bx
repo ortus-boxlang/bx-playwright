@@ -6,10 +6,18 @@ class extends="models.PageObject@playwright" {
 	url      = "/dashboard"
 	elements = { welcome : "##welcome", todos : ".todos li" }
 
+	/**
+	 * Assert the browser is on the dashboard by checking the URL path.
+	 */
 	function at() {
 		page.assertPathIs( "/dashboard" )
 	}
 
+	/**
+	 * Count the todo items listed on the dashboard.
+	 *
+	 * @return The number of todo items
+	 */
 	numeric function todoCount() {
 		return page.count( "@todos" )
 	}

@@ -4,6 +4,8 @@
 class {
 
 	/**
+	 * Remove the extracted driver and downloaded Node.js from the playwright home, keeping the browsers.
+	 *
 	 * @options CLI options
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

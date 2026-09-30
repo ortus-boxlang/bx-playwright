@@ -8,6 +8,8 @@
 class {
 
 	/**
+	 * Record a browser session with Playwright codegen and translate it into the bx-playwright DSL, or pass other targets through to Playwright.
+	 *
 	 * @options CLI options, the raw arguments are in `_raw`
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

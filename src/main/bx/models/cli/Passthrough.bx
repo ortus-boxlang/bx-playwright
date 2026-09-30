@@ -5,6 +5,8 @@
 class {
 
 	/**
+	 * Forward the verb's Playwright CLI command and the raw arguments to the Playwright CLI.
+	 *
 	 * @options CLI options, the raw arguments are in `_raw`
 	 * @config  The models.Config
 	 * @verb    The verb registry entry, `command` is the Playwright CLI command

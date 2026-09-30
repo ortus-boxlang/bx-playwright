@@ -5,6 +5,8 @@
 class {
 
 	/**
+	 * Print the bash completion script built from the verb registry.
+	 *
 	 * @options CLI options
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

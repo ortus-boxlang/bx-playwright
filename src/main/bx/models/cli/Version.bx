@@ -4,6 +4,8 @@
 class {
 
 	/**
+	 * Report the module, Playwright, Node.js and installed browser versions.
+	 *
 	 * @options CLI options
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

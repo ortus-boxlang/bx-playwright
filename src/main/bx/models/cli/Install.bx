@@ -10,6 +10,8 @@ import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
 class {
 
 	/**
+	 * Extract the driver, make sure Node.js is available and install the requested browsers.
+	 *
 	 * @options CLI options: _positionals (browsers), with-deps, only-shell, force, skip-node
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

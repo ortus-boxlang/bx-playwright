@@ -6,6 +6,8 @@ import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
 class {
 
 	/**
+	 * List the device descriptors shipped with Playwright, with their viewport and default browser.
+	 *
 	 * @options CLI options
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

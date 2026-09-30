@@ -6,6 +6,8 @@ import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
 class {
 
 	/**
+	 * Download the pinned Node.js runtime into the playwright home.
+	 *
 	 * @options CLI options: force
 	 * @config  The models.Config
 	 * @verb    The verb registry entry

@@ -6,6 +6,11 @@ class extends="models.PageComponent@playwright" {
 	selector = "@cart"
 	elements = { remove : "button" }
 
+	/**
+	 * Empty the cart by clicking its remove button.
+	 *
+	 * @return The component, for chaining
+	 */
 	function empty() {
 		return click( "@remove" )
 	}

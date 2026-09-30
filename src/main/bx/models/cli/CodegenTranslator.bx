@@ -75,7 +75,11 @@ class {
 	}
 
 	/**
-	 * Translate a Java expression chain.
+	 * Translate a Java expression chain, mapping Playwright Java method names to the DSL.
+	 *
+	 * @expression The Java expression, such as `page.getByText("Hi").click()`
+	 *
+	 * @return The BoxLang expression
 	 */
 	string function translateExpression( required string expression ) {
 		var calls  = splitCalls( arguments.expression )
@@ -97,7 +101,11 @@ class {
 	}
 
 	/**
-	 * Translate a Java argument list.
+	 * Translate a Java argument list, converting roles, option builders, patterns and paths.
+	 *
+	 * @args The comma separated Java arguments
+	 *
+	 * @return The BoxLang arguments, comma separated
 	 */
 	string function translateArguments( required string args ) {
 		var parts  = splitTopLevel( arguments.args, "," )
@@ -125,7 +133,12 @@ class {
 	}
 
 	/**
+	 * Convert a Java options builder into a struct literal.
 	 * new Page.GetByRoleOptions().setName("Save").setExact(true)  ->  { name : "Save", exact : true }
+	 *
+	 * @options The Java options builder expression
+	 *
+	 * @return The BoxLang struct literal, `{}` when no setters are called
 	 */
 	string function optionsToStruct( required string options ) {
 		var pairs = []
@@ -141,7 +154,11 @@ class {
 	}
 
 	/**
-	 * Split Java source into statements, joining multi-line ones.
+	 * Split Java source into statements, joining multi-line ones. Comments, imports and block braces are skipped.
+	 *
+	 * @source The Java source
+	 *
+	 * @return The statements, without trailing semicolons
 	 */
 	array function statements( required string source ) {
 		var result  = []
@@ -162,6 +179,13 @@ class {
 		return result
 	}
 
+	/**
+	 * Whether a statement is setup boilerplate (Playwright, browser, context or page declarations, try-with-resources).
+	 *
+	 * @statement The Java statement
+	 *
+	 * @return True when the statement should be dropped
+	 */
 	private boolean function isBoilerplate( required string statement ) {
 		return reFindNoCase( "^(Browser|BrowserContext|Page|Playwright)\s+\w+\s*=", arguments.statement ) > 0
 			|| arguments.statement.startsWith( "try (" )
@@ -169,6 +193,10 @@ class {
 
 	/**
 	 * Split "page.getByRole(a, b).click()" into [ { name : "page" }, { name : "getByRole", args : "a, b" }, { name : "click", args : "" } ].
+	 *
+	 * @expression The Java expression chain
+	 *
+	 * @return The segments, each with `name`, `args` and `isField`
 	 */
 	private array function splitCalls( required string expression ) {
 		var calls = []
@@ -213,6 +241,14 @@ class {
 		return calls
 	}
 
+	/**
+	 * Split text on a separator, ignoring separators inside quotes, parentheses or braces.
+	 *
+	 * @text      The text to split
+	 * @separator The single character separator
+	 *
+	 * @return The parts, untrimmed
+	 */
 	private array function splitTopLevel( required string text, required string separator ) {
 		var parts   = []
 		var depth   = 0

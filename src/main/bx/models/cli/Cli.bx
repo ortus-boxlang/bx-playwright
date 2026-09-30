@@ -159,6 +159,8 @@ class {
 	}
 
 	/**
+	 * Create the CLI dispatcher.
+	 *
 	 * @config The configuration to use. Defaults to the loaded module settings
 	 */
 	function init( any config ) {
@@ -246,6 +248,8 @@ class {
 	}
 
 	/**
+	 * Get the registry of CLI verbs.
+	 *
 	 * @return The verb registry
 	 */
 	struct function getVerbs() {
@@ -302,6 +306,11 @@ class {
 	 * --------------------------------------------------------------------------
 	 */
 
+	/**
+	 * Get the configuration, lazily creating one from the module settings when none was given.
+	 *
+	 * @return The configuration
+	 */
 	private function getConfig() {
 		if ( isNull( variables.config ) ) {
 			variables.config = new models.Config@playwright()
@@ -309,6 +318,14 @@ class {
 		return variables.config
 	}
 
+	/**
+	 * Print a verb result: its data as JSON when requested, otherwise its message.
+	 *
+	 * @result The verb result (`message`, `data`, `exitCode`)
+	 * @json   Whether to print JSON output
+	 *
+	 * @return The result's exit code (0 when not set)
+	 */
 	private numeric function output( required struct result, boolean json = false ) {
 		if ( arguments.json ) {
 			println( jsonSerialize( arguments.result.data ?: { "message" : arguments.result.message ?: "" } ) )
@@ -318,6 +335,13 @@ class {
 		return arguments.result.exitCode ?: 0
 	}
 
+	/**
+	 * Print help for all verbs, or for the verb named by the first positional, as text or JSON.
+	 *
+	 * @options The parsed options (`_positionals`, `json`)
+	 *
+	 * @return The exit code (1 when the verb is unknown)
+	 */
 	private numeric function help( required struct options ) {
 		var target = options._positionals.len() ? options._positionals[ 1 ] : ""
 		if ( options.json ?: false ) {
@@ -350,6 +374,9 @@ class {
 		return 0
 	}
 
+	/**
+	 * Print the general usage text listing every verb and the global options.
+	 */
 	private void function printUsage() {
 		println( "bxPlaywright - Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright" )
 		println( "" )
@@ -365,6 +392,13 @@ class {
 		println( "  --json         Machine readable output, where supported" )
 	}
 
+	/**
+	 * Remove surrounding quotes from a value that starts with a single or double quote.
+	 *
+	 * @value The value to unquote
+	 *
+	 * @return The value without its first and last characters when quoted, otherwise unchanged
+	 */
 	private string function stripQuotes( required string value ) {
 		if ( arguments.value.len() >= 2 && ( arguments.value.startsWith( """" ) || arguments.value.startsWith( "'" ) ) ) {
 			return arguments.value.mid( 2, arguments.value.len() - 2 )

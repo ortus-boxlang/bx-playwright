@@ -6,10 +6,21 @@ class extends="models.PageObject@playwright" {
 	url      = "/login"
 	elements = { email : "##email", password : "input[name=password]", submit : "button[type=submit]" }
 
+	/**
+	 * Assert the browser is on the login page by checking the title.
+	 */
 	function at() {
 		page.assertTitle( "Login" )
 	}
 
+	/**
+	 * Fill in the login form, submit it and move on to the dashboard page.
+	 *
+	 * @email    The email to log in with
+	 * @password The password to log in with
+	 *
+	 * @return The DashboardPage page object
+	 */
 	function loginAs( required string email, string password = "secret" ) {
 		page.fill( "@email", email ).fill( "@password", password ).click( "@submit" )
 		return page.on( new fixtures.DashboardPage() )

@@ -4,6 +4,8 @@
 class {
 
 	/**
+	 * List all profiles, or show the named profiles resolved with the module settings.
+	 *
 	 * @options CLI options: _positionals (profile names)
 	 * @config  The models.Config
 	 * @verb    The verb registry entry
