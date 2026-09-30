@@ -36,6 +36,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The selector of the component root element, or an empty string when none is set.
+	 *
 	 * @return The root selector
 	 */
 	string function getSelector() {
@@ -43,6 +45,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The underlying Playwright Locator of the component root.
+	 *
 	 * @return The Playwright locator of the component root
 	 */
 	function getJava() {

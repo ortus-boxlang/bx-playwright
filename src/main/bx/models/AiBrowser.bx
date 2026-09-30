@@ -127,6 +127,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The page the AI tools act on, opening a new one when none is open or the last one was closed.
+	 *
 	 * @return The current Page, opened on first use
 	 */
 	function currentPage() {

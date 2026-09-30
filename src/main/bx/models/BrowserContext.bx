@@ -35,6 +35,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The underlying Playwright BrowserContext Java object, for anything not covered by the DSL.
+	 *
 	 * @return The Playwright BrowserContext
 	 */
 	function getJava() {
@@ -42,6 +44,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The resolved configuration this context was created with.
+	 *
 	 * @return The resolved configuration
 	 */
 	struct function getConfig() {
@@ -49,6 +53,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The playwright() manager that owns this context.
+	 *
 	 * @return The playwright() manager
 	 */
 	function manager() {
@@ -63,6 +69,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The pages (tabs) opened in this context and tracked by it.
+	 *
 	 * @return The open pages of this context
 	 */
 	array function pages() {
@@ -99,6 +107,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The cookies of this context, each with name, value, domain, path, expires and the other cookie flags.
+	 *
 	 * @return The cookies as an array of structs
 	 */
 	array function cookies() {
@@ -251,6 +261,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Whether this context has been closed.
+	 *
 	 * @return True once close() ran
 	 */
 	boolean function isClosed() {

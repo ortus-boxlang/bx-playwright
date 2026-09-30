@@ -56,6 +56,8 @@ public class NodeRuntime {
 	}
 
 	/**
+	 * The path of the node executable of this runtime.
+	 *
 	 * @return The node executable
 	 */
 	public Path getExecutable() {
@@ -63,6 +65,8 @@ public class NodeRuntime {
 	}
 
 	/**
+	 * The source this runtime was resolved from.
+	 *
 	 * @return Where the runtime came from
 	 */
 	public Source getSource() {
@@ -70,6 +74,8 @@ public class NodeRuntime {
 	}
 
 	/**
+	 * The Node.js version of this runtime.
+	 *
 	 * @return The version if known, or null
 	 */
 	public String getVersion() {

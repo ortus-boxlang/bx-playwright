@@ -23,6 +23,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The underlying Playwright Locator Java object.
+	 *
 	 * @return The Playwright Locator, for anything not covered by the DSL
 	 */
 	function getJava() {

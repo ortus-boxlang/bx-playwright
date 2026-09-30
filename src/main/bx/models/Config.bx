@@ -54,6 +54,8 @@ class {
 	}
 
 	/**
+	 * The settings of the loaded playwright module, read from the module service.
+	 *
 	 * @return The settings of the loaded playwright module
 	 */
 	struct function moduleSettings() {
@@ -61,6 +63,8 @@ class {
 	}
 
 	/**
+	 * Build information about this module.
+	 *
 	 * @return Build information: module version, distribution flavor and Playwright version
 	 */
 	struct function buildInfo() {
@@ -72,6 +76,8 @@ class {
 	}
 
 	/**
+	 * The physical path of the loaded playwright module on disk.
+	 *
 	 * @return The physical path of the loaded playwright module
 	 */
 	string function modulePath() {
@@ -79,6 +85,8 @@ class {
 	}
 
 	/**
+	 * The module settings this config resolves configurations from.
+	 *
 	 * @return The module settings used by this config
 	 */
 	struct function getSettings() {
@@ -153,6 +161,8 @@ class {
 	}
 
 	/**
+	 * The playwright home directory, where drivers, browsers, Node.js, sessions and default artifacts live.
+	 *
 	 * @return The home directory: the `home` setting, BX_PLAYWRIGHT_HOME, or ~/.boxlang/playwright
 	 */
 	string function homePath() {
@@ -167,6 +177,8 @@ class {
 	}
 
 	/**
+	 * The Node.js executable path configured explicitly, if any.
+	 *
 	 * @return The explicit Node.js path: the `nodePath` setting or PLAYWRIGHT_NODEJS_PATH, or empty
 	 */
 	string function nodePath() {
@@ -185,6 +197,8 @@ class {
 	}
 
 	/**
+	 * The directory where screenshots, traces and videos kept by the artifact policies are written.
+	 *
 	 * @config A resolved configuration whose artifacts.directory wins over the module setting
 	 *
 	 * @return The artifacts directory: the `artifacts.directory` setting or {home}/artifacts
@@ -195,6 +209,8 @@ class {
 	}
 
 	/**
+	 * The directory where visual regression baseline screenshots are stored.
+	 *
 	 * @config A resolved configuration whose snapshots.directory wins over the module setting
 	 *
 	 * @return The snapshots directory: the `snapshots.directory` setting or {current directory}/tests/snapshots

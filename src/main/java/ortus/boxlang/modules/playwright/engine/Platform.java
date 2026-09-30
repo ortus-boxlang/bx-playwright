@@ -94,6 +94,8 @@ public enum Platform {
 	}
 
 	/**
+	 * The Playwright driver folder name for this platform.
+	 *
 	 * @return The folder name Playwright uses for this platform inside the driver bundle (e.g. {@code mac-arm64})
 	 */
 	public String getDriverFolder() {
@@ -101,6 +103,8 @@ public enum Platform {
 	}
 
 	/**
+	 * The Node.js distribution suffix for this platform.
+	 *
 	 * @return The Node.js distribution suffix (e.g. {@code darwin-arm64})
 	 */
 	public String getNodeDistribution() {
@@ -108,6 +112,8 @@ public enum Platform {
 	}
 
 	/**
+	 * The archive extension of the Node.js distribution for this platform.
+	 *
 	 * @return The archive extension of the Node.js distribution ({@code tar.gz} or {@code zip})
 	 */
 	public String getNodeArchiveExtension() {
@@ -115,6 +121,8 @@ public enum Platform {
 	}
 
 	/**
+	 * The relative path of the node executable inside a Node.js distribution for this platform.
+	 *
 	 * @return The path of the node executable relative to the root of an extracted Node.js distribution
 	 */
 	public String getNodeExecutable() {
@@ -122,6 +130,8 @@ public enum Platform {
 	}
 
 	/**
+	 * The file name of the node executable for this platform.
+	 *
 	 * @return The node executable file name for this platform ({@code node} or {@code node.exe})
 	 */
 	public String getNodeFileName() {
@@ -129,6 +139,8 @@ public enum Platform {
 	}
 
 	/**
+	 * Whether this platform is Windows.
+	 *
 	 * @return True if this is a Windows platform
 	 */
 	public boolean isWindows() {

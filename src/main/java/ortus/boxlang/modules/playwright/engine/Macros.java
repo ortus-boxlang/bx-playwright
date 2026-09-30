@@ -68,6 +68,8 @@ public final class Macros {
 	}
 
 	/**
+	 * List the names of the macros registered for a target.
+	 *
 	 * @param target page or locator
 	 *
 	 * @return The registered macro names, sorted
