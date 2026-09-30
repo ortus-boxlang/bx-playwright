@@ -171,6 +171,24 @@ public class ConfigTest extends BaseIntegrationTest {
 	}
 
 	/**
+	 * A relative artifacts directory resolves against the current directory, an absolute one is kept.
+	 */
+	@DisplayName( "A relative artifacts directory resolves against the current directory" )
+	@Test
+	public void testRelativeArtifactsPath() {
+		// @formatter:off
+		Object value = run( """
+			cfg      = new models.Config@playwright( settings = { artifacts : { directory : "relartifacts" }, profiles : {} }, environment = {} )
+			absolute = createObject( "java", "java.io.File" ).init( createObject( "java", "java.lang.System" ).getProperty( "java.io.tmpdir" ), "abs-artifacts" ).getAbsolutePath()
+			result   = cfg.artifactsPath() & "|" & cfg.artifactsPath( { artifacts : { directory : absolute } } ) & "|" & absolute
+		""" );
+		// @formatter:on
+		String[]	parts	= value.toString().split( "\\|" );
+		assertThat( parts[ 0 ] ).isEqualTo( Path.of( System.getProperty( "user.dir" ), "relartifacts" ).toString() );
+		assertThat( parts[ 1 ] ).isEqualTo( parts[ 2 ] );
+	}
+
+	/**
 	 * A relative snapshots directory resolves against the current directory, an absolute one is kept.
 	 */
 	@DisplayName( "A relative snapshots directory resolves against the current directory" )

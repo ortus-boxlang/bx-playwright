@@ -222,8 +222,15 @@ class {
 	 * @return The artifacts directory: the `artifacts.directory` setting or {home}/artifacts
 	 */
 	string function artifactsPath( struct config = {} ) {
-		var configured = arguments.config.artifacts.directory ?: ( variables.settings.artifacts.directory ?: "" )
-		return len( trim( configured ) ) ? configured : homePath() & "/artifacts"
+		var configured = trim( arguments.config.artifacts.directory ?: ( variables.settings.artifacts.directory ?: "" ) )
+		if ( !len( configured ) ) {
+			return homePath() & "/artifacts"
+		}
+		// A relative directory is relative to the current directory, like snapshotsPath(), never to this class
+		if ( File.init( configured ).isAbsolute() ) {
+			return configured
+		}
+		return File.init( System.getProperty( "user.dir" ), configured ).toPath().normalize().toString()
 	}
 
 	/**
