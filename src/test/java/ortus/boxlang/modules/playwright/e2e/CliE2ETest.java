@@ -26,6 +26,9 @@ public class CliE2ETest extends BaseIntegrationTest {
 
 	private String cli;
 
+	/**
+	 * Prepare the end-to-end home and build the BoxLang snippet that creates a CLI pointed at it.
+	 */
 	@BeforeEach
 	public void prepare() {
 		E2E.home();
@@ -34,6 +37,9 @@ public class CliE2ETest extends BaseIntegrationTest {
 		    + "\", nodeVersion : \"" + E2E.NODE_VERSION + "\", nodeDownloadURL : \"\", profiles : {}, defaultProfile : \"default\" }, environment = {} ) )\n";
 	}
 
+	/**
+	 * The doctor verb returns exit code 0, reports Node.js and Chromium as healthy, and reports ok as JSON with "--json".
+	 */
 	@DisplayName( "doctor reports a healthy installation" )
 	@Test
 	public void testDoctor() {
@@ -45,6 +51,9 @@ public class CliE2ETest extends BaseIntegrationTest {
 		assertThat( json ).contains( "\"ok\":true" );
 	}
 
+	/**
+	 * The devices verb returns exit code 0 and lists Playwright device descriptors such as iPhone 15 and Pixel 7.
+	 */
 	@DisplayName( "devices lists the Playwright device descriptors" )
 	@Test
 	public void testDevices() {
@@ -54,6 +63,9 @@ public class CliE2ETest extends BaseIntegrationTest {
 		assertThat( output ).contains( "Pixel 7" );
 	}
 
+	/**
+	 * Installing Chromium again returns exit code 0 and prints "Ready." when everything is already present.
+	 */
 	@DisplayName( "install is idempotent when everything is present" )
 	@Test
 	public void testInstall() {

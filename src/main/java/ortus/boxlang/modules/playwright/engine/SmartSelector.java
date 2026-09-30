@@ -61,6 +61,9 @@ public final class SmartSelector {
 	    "sup", "svg", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "tr", "u", "ul", "video"
 	);
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private SmartSelector() {
 	}
 
@@ -131,6 +134,14 @@ public final class SmartSelector {
 		return true;
 	}
 
+	/**
+	 * Decide if a whitespace separated part of a selector looks like CSS: a combinator, a token starting
+	 * with a CSS character, or a known HTML tag name (case sensitive).
+	 *
+	 * @param part One part of the selector, not empty
+	 *
+	 * @return True when the part looks like CSS
+	 */
 	private static boolean isCssToken( String part ) {
 		if ( part.equals( ">" ) || part.equals( "~" ) || part.equals( "+" ) ) {
 			return true;

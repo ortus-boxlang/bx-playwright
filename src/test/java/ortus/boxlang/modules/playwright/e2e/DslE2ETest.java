@@ -36,6 +36,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 
 	private String setup;
 
+	/**
+	 * Prepare the end-to-end home, map the fixtures folder and build the BoxLang preamble that serves the fake site through request interception.
+	 */
 	@BeforeEach
 	public void prepare() {
 		E2E.home();
@@ -61,10 +64,20 @@ public class DslE2ETest extends BaseIntegrationTest {
 		// @formatter:on
 	}
 
+	/**
+	 * Run BoxLang code after the site preamble, closing the Playwright manager afterwards.
+	 *
+	 * @param code The BoxLang code to run, which should set a `result` variable
+	 *
+	 * @return The value of `result`
+	 */
 	private Object bx( String code ) {
 		return run( setup + "\ntry {\n" + code + "\n} finally {\n pw.close()\n}" );
 	}
 
+	/**
+	 * A login form is filled with smart selectors, submitted and asserted through the fluent page API, ending on the dashboard URL.
+	 */
 	@DisplayName( "Fill a form with smart selectors, submit and assert" )
 	@Test
 	public void testLoginFlow() {
@@ -91,6 +104,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).isEqualTo( "http://app.test/dashboard?user=luis%40ortus.com" );
 	}
 
+	/**
+	 * Locators count, list texts, pick nth and last elements, find by role, filter, scope with within() and assert visibility.
+	 */
 	@DisplayName( "Locators: count, texts, nth, roles, within and hidden elements" )
 	@Test
 	public void testLocators() {
@@ -110,6 +126,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "3|Write specs,Ship bx-playwright,Celebrate|Ship bx-playwright|Celebrate|Welcome" );
 	}
 
+	/**
+	 * A mocked JSON API response is rendered on the page and console messages reach the onConsole() listener.
+	 */
 	@DisplayName( "Mock the network and listen to console messages" )
 	@Test
 	public void testNetworkAndConsole() {
@@ -127,6 +146,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "dashboard loaded" );
 	}
 
+	/**
+	 * waitForPopup() returns the page opened by a click as a new page that can be asserted.
+	 */
 	@DisplayName( "Popups open as new pages" )
 	@Test
 	public void testPopup() {
@@ -141,6 +163,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "About" );
 	}
 
+	/**
+	 * Failed assertions, action timeouts and invalid profiles throw typed Playwright errors that carry the Playwright message.
+	 */
 	@DisplayName( "Assertion failures and timeouts are typed errors with Playwright's message" )
 	@Test
 	public void testTypedErrors() {
@@ -171,6 +196,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "assert:true,timeout:true,profile" );
 	}
 
+	/**
+	 * Pages write screenshots and PDFs to files or bytes, return their content, and render() turns HTML into PDF or PNG bytes.
+	 */
 	@DisplayName( "Screenshots, PDFs, content and rendering HTML" )
 	@Test
 	public void testOutputs() {
@@ -194,6 +222,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|true|true|true|%PDF|true" );
 	}
 
+	/**
+	 * browse() gives each closure argument a page in its own context and stops the manager afterwards.
+	 */
 	@DisplayName( "browse() gives each argument an isolated page and cleans up" )
 	@Test
 	public void testBrowseMultiUser() {
@@ -211,6 +242,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "alice,bob,true,false" );
 	}
 
+	/**
+	 * The android profile emulates an Android user agent, a 412px wide viewport and the light color scheme.
+	 */
 	@DisplayName( "Profiles and devices shape the browser context" )
 	@Test
 	public void testDeviceProfile() {
@@ -225,6 +259,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|412|true" );
 	}
 
+	/**
+	 * A context closed as failed keeps its screenshot, trace and video, while a context closed as passed removes them.
+	 */
 	@DisplayName( "Artifacts are kept on failure and removed on success" )
 	@Test
 	public void testArtifacts() {
@@ -245,6 +282,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "1|true|1|true|0|0|0" );
 	}
 
+	/**
+	 * snapshot() returns a compact accessibility view that lists the heading and button with their names.
+	 */
 	@DisplayName( "The accessibility snapshot is a compact page view" )
 	@Test
 	public void testSnapshot() {
@@ -260,6 +300,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "button \"Save\"" );
 	}
 
+	/**
+	 * bx:playwrightRender writes its body to a PDF file or stores image bytes in a variable, and fails without a target.
+	 */
 	@DisplayName( "bx:playwrightRender renders its body to a PDF file or image bytes" )
 	@Test
 	public void testRenderComponent() {
@@ -289,6 +332,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|true|missing target" );
 	}
 
+	/**
+	 * request() sends API calls with JSON bodies, headers and query params to a local server and reports the status of each response.
+	 */
 	@DisplayName( "API testing with request(): verbs, JSON, headers and status" )
 	@Test
 	public void testRequest() throws IOException {
@@ -330,6 +376,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		}
 	}
 
+	/**
+	 * Creating a context and a page announces the onContextCreate and onPageCreate interception points.
+	 */
 	@DisplayName( "Interception points are announced" )
 	@Test
 	public void testInterceptors() {
@@ -346,6 +395,10 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "page" );
 	}
 
+	/**
+	 * Screenshot matching creates a baseline, matches it, honors masks, fails on changes with diff and actual images, and updates the baseline on
+	 * request.
+	 */
 	@DisplayName( "Visual regression: baseline, match, mismatch with diff image, update" )
 	@Test
 	public void testScreenshotMatches() {
@@ -380,6 +433,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|true|true|true" );
 	}
 
+	/**
+	 * Console errors can be listed, asserted and ignored, smoke tests report failing paths, and accessibility checks filter by impact or rule.
+	 */
 	@DisplayName( "Quality checks: console errors, smoke test and accessibility" )
 	@Test
 	public void testQualityChecks() {
@@ -422,6 +478,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "2|true|ignored|true|button-name,image-alt|true" );
 	}
 
+	/**
+	 * Page objects are visited, checked with at(), use element aliases and chain into other page objects.
+	 */
 	@DisplayName( "Page objects: visit, at() checks, element aliases and chaining" )
 	@Test
 	public void testPageObjects() {
@@ -445,6 +504,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).endsWith( "DashboardPage" );
 	}
 
+	/**
+	 * Page components scope actions, assertions and aliases to their root element through within() and component().
+	 */
 	@DisplayName( "Page components scope actions and aliases to their root" )
 	@Test
 	public void testComponents() {
@@ -460,6 +522,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "Empty|1" );
 	}
 
+	/**
+	 * Macros add methods to pages and locators, unknown methods list the available macros, and macros can be removed.
+	 */
 	@DisplayName( "Macros add methods to pages and locators" )
 	@Test
 	public void testMacros() {
@@ -483,6 +548,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "SIGN IN TO BOXLANG|true" );
 	}
 
+	/**
+	 * soft() runs every assertion and then throws one error that counts and lists all the failures.
+	 */
 	@DisplayName( "Soft assertions collect every failure and fail once" )
 	@Test
 	public void testSoftAssertions() {
@@ -508,6 +576,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "3 soft assertion(s) failed|true|true" );
 	}
 
+	/**
+	 * A saved session runs its setup once, is reused by later calls and new pages, and a missing session fails.
+	 */
 	@DisplayName( "Saved sessions are created once and reused" )
 	@Test
 	public void testSessions() {
@@ -534,6 +605,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "1|true|admin-token|missing" );
 	}
 
+	/**
+	 * freezeTime() fixes the page clock, and setViewport() and emulate() change the viewport, color scheme and media.
+	 */
 	@DisplayName( "Emulation and time helpers" )
 	@Test
 	public void testEmulationAndTime() {
@@ -550,6 +624,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "2030|500|true|true" );
 	}
 
+	/**
+	 * The AI browser returns snapshots with element refs, acts by ref or by text, and reports failures and closing as text.
+	 */
 	@DisplayName( "AI browser: snapshots with refs, acting by ref or text, errors as text" )
 	@Test
 	public void testAiBrowser() {
@@ -571,6 +648,9 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).matches( "[23]\\|true\\|true\\|true\\|Closed\\." );
 	}
 
+	/**
+	 * Locator fill, type, select and press act on the located element itself.
+	 */
 	@DisplayName( "Locator shortcuts: fill, type, select and press act on the locator itself" )
 	@Test
 	public void testLocatorShortcuts() {

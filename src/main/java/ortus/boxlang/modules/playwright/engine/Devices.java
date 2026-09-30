@@ -32,6 +32,9 @@ import com.microsoft.playwright.impl.PlaywrightImpl;
  */
 public final class Devices {
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private Devices() {
 	}
 
@@ -81,6 +84,10 @@ public final class Devices {
 
 	/**
 	 * Convert a Gson element to plain Java maps, lists, strings, numbers and booleans.
+	 *
+	 * @param element The Gson element, may be null
+	 *
+	 * @return The plain Java value, or null for a JSON null
 	 */
 	private static Object toJava( JsonElement element ) {
 		if ( element == null || element.isJsonNull() ) {

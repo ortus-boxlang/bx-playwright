@@ -21,6 +21,9 @@ import org.junit.jupiter.api.Test;
 
 public class ProfilesTest extends BaseIntegrationTest {
 
+	/**
+	 * A built-in profile resolves by following its extends chain, and the extends key is removed from the result.
+	 */
 	@DisplayName( "Built-in profiles resolve, following extends" )
 	@Test
 	public void testExtends() {
@@ -33,6 +36,9 @@ public class ProfilesTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "webkit|iPhone 15|false" );
 	}
 
+	/**
+	 * Several profiles merge left to right, with nested structs merged deeply.
+	 */
 	@DisplayName( "Profiles merge left to right, deeply" )
 	@Test
 	public void testMerge() {
@@ -45,6 +51,9 @@ public class ProfilesTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "dark|false|on|on" );
 	}
 
+	/**
+	 * User profiles can extend built-in profiles and replace a built-in profile with the same name.
+	 */
 	@DisplayName( "User profiles can extend built-in ones and replace them" )
 	@Test
 	public void testUserProfiles() {
@@ -58,6 +67,9 @@ public class ProfilesTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "1920|https://staging.test|light" );
 	}
 
+	/**
+	 * Resolving an unknown profile throws Playwright.InvalidProfile listing the available profiles.
+	 */
 	@DisplayName( "Unknown profiles fail with the list of profiles" )
 	@Test
 	public void testUnknownProfile() {
@@ -75,6 +87,9 @@ public class ProfilesTest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "mobile" );
 	}
 
+	/**
+	 * A profile whose extends chain loops back to itself throws Playwright.InvalidProfile.
+	 */
 	@DisplayName( "Extends loops are detected" )
 	@Test
 	public void testLoop() {

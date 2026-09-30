@@ -31,12 +31,21 @@ import ortus.boxlang.modules.playwright.BaseIntegrationTest;
  */
 public class ExamplesE2ETest extends BaseIntegrationTest {
 
+	/**
+	 * Prepare the end-to-end home and map /pages to the examples page objects.
+	 */
 	@BeforeEach
 	public void prepare() {
 		E2E.home();
 		runtime.getConfiguration().registerMapping( "/pages", Path.of( "examples/pages" ).toAbsolutePath().toString() );
 	}
 
+	/**
+	 * Each example script runs and prints its expected output.
+	 *
+	 * @param file     The example file name under examples/
+	 * @param expected Text the example output must contain
+	 */
 	@ParameterizedTest( name = "{0}" )
 	@CsvSource( {
 	    "render-pdf-and-images.bxs, PDF:",

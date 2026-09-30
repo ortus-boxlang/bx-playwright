@@ -84,6 +84,9 @@ public final class OptionsMapper {
 
 	private static final Map<Class<?>, Map<String, List<Method>>>	SETTERS				= new ConcurrentHashMap<>();
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private OptionsMapper() {
 	}
 
@@ -179,6 +182,16 @@ public final class OptionsMapper {
 	 * --------------------------------------------------------------------------
 	 */
 
+	/**
+	 * Call the first setter overload that accepts the value, trying the most natural ones first.
+	 *
+	 * @param target     The options object
+	 * @param candidates The setter overloads for the option
+	 * @param key        The option name, for error messages
+	 * @param value      The option value
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when no overload accepts the value or the setter fails
+	 */
 	private static void invokeBest( Object target, List<Method> candidates, String key, Object value ) {
 		ConversionException last = null;
 		for ( Method method : ranked( candidates, value ) ) {
@@ -210,6 +223,11 @@ public final class OptionsMapper {
 
 	/**
 	 * Order setter overloads so the most natural one for the value is tried first.
+	 *
+	 * @param candidates The setter overloads
+	 * @param value      The option value
+	 *
+	 * @return A new list of the overloads, best match first
 	 */
 	private static List<Method> ranked( List<Method> candidates, Object value ) {
 		List<Method> ranked = new ArrayList<>( candidates );
@@ -217,6 +235,14 @@ public final class OptionsMapper {
 		return ranked;
 	}
 
+	/**
+	 * Score how well a parameter type fits a value; lower is better.
+	 *
+	 * @param type  The setter parameter type
+	 * @param value The option value
+	 *
+	 * @return The score, 0 for an exact instance match
+	 */
 	private static int score( Class<?> type, Object value ) {
 		if ( type.isInstance( value ) ) {
 			return 0;
@@ -236,6 +262,18 @@ public final class OptionsMapper {
 		return 3;
 	}
 
+	/**
+	 * Convert a BoxLang value to a setter or constructor parameter type, recursing into lists, maps and
+	 * nested Playwright option classes.
+	 *
+	 * @param value      The value to convert
+	 * @param targetType The target type, possibly generic
+	 * @param key        The option name, for error messages
+	 *
+	 * @return The converted value
+	 *
+	 * @throws ConversionException when the value does not fit the type
+	 */
 	private static Object convert( Object value, Type targetType, String key ) {
 		Class<?> raw = rawClass( targetType );
 
@@ -324,6 +362,17 @@ public final class OptionsMapper {
 		throw new ConversionException( "cannot convert " + value.getClass().getSimpleName() + " to " + raw.getSimpleName() );
 	}
 
+	/**
+	 * Find an enum constant by name, ignoring case, dashes and underscores.
+	 *
+	 * @param enumType The enum class
+	 * @param value    The value, e.g. {@code no-preference}
+	 * @param key      The option name, for error messages
+	 *
+	 * @return The enum constant
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when no constant matches
+	 */
 	@SuppressWarnings( { "unchecked", "rawtypes" } )
 	private static Object toEnum( Class<?> enumType, String value, String key ) {
 		String wanted = normalizeEnumName( value );
@@ -339,6 +388,13 @@ public final class OptionsMapper {
 		);
 	}
 
+	/**
+	 * List the constants of an enum as lower case, dashed names.
+	 *
+	 * @param enumType The enum class
+	 *
+	 * @return The names, e.g. {@code no-preference}
+	 */
 	private static List<String> enumNames( Class<?> enumType ) {
 		List<String> names = new ArrayList<>();
 		for ( Object constant : enumType.getEnumConstants() ) {
@@ -347,10 +403,26 @@ public final class OptionsMapper {
 		return names;
 	}
 
+	/**
+	 * Normalize an enum name for comparison: keep letters and digits only, upper cased.
+	 *
+	 * @param value The name
+	 *
+	 * @return The normalized name
+	 */
 	private static String normalizeEnumName( String value ) {
 		return value.replaceAll( "[^A-Za-z0-9]", "" ).toUpperCase( Locale.ROOT );
 	}
 
+	/**
+	 * Convert a boolean, number or true/false/yes/no string to a boolean.
+	 *
+	 * @param value The value
+	 *
+	 * @return The boolean
+	 *
+	 * @throws ConversionException when the value is not a boolean
+	 */
 	private static boolean toBoolean( Object value ) {
 		if ( value instanceof Boolean bool ) {
 			return bool;
@@ -370,6 +442,15 @@ public final class OptionsMapper {
 		throw new ConversionException( "expected a boolean" );
 	}
 
+	/**
+	 * Convert a number or numeric string to a number.
+	 *
+	 * @param value The value
+	 *
+	 * @return The number
+	 *
+	 * @throws ConversionException when the value is not numeric
+	 */
 	private static Number toNumber( Object value ) {
 		if ( value instanceof Number number ) {
 			return number;
@@ -384,6 +465,13 @@ public final class OptionsMapper {
 		throw new ConversionException( "expected a number" );
 	}
 
+	/**
+	 * Treat a value as a collection: collections and arrays as-is, anything else as a single item list.
+	 *
+	 * @param value The value
+	 *
+	 * @return The collection
+	 */
 	private static Collection<?> toCollection( Object value ) {
 		if ( value instanceof Collection<?> collection ) {
 			return collection;
@@ -401,6 +489,18 @@ public final class OptionsMapper {
 	 * --------------------------------------------------------------------------
 	 */
 
+	/**
+	 * Create an options object with its no-arg constructor, or with the required constructor arguments
+	 * listed in {@code CONSTRUCTOR_ARGS}, which are removed from the values.
+	 *
+	 * @param type   The options class
+	 * @param values The normalized option values; constructor arguments are removed
+	 * @param <T>    The options type
+	 *
+	 * @return The new options object
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when the object cannot be built
+	 */
 	private static <T> T instantiate( Class<T> type, Map<String, Object> values ) {
 		try {
 			try {
@@ -437,6 +537,13 @@ public final class OptionsMapper {
 		}
 	}
 
+	/**
+	 * Find the single argument instance setters of a class, cached per class.
+	 *
+	 * @param type The class
+	 *
+	 * @return The setter overloads keyed by lower cased property name
+	 */
 	private static Map<String, List<Method>> setters( Class<?> type ) {
 		return SETTERS.computeIfAbsent( type, key -> {
 			Map<String, List<Method>> result = new LinkedHashMap<>();
@@ -452,6 +559,13 @@ public final class OptionsMapper {
 		} );
 	}
 
+	/**
+	 * Copy a struct or map into a map with plain string keys.
+	 *
+	 * @param options The struct or map, may be null
+	 *
+	 * @return A new ordered map
+	 */
 	private static Map<String, Object> normalize( Map<?, ?> options ) {
 		Map<String, Object> result = new LinkedHashMap<>();
 		if ( options == null ) {
@@ -465,6 +579,14 @@ public final class OptionsMapper {
 		return result;
 	}
 
+	/**
+	 * Remove an entry by key, ignoring case.
+	 *
+	 * @param values The map
+	 * @param name   The key
+	 *
+	 * @return The removed value, or null when not found
+	 */
 	private static Object removeIgnoreCase( Map<String, Object> values, String name ) {
 		for ( String key : new ArrayList<>( values.keySet() ) ) {
 			if ( key.equalsIgnoreCase( name ) ) {
@@ -474,6 +596,16 @@ public final class OptionsMapper {
 		return null;
 	}
 
+	/**
+	 * Load a Playwright class by its short name, turning nested names into binary names,
+	 * e.g. {@code Page.NavigateOptions} into {@code com.microsoft.playwright.Page$NavigateOptions}.
+	 *
+	 * @param className The class name, relative to {@code com.microsoft.playwright} or fully qualified
+	 *
+	 * @return The class
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when the class does not exist
+	 */
 	private static Class<?> resolveClass( String className ) {
 		String	name		= className.startsWith( PLAYWRIGHT_PACKAGE ) ? className : PLAYWRIGHT_PACKAGE + className;
 		int		lastDot		= name.lastIndexOf( '.' );
@@ -490,6 +622,13 @@ public final class OptionsMapper {
 		}
 	}
 
+	/**
+	 * The raw class of a type.
+	 *
+	 * @param type A class or parameterized type
+	 *
+	 * @return The raw class, or Object for other types
+	 */
 	private static Class<?> rawClass( Type type ) {
 		if ( type instanceof Class<?> clazz ) {
 			return clazz;
@@ -500,6 +639,14 @@ public final class OptionsMapper {
 		return Object.class;
 	}
 
+	/**
+	 * A type argument of a parameterized type.
+	 *
+	 * @param type  The type
+	 * @param index The type argument position
+	 *
+	 * @return The type argument, or Object when unavailable
+	 */
 	private static Type typeArgument( Type type, int index ) {
 		if ( type instanceof ParameterizedType parameterized && parameterized.getActualTypeArguments().length > index ) {
 			return parameterized.getActualTypeArguments()[ index ];
@@ -507,14 +654,35 @@ public final class OptionsMapper {
 		return Object.class;
 	}
 
+	/**
+	 * A short type name for messages, without the Playwright, java.lang and java.util packages.
+	 *
+	 * @param type The type
+	 *
+	 * @return The short name
+	 */
 	private static String simpleTypeName( Type type ) {
 		return type.getTypeName().replace( PLAYWRIGHT_PACKAGE, "" ).replace( "java.lang.", "" ).replace( "java.util.", "" );
 	}
 
+	/**
+	 * A short class name for messages, e.g. {@code Page.NavigateOptions}.
+	 *
+	 * @param type The class
+	 *
+	 * @return The short name
+	 */
 	private static String displayName( Class<?> type ) {
 		return type.getName().replace( PLAYWRIGHT_PACKAGE, "" ).replace( '$', '.' );
 	}
 
+	/**
+	 * The message of the deepest cause of an exception.
+	 *
+	 * @param e The exception
+	 *
+	 * @return The root cause message
+	 */
 	private static String rootMessage( Throwable e ) {
 		Throwable root = e;
 		while ( root.getCause() != null ) {
@@ -530,6 +698,11 @@ public final class OptionsMapper {
 
 		private static final long serialVersionUID = 1L;
 
+		/**
+		 * Create the signal without a stack trace.
+		 *
+		 * @param message Why the conversion failed
+		 */
 		ConversionException( String message ) {
 			super( message, null, false, false );
 		}

@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Test;
 
 public class PlatformTest {
 
+	/**
+	 * Linux, macOS and Windows names with their architectures resolve to the matching platform.
+	 */
 	@DisplayName( "It resolves every supported OS and architecture" )
 	@Test
 	public void testResolvesPlatforms() {
@@ -32,6 +35,9 @@ public class PlatformTest {
 		assertThat( Platform.of( "Windows 11", "amd64" ) ).isEqualTo( Platform.WINDOWS_X64 );
 	}
 
+	/**
+	 * Unsupported OS and architecture combinations throw UnsupportedOperationException.
+	 */
 	@DisplayName( "It rejects unsupported platforms with a clear message" )
 	@Test
 	public void testRejectsUnsupportedPlatforms() {
@@ -39,6 +45,9 @@ public class PlatformTest {
 		assertThrows( UnsupportedOperationException.class, () -> Platform.of( "SunOS", "sparc" ) );
 	}
 
+	/**
+	 * Each platform builds its Node.js archive and folder names, Node.js executable path and driver folder.
+	 */
 	@DisplayName( "It builds the Node.js archive and folder names" )
 	@Test
 	public void testNodeNaming() {

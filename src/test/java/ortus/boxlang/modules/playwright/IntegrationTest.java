@@ -24,6 +24,9 @@ import ortus.boxlang.runtime.types.IStruct;
 
 public class IntegrationTest extends BaseIntegrationTest {
 
+	/**
+	 * The module is registered and its settings include the default profile and a Node.js version.
+	 */
 	@DisplayName( "The module loads with its settings" )
 	@Test
 	public void testModuleLoads() {

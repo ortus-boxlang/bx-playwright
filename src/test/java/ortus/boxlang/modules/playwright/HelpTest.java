@@ -21,6 +21,9 @@ import org.junit.jupiter.api.Test;
 
 public class HelpTest extends BaseIntegrationTest {
 
+	/**
+	 * help() describes the public methods from their docblocks, with descriptions and arguments, and leaves out private methods and init().
+	 */
 	@DisplayName( "help() describes the public API from the docblocks" )
 	@Test
 	public void testHelp() {
@@ -37,6 +40,9 @@ public class HelpTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|false|false|true|url|true|true" );
 	}
 
+	/**
+	 * help() for an unknown method throws Playwright.InvalidOption whose detail lists the available methods.
+	 */
 	@DisplayName( "help() for an unknown method lists the available ones" )
 	@Test
 	public void testUnknown() {
@@ -52,6 +58,9 @@ public class HelpTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( true );
 	}
 
+	/**
+	 * aiToolDefinitions() returns the browser tool definitions without bx-ai, while aiTools() throws Playwright.NotInstalled mentioning bx-ai.
+	 */
 	@DisplayName( "aiTools() explains that bx-ai is needed; aiToolDefinitions() works without it" )
 	@Test
 	public void testAiTools() {

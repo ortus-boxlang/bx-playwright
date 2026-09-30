@@ -46,6 +46,9 @@ public abstract class BaseIntegrationTest {
 	protected ScriptingRequestBoxContext	context;
 	protected IScope						variables;
 
+	/**
+	 * Boot the BoxLang runtime with the test configuration and load the built module once for the whole test class.
+	 */
 	@BeforeAll
 	public static void setup() {
 		runtime			= BoxRuntime.getInstance( true, Path.of( "src/test/resources/boxlang.json" ).toString() );
@@ -54,6 +57,9 @@ public abstract class BaseIntegrationTest {
 		loadModule( runtime.getRuntimeContext() );
 	}
 
+	/**
+	 * Create a fresh scripting request context and grab its variables scope before each test.
+	 */
 	@BeforeEach
 	public void setupEach() {
 		// Create the mock contexts
@@ -61,6 +67,11 @@ public abstract class BaseIntegrationTest {
 		variables	= context.getScopeNearby( VariablesScope.name );
 	}
 
+	/**
+	 * Register and activate the module from build/module, unless the module service already has it loaded.
+	 *
+	 * @param context The context used to load, register and activate the module
+	 */
 	protected static void loadModule( IBoxContext context ) {
 		if ( !runtime.getModuleService().hasModule( moduleName ) ) {
 			System.out.println( "Loading module: " + moduleName );

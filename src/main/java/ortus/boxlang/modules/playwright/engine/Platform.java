@@ -34,6 +34,14 @@ public enum Platform {
 	private final String	nodeArchiveExtension;
 	private final String	nodeExecutable;
 
+	/**
+	 * Describe a platform.
+	 *
+	 * @param driverFolder         The Playwright driver folder name for this platform
+	 * @param nodeDistribution     The Node.js distribution name, e.g. {@code linux-x64}
+	 * @param nodeArchiveExtension The Node.js archive extension, {@code tar.gz} or {@code zip}
+	 * @param nodeExecutable       The node executable path inside the Node.js distribution
+	 */
 	Platform( String driverFolder, String nodeDistribution, String nodeArchiveExtension, String nodeExecutable ) {
 		this.driverFolder			= driverFolder;
 		this.nodeDistribution		= nodeDistribution;

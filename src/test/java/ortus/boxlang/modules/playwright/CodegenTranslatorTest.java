@@ -54,11 +54,18 @@ public class CodegenTranslatorTest extends BaseIntegrationTest {
 	                                        }
 	                                        """;
 
+	/**
+	 * Put the sample codegen recording in the variables scope as "recording" before each test.
+	 */
 	@BeforeEach
 	public void loadRecording() {
 		variables.put( Key.of( "recording" ), RECORDING );
 	}
 
+	/**
+	 * A Java codegen recording is translated into a browse() script: navigation, locators, actions and assertions map to the DSL, nth() becomes 1-based
+	 * and the browser boilerplate is dropped.
+	 */
 	@DisplayName( "Recorded Java becomes the BoxLang DSL" )
 	@Test
 	public void testTranslate() {
@@ -78,6 +85,9 @@ public class CodegenTranslatorTest extends BaseIntegrationTest {
 		assertThat( code ).endsWith( "} )\n" );
 	}
 
+	/**
+	 * A statement the translator does not understand is kept as a "// TODO translate:" comment.
+	 */
 	@DisplayName( "Unknown statements are kept as comments" )
 	@Test
 	public void testUnknown() {

@@ -33,6 +33,16 @@ import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 
 public class ImageDiffTest {
 
+	/**
+	 * Draw a PNG with a solid background and an optional 10x10 square in the top left corner.
+	 *
+	 * @param width      The image width in pixels
+	 * @param height     The image height in pixels
+	 * @param background The background color
+	 * @param square     The square color, or null for no square
+	 *
+	 * @return The PNG bytes
+	 */
 	private static byte[] png( int width, int height, Color background, Color square ) throws IOException {
 		BufferedImage	image		= new BufferedImage( width, height, BufferedImage.TYPE_INT_ARGB );
 		Graphics2D		graphics	= image.createGraphics();
@@ -48,6 +58,9 @@ public class ImageDiffTest {
 		return out.toByteArray();
 	}
 
+	/**
+	 * Comparing an image with itself reports the same size, no differing pixels and a zero ratio.
+	 */
 	@DisplayName( "Identical images have no differences" )
 	@Test
 	public void testIdentical() throws IOException {
@@ -58,6 +71,9 @@ public class ImageDiffTest {
 		assertThat( result.diffRatio() ).isEqualTo( 0.0 );
 	}
 
+	/**
+	 * Changed pixels are counted, the ratio reflects them, and the diff image marks them in red and nothing else.
+	 */
 	@DisplayName( "Changed pixels are counted and drawn in red" )
 	@Test
 	public void testDifferences() throws IOException {
@@ -69,6 +85,9 @@ public class ImageDiffTest {
 		assertThat( diff.getRGB( 40, 30 ) ).isNotEqualTo( 0xFFFF0000 );
 	}
 
+	/**
+	 * Small color changes are ignored under the threshold and counted with a zero threshold.
+	 */
 	@DisplayName( "The threshold ignores small color changes" )
 	@Test
 	public void testThreshold() throws IOException {
@@ -78,6 +97,9 @@ public class ImageDiffTest {
 		assertThat( ImageDiff.compare( a, b, 0.0 ).diffPixels() ).isEqualTo( 400 );
 	}
 
+	/**
+	 * Images of different sizes are a full mismatch with no diff image.
+	 */
 	@DisplayName( "Different sizes are a full mismatch" )
 	@Test
 	public void testSizeMismatch() throws IOException {
@@ -87,6 +109,9 @@ public class ImageDiffTest {
 		assertThat( result.diffImage() ).isNull();
 	}
 
+	/**
+	 * Bytes that are not images throw a BoxRuntimeException of the invalid option type.
+	 */
 	@DisplayName( "Unreadable images fail with a typed error" )
 	@Test
 	public void testUnreadable() {

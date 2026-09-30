@@ -43,6 +43,8 @@ public class NodeRuntime {
 	private final String	version;
 
 	/**
+	 * Create a runtime description.
+	 *
 	 * @param executable The node executable
 	 * @param source     Where it came from
 	 * @param version    The version if known, or null

@@ -476,12 +476,25 @@ public class PlaywrightHome {
 	 * --------------------------------------------------------------------------
 	 */
 
+	/**
+	 * Find a resource through the Playwright class loader.
+	 *
+	 * @param path The resource path
+	 *
+	 * @return The resource URL, or null when not found
+	 */
 	private static URL resource( String path ) {
 		return Playwright.class.getClassLoader().getResource( path );
 	}
 
 	/**
 	 * Copy a resource folder from the jars (or the file system during development) into a directory.
+	 *
+	 * @param resourcePath The resource folder path
+	 * @param destination  The directory to copy into
+	 *
+	 * @throws IOException        when the resource is missing or a file cannot be copied
+	 * @throws URISyntaxException when the resource URL is not a valid URI
 	 */
 	private static void extractResource( String resourcePath, Path destination ) throws IOException, URISyntaxException {
 		URL url = resource( resourcePath );
@@ -520,11 +533,25 @@ public class PlaywrightHome {
 		}
 	}
 
+	/**
+	 * Guess if an extracted file should be executable: {@code .sh}, {@code .exe} or no extension.
+	 *
+	 * @param file The file
+	 *
+	 * @return True when the file should be marked executable
+	 */
 	private static boolean isExecutable( Path file ) {
 		String name = file.getFileName().toString();
 		return name.endsWith( ".sh" ) || name.endsWith( ".exe" ) || !name.contains( "." );
 	}
 
+	/**
+	 * Delete a file or directory tree, doing nothing when it does not exist.
+	 *
+	 * @param path The file or directory to delete
+	 *
+	 * @throws IOException when a file cannot be deleted
+	 */
 	private static void deleteRecursively( Path path ) throws IOException {
 		if ( !Files.exists( path ) ) {
 			return;
@@ -536,6 +563,11 @@ public class PlaywrightHome {
 		}
 	}
 
+	/**
+	 * Delete a file or directory tree, ignoring errors.
+	 *
+	 * @param path The file or directory to delete
+	 */
 	private static void deleteQuietly( Path path ) {
 		try {
 			deleteRecursively( path );
@@ -544,6 +576,13 @@ public class PlaywrightHome {
 		}
 	}
 
+	/**
+	 * Check if a string is null or only whitespace.
+	 *
+	 * @param value The string to check
+	 *
+	 * @return True when null or blank
+	 */
 	private static boolean isBlank( String value ) {
 		return value == null || value.isBlank();
 	}

@@ -32,6 +32,9 @@ public final class PlaywrightErrors {
 	public static final String	TIMEOUT					= "Playwright.Timeout";
 	public static final String	ACTION_FAILED			= "Playwright.ActionFailed";
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private PlaywrightErrors() {
 	}
 

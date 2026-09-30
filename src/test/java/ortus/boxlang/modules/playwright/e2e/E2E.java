@@ -36,6 +36,9 @@ public final class E2E {
 
 	private static PlaywrightHome	home;
 
+	/**
+	 * Static helpers only, no instances.
+	 */
 	private E2E() {
 	}
 

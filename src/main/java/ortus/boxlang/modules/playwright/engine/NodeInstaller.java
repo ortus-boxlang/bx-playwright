@@ -60,6 +60,8 @@ public class NodeInstaller {
 	private final HttpClient		httpClient;
 
 	/**
+	 * Create an installer.
+	 *
 	 * @param home        The playwright home
 	 * @param downloadURL The Node.js distribution base URL, or null/empty for {@link #DEFAULT_DOWNLOAD_URL}
 	 * @param logger      Receives progress messages, may be null
@@ -207,10 +209,24 @@ public class NodeInstaller {
 		}
 	}
 
+	/**
+	 * The base URL of the configured Node.js release.
+	 *
+	 * @return The download URL followed by the version folder, e.g. {@code .../v22.0.0}
+	 */
 	private String releaseURL() {
 		return downloadURL + "/v" + home.getNodeVersion();
 	}
 
+	/**
+	 * Download a URL into a file.
+	 *
+	 * @param url    The URL to download
+	 * @param target The file to write
+	 *
+	 * @throws IOException          when the request fails or the status is not 200
+	 * @throws InterruptedException when interrupted while waiting for the response
+	 */
 	private void download( String url, Path target ) throws IOException, InterruptedException {
 		HttpRequest			request		= HttpRequest.newBuilder( URI.create( url ) ).timeout( DOWNLOAD_TIMEOUT ).GET().build();
 		HttpResponse<Path>	response	= httpClient.send( request, HttpResponse.BodyHandlers.ofFile( target ) );
@@ -219,6 +235,16 @@ public class NodeInstaller {
 		}
 	}
 
+	/**
+	 * Download a URL as UTF-8 text.
+	 *
+	 * @param url The URL to download
+	 *
+	 * @return The response body
+	 *
+	 * @throws IOException          when the request fails or the status is not 200
+	 * @throws InterruptedException when interrupted while waiting for the response
+	 */
 	private String fetchText( String url ) throws IOException, InterruptedException {
 		HttpRequest				request		= HttpRequest.newBuilder( URI.create( url ) ).timeout( CONNECT_TIMEOUT ).GET().build();
 		HttpResponse<String>	response	= httpClient.send( request, HttpResponse.BodyHandlers.ofString( StandardCharsets.UTF_8 ) );
@@ -228,6 +254,15 @@ public class NodeInstaller {
 		return response.body();
 	}
 
+	/**
+	 * Extract a zip or tar.gz archive with the system {@code tar} command.
+	 *
+	 * @param archive     The archive file
+	 * @param destination The directory to extract into
+	 *
+	 * @throws IOException          when tar fails or times out
+	 * @throws InterruptedException when interrupted while waiting for tar
+	 */
 	private static void extract( Path archive, Path destination ) throws IOException, InterruptedException {
 		// The archive keeps its '.download' suffix, so tell tar the compression explicitly
 		boolean			isZip	= archive.getFileName().toString().contains( ".zip" );
@@ -245,6 +280,13 @@ public class NodeInstaller {
 		}
 	}
 
+	/**
+	 * Delete a file or directory tree.
+	 *
+	 * @param path The file or directory to delete
+	 *
+	 * @throws IOException when a file cannot be deleted
+	 */
 	private static void deleteRecursively( Path path ) throws IOException {
 		try ( Stream<Path> paths = Files.walk( path ) ) {
 			for ( Path entry : paths.sorted( Comparator.reverseOrder() ).toList() ) {
@@ -253,6 +295,13 @@ public class NodeInstaller {
 		}
 	}
 
+	/**
+	 * Remove one trailing slash from a string.
+	 *
+	 * @param value The string
+	 *
+	 * @return The string without its trailing slash
+	 */
 	private static String stripTrailingSlash( String value ) {
 		return value.endsWith( "/" ) ? value.substring( 0, value.length() - 1 ) : value;
 	}

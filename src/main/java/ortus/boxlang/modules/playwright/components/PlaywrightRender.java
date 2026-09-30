@@ -71,6 +71,9 @@ public class PlaywrightRender extends Component {
 
 	private static final Set<String>	TYPES		= Set.of( "pdf", "png", "jpeg", "webp" );
 
+	/**
+	 * Create the component and declare its attributes.
+	 */
 	public PlaywrightRender() {
 		super();
 		declaredAttributes = new Attribute[] {
@@ -147,6 +150,10 @@ public class PlaywrightRender extends Component {
 
 	/**
 	 * Build the options struct passed to render().
+	 *
+	 * @param attributes The component attributes
+	 *
+	 * @return The render() options
 	 */
 	private IStruct buildOptions( IStruct attributes ) {
 		IStruct options = new Struct();
@@ -183,6 +190,13 @@ public class PlaywrightRender extends Component {
 		return options;
 	}
 
+	/**
+	 * Check if a string is null or only whitespace.
+	 *
+	 * @param value The string to check
+	 *
+	 * @return True when null or blank
+	 */
 	private static boolean isBlank( String value ) {
 		return value == null || value.isBlank();
 	}

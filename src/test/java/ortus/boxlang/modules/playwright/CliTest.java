@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 
 public class CliTest extends BaseIntegrationTest {
 
+	/**
+	 * Running the CLI without a verb returns exit code 1 and prints the usage, including the install verb.
+	 */
 	@DisplayName( "No verb prints usage and fails" )
 	@Test
 	public void testNoVerb() {
@@ -34,6 +37,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( output ).contains( "install" );
 	}
 
+	/**
+	 * An unknown verb returns exit code 1 and prints an "Unknown verb [fly]" message.
+	 */
 	@DisplayName( "Unknown verbs fail and print usage" )
 	@Test
 	public void testUnknownVerb() {
@@ -42,6 +48,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( output ).contains( "Unknown verb [fly]" );
 	}
 
+	/**
+	 * Help for a single verb, "help --json" and "<verb> --help" print the verb usage or the JSON description of the verbs.
+	 */
 	@DisplayName( "Help for a verb and machine readable help" )
 	@Test
 	public void testHelp() {
@@ -54,6 +63,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( dashHelp ).contains( "bxPlaywright install [browsers...]" );
 	}
 
+	/**
+	 * parseOptions() separates positionals from options, parses flags, quoted values and "--no-" negations.
+	 */
 	@DisplayName( "It parses BoxLang style options" )
 	@Test
 	public void testParseOptions() {
@@ -66,6 +78,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "firefox,webkit|true|iPhone 15|false" );
 	}
 
+	/**
+	 * "--version" returns exit code 0 and prints the Playwright version, and "version --json" prints it as JSON.
+	 */
 	@DisplayName( "Version prints versions and supports --json" )
 	@Test
 	public void testVersion() {
@@ -76,6 +91,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( json ).contains( "\"playwright\":\"1.63.0\"" );
 	}
 
+	/**
+	 * The profiles verb lists the built-in profiles and resolves a single profile as JSON.
+	 */
 	@DisplayName( "Profiles lists and resolves profiles" )
 	@Test
 	public void testProfiles() {
@@ -86,6 +104,9 @@ public class CliTest extends BaseIntegrationTest {
 		assertThat( one ).contains( "iPad Pro 11" );
 	}
 
+	/**
+	 * Errors return exit code 1 and print their type and fix, or the error type as JSON with "--json".
+	 */
 	@DisplayName( "Errors print their type and fix, or JSON" )
 	@Test
 	public void testErrors() {

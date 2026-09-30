@@ -37,6 +37,9 @@ public final class Macros {
 
 	private static final Map<String, Map<String, Object>>	REGISTRY	= new ConcurrentHashMap<>();
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private Macros() {
 	}
 
@@ -92,6 +95,15 @@ public final class Macros {
 		}
 	}
 
+	/**
+	 * Validate and normalize a macro target.
+	 *
+	 * @param target page or locator, case insensitive; null means page
+	 *
+	 * @return The lower cased target
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when the target is unknown
+	 */
 	private static String checkTarget( String target ) {
 		String value = target == null ? "page" : target.toLowerCase( Locale.ROOT );
 		if ( !TARGETS.contains( value ) ) {

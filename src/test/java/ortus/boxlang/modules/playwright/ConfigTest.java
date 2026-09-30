@@ -21,6 +21,9 @@ import org.junit.jupiter.api.Test;
 
 public class ConfigTest extends BaseIntegrationTest {
 
+	/**
+	 * Without arguments or environment the config resolves the default profile, chromium, headless mode, a 5000ms assertion timeout and no home key.
+	 */
 	@DisplayName( "Without arguments the default profile and module settings apply" )
 	@Test
 	public void testDefaults() {
@@ -33,6 +36,9 @@ public class ConfigTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "default|chromium|true|5000|false" );
 	}
 
+	/**
+	 * Environment variables override the profile settings, and profiles and options passed to resolve() override the environment.
+	 */
 	@DisplayName( "Environment overrides win over profiles, call options win over everything" )
 	@Test
 	public void testResolutionOrder() {
@@ -48,6 +54,9 @@ public class ConfigTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "mobile|webkit|false|http://env.test|firefox|http://call.test" );
 	}
 
+	/**
+	 * launchOptions() and contextOptions() build the launch and context options from the resolved profiles, call options and extra context options.
+	 */
 	@DisplayName( "It builds launch and context options" )
 	@Test
 	public void testOptions() {
@@ -63,6 +72,9 @@ public class ConfigTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "chrome|100|dark|UTC|390|true" );
 	}
 
+	/**
+	 * An empty home setting defaults to .boxlang/playwright under the user home, and a configured home is used for the browsers path.
+	 */
 	@DisplayName( "The home defaults under the user home and honors settings" )
 	@Test
 	public void testHome() {

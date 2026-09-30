@@ -21,6 +21,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class SmartSelectorTest {
 
+	/**
+	 * CSS, XPath and engine prefixed values are detected as selectors.
+	 *
+	 * @param value The value to classify
+	 */
 	@ParameterizedTest( name = "[{0}] is a selector" )
 	@ValueSource( strings = {
 	    "#email", ".btn", "[data-x=1]", "//div", "(//a)[2]", "*", "h1", "button", "input[name=email]", "div > span", "a:has-text('x')",
@@ -30,6 +35,11 @@ public class SmartSelectorTest {
 		assertThat( SmartSelector.isSelector( value ) ).isTrue();
 	}
 
+	/**
+	 * Plain words and phrases are detected as text, not selectors.
+	 *
+	 * @param value The value to classify
+	 */
 	@ParameterizedTest( name = "[{0}] is text" )
 	@ValueSource( strings = { "Save", "Sign in", "Email", "Save changes", "Remember me", "Welcome back!", "Continue to checkout", "Menu", "Summary",
 	    "Button" } )

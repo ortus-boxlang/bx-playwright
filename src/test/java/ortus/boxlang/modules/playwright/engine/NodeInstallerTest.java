@@ -32,6 +32,9 @@ public class NodeInstallerTest {
 	@TempDir
 	Path tempDir;
 
+	/**
+	 * The Node.js archive and checksums URLs point at nodejs.org by default and at a mirror when one is set.
+	 */
 	@DisplayName( "It builds the download URLs, honoring a mirror" )
 	@Test
 	public void testUrls() {
@@ -43,6 +46,9 @@ public class NodeInstallerTest {
 		assertThat( mirror.archiveURL() ).isEqualTo( "https://mirror.example.com/node/v24.21.0/node-v24.21.0-linux-x64.tar.gz" );
 	}
 
+	/**
+	 * The checksum of an archive is found in a SHASUMS file, and a missing archive fails with the node install error type.
+	 */
 	@DisplayName( "It finds the checksum of an archive" )
 	@Test
 	public void testExpectedChecksum() {
@@ -56,6 +62,9 @@ public class NodeInstallerTest {
 		assertThat( error.getType() ).isEqualTo( PlaywrightErrors.NODE_INSTALL_FAILED );
 	}
 
+	/**
+	 * The SHA-256 digest of a file is computed as lowercase hex.
+	 */
 	@DisplayName( "It computes SHA-256 digests" )
 	@Test
 	public void testSha256() throws IOException {

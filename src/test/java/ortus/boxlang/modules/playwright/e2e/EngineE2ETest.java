@@ -28,6 +28,9 @@ import ortus.boxlang.modules.playwright.engine.PlaywrightHome;
 
 public class EngineE2ETest {
 
+	/**
+	 * The engine resolves a downloaded or bundled Node.js, launches Chromium and reads the text of a rendered heading.
+	 */
 	@DisplayName( "The engine downloads Node.js, installs Chromium and drives a page" )
 	@Test
 	public void testLaunchChromium() {

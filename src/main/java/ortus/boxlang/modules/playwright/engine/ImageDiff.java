@@ -39,6 +39,9 @@ public final class ImageDiff {
 	private static final int	DIFF_COLOR		= 0xFFFF0000;
 	private static final double	FADE			= 0.1;
 
+	/**
+	 * Static utility class, not instantiable.
+	 */
 	private ImageDiff() {
 	}
 
@@ -110,6 +113,11 @@ public final class ImageDiff {
 
 	/**
 	 * The squared YIQ distance between two ARGB colors, after blending on white.
+	 *
+	 * @param first  The first ARGB color
+	 * @param second The second ARGB color
+	 *
+	 * @return The weighted squared YIQ distance
 	 */
 	static double colorDelta( int first, int second ) {
 		double[]	a	= blend( first );
@@ -120,6 +128,13 @@ public final class ImageDiff {
 		return 0.5053 * dy * dy + 0.299 * di * di + 0.1957 * dq * dq;
 	}
 
+	/**
+	 * Blend an ARGB color on a white background using its alpha.
+	 *
+	 * @param argb The ARGB color
+	 *
+	 * @return The blended red, green and blue components
+	 */
 	private static double[] blend( int argb ) {
 		double	alpha	= ( ( argb >>> 24 ) & 0xFF ) / 255.0;
 		double	r		= ( argb >> 16 ) & 0xFF;
@@ -132,20 +147,45 @@ public final class ImageDiff {
 		};
 	}
 
+	/**
+	 * The Y (luma) component of an RGB color.
+	 *
+	 * @param c The red, green and blue components
+	 *
+	 * @return The Y component
+	 */
 	private static double yiqY( double[] c ) {
 		return c[ 0 ] * 0.29889531 + c[ 1 ] * 0.58662247 + c[ 2 ] * 0.11448223;
 	}
 
+	/**
+	 * The I (in-phase chroma) component of an RGB color.
+	 *
+	 * @param c The red, green and blue components
+	 *
+	 * @return The I component
+	 */
 	private static double yiqI( double[] c ) {
 		return c[ 0 ] * 0.59597799 - c[ 1 ] * 0.27417610 - c[ 2 ] * 0.32180189;
 	}
 
+	/**
+	 * The Q (quadrature chroma) component of an RGB color.
+	 *
+	 * @param c The red, green and blue components
+	 *
+	 * @return The Q component
+	 */
 	private static double yiqQ( double[] c ) {
 		return c[ 0 ] * 0.21147017 - c[ 1 ] * 0.52261711 + c[ 2 ] * 0.31114694;
 	}
 
 	/**
 	 * A washed out grayscale version of the pixel, so the red differences stand out.
+	 *
+	 * @param argb The ARGB color of the pixel
+	 *
+	 * @return The opaque faded gray ARGB color
 	 */
 	private static int faded( int argb ) {
 		double[]	c		= blend( argb );
@@ -153,6 +193,16 @@ public final class ImageDiff {
 		return 0xFF000000 | ( gray << 16 ) | ( gray << 8 ) | gray;
 	}
 
+	/**
+	 * Decode PNG bytes into an image.
+	 *
+	 * @param png   The PNG bytes, may be null
+	 * @param label The image name used in error messages, e.g. baseline or actual
+	 *
+	 * @return The decoded image
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException when the bytes are missing or not a readable image
+	 */
 	private static BufferedImage read( byte[] png, String label ) {
 		try {
 			BufferedImage image = png == null ? null : ImageIO.read( new ByteArrayInputStream( png ) );
@@ -167,6 +217,15 @@ public final class ImageDiff {
 		}
 	}
 
+	/**
+	 * Encode an image as PNG bytes.
+	 *
+	 * @param image The image to encode
+	 *
+	 * @return The PNG bytes
+	 *
+	 * @throws IllegalStateException when the image cannot be encoded
+	 */
 	private static byte[] write( BufferedImage image ) {
 		try {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();

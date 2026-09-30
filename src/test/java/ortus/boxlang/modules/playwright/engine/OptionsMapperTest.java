@@ -39,6 +39,9 @@ import ortus.boxlang.runtime.types.exceptions.BoxRuntimeException;
 
 public class OptionsMapperTest {
 
+	/**
+	 * Numbers and enum names in a plain map are mapped onto Playwright option fields.
+	 */
 	@DisplayName( "It maps scalars and enums from a plain map" )
 	@Test
 	public void testScalarsAndEnums() {
@@ -47,6 +50,9 @@ public class OptionsMapperTest {
 		assertThat( options.waitUntil ).isEqualTo( WaitUntilState.NETWORKIDLE );
 	}
 
+	/**
+	 * BoxLang structs are mapped with case insensitive keys.
+	 */
 	@DisplayName( "It maps BoxLang structs with Key keys, ignoring case" )
 	@Test
 	public void testBoxLangStruct() {
@@ -57,6 +63,9 @@ public class OptionsMapperTest {
 		assertThat( options.channel ).isEqualTo( "chrome" );
 	}
 
+	/**
+	 * Nested structs, arrays and maps become viewport, geolocation, permission, header and proxy options, including aliases such as timezone.
+	 */
 	@DisplayName( "It builds nested option objects, lists and maps" )
 	@Test
 	public void testNestedObjects() {
@@ -81,6 +90,9 @@ public class OptionsMapperTest {
 		assertThat( options.proxy.server ).isEqualTo( "http://proxy:8080" );
 	}
 
+	/**
+	 * Strings are converted to paths and booleans, and dashed values such as no-preference to enum constants.
+	 */
 	@DisplayName( "It converts strings to paths and dashed values to enums" )
 	@Test
 	public void testPathsAndDashedEnums() {
@@ -91,6 +103,9 @@ public class OptionsMapperTest {
 		assertThat( context.colorScheme.get() ).isEqualTo( ColorScheme.NO_PREFERENCE );
 	}
 
+	/**
+	 * Option objects are built from short class names with nested options, and enum values are looked up by name.
+	 */
 	@DisplayName( "It builds options by short class name and enums by name" )
 	@Test
 	public void testBuildByName() {
@@ -102,6 +117,9 @@ public class OptionsMapperTest {
 		assertThat( OptionsMapper.enumValue( "AriaRole", "button" ) ).isEqualTo( AriaRole.BUTTON );
 	}
 
+	/**
+	 * An unknown option fails with the invalid option type, naming the option and listing the valid ones.
+	 */
 	@DisplayName( "It fails on unknown options with the list of valid ones" )
 	@Test
 	public void testUnknownOption() {
@@ -114,6 +132,9 @@ public class OptionsMapperTest {
 		assertThat( error.getDetail() ).contains( "waitUntil" );
 	}
 
+	/**
+	 * An invalid enum value fails with the invalid option type and lists the valid values.
+	 */
 	@DisplayName( "It fails on invalid enum values with the valid values" )
 	@Test
 	public void testInvalidEnum() {
@@ -125,6 +146,9 @@ public class OptionsMapperTest {
 		assertThat( error.getDetail() ).contains( "networkidle" );
 	}
 
+	/**
+	 * optionNames() lists the option fields of an options class.
+	 */
 	@DisplayName( "It lists option names" )
 	@Test
 	public void testOptionNames() {

@@ -33,10 +33,20 @@ public class PlaywrightHomeTest {
 	@TempDir
 	Path						tempDir;
 
+	/**
+	 * Create a home in the temporary folder for the current platform.
+	 *
+	 * @param explicitNode An explicit Node.js executable, or null to resolve one
+	 *
+	 * @return The home
+	 */
 	private PlaywrightHome home( Path explicitNode ) {
 		return new PlaywrightHome( tempDir, null, PLAYWRIGHT_VERSION, NODE_VERSION, explicitNode, Platform.current() );
 	}
 
+	/**
+	 * The driver, browsers and downloaded Node.js paths are laid out under the home folder.
+	 */
 	@DisplayName( "It lays out the home folders" )
 	@Test
 	public void testPaths() {
@@ -46,6 +56,9 @@ public class PlaywrightHomeTest {
 		assertThat( home.getDownloadedNodeExecutable().toString() ).contains( "node-v" + NODE_VERSION );
 	}
 
+	/**
+	 * The driver is extracted once, reported installed, and installing again without force returns the same folder.
+	 */
 	@DisplayName( "It extracts the driver once and reports it installed" )
 	@Test
 	public void testInstallDriver() {
@@ -58,6 +71,9 @@ public class PlaywrightHomeTest {
 		assertThat( home.installDriver( false ) ).isEqualTo( driverDir );
 	}
 
+	/**
+	 * The small distribution has no bundled Node.js; skipped for the full flavor.
+	 */
 	@DisplayName( "The small distribution does not bundle Node.js" )
 	@Test
 	public void testNoBundledNodeInSmallFlavor() {
@@ -67,6 +83,9 @@ public class PlaywrightHomeTest {
 		assertThat( home( null ).hasBundledNode() ).isFalse();
 	}
 
+	/**
+	 * The full distribution extracts its bundled Node.js with the driver and resolves it; skipped when none is bundled.
+	 */
 	@DisplayName( "The full distribution extracts and uses its bundled Node.js" )
 	@Test
 	public void testBundledNodeInFullFlavor() {
@@ -79,6 +98,9 @@ public class PlaywrightHomeTest {
 		assertThat( home.resolveNode().get().getSource() ).isEqualTo( NodeRuntime.Source.BUNDLED );
 	}
 
+	/**
+	 * An explicit Node.js path is resolved as the explicit source with that executable.
+	 */
 	@DisplayName( "An explicit Node.js path wins" )
 	@Test
 	public void testExplicitNode() throws IOException {
@@ -88,6 +110,9 @@ public class PlaywrightHomeTest {
 		assertThat( home.resolveNode().get().getExecutable() ).isEqualTo( fakeNode );
 	}
 
+	/**
+	 * A Node.js executable in the download folder is resolved as the downloaded source.
+	 */
 	@DisplayName( "A downloaded Node.js runtime is found" )
 	@Test
 	public void testDownloadedNode() throws IOException {
@@ -98,6 +123,9 @@ public class PlaywrightHomeTest {
 		assertThat( home.resolveNode().get().getSource() ).isEqualTo( NodeRuntime.Source.DOWNLOADED );
 	}
 
+	/**
+	 * The driver environment sets the browsers path, skips browser downloads and points at the Node.js executable.
+	 */
 	@DisplayName( "It builds the driver environment" )
 	@Test
 	public void testDriverEnvironment() {
@@ -108,6 +136,9 @@ public class PlaywrightHomeTest {
 		assertThat( env ).containsEntry( "PLAYWRIGHT_NODEJS_PATH", Path.of( "/opt/node" ).toString() );
 	}
 
+	/**
+	 * nodeMajor() parses the major version with or without a leading v, and returns -1 for invalid versions.
+	 */
 	@DisplayName( "It parses Node.js versions" )
 	@Test
 	public void testNodeMajor() {
@@ -116,6 +147,9 @@ public class PlaywrightHomeTest {
 		assertThat( PlaywrightHome.nodeMajor( "nope" ) ).isEqualTo( -1 );
 	}
 
+	/**
+	 * Installed browsers are listed without hidden folders, and clean() removes the driver but keeps the browsers.
+	 */
 	@DisplayName( "It lists installed browsers and cleans drivers" )
 	@Test
 	public void testBrowsersAndClean() throws IOException {
