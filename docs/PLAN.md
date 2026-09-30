@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft for review. No code yet. API shapes below are proposals to agree on before implementation.
+Status: draft v2 (engine, bundling, TestBox location and scope decisions confirmed). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -9,7 +9,7 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 - Ships the Playwright Java bindings and manages the driver and browsers itself.
 - Provides a CLI (install browsers, codegen, show-trace, etc.).
 - Offers a fluent BoxLang DSL usable anywhere: tests, scheduled tasks, scraping, PDF/screenshot generation.
-- Offers a TestBox integration (base specs, matchers, failure artifacts).
+- Exposes a testing SPI so TestBox core can build its Playwright integration (base specs, matchers, failure artifacts).
 
 ## 2. Research Summary
 
@@ -68,15 +68,21 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 | Serenity Screenplay | Named saved sessions, console error checks, network mocking in DSL |
 | Cypress / WebdriverIO | `cy.session` auth caching, custom commands at page and element level |
 
-## 3. Decisions (proposed)
+## 3. Decisions
 
-1. **BoxLang only.** No Adobe/Lucee. This removes all PageContext and error-string hacks.
-2. **One module, `bx-playwright`**, registered as `playwright`. CLI and runtime DSL in the same module.
-3. **Bundle `playwright` + `driver` jars in `libs/`. Do not bundle `driver-bundle` (204 MB).** Node is resolved in this order: `PLAYWRIGHT_NODEJS_PATH`, module setting, then a per-platform Node downloaded on demand by `install` (from the matching `driver-bundle` version on Maven Central, extracting only the needed platform, including `mac-arm64`).
-4. **Single version source**: the Playwright version comes from the bundled jar at build time (Gradle). The driver and Node always match it. No user-facing version juggling.
-5. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/`, `node/`, `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch.
-6. **TestBox adapter lives in bx-playwright** (as the `playwright.testing` package), not in TestBox. TestBox already exposes what we need (base spec `extends`, `addMatchers`, lifecycle and `aroundEach` hooks, TestBox modules with `onSpecFailure`). Keeping it here keeps versions aligned. TestBox can later add a generic "attach artifact to result" API, which we would use.
-7. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
+Confirmed:
+
+1. **BoxLang native only.** No Adobe/Lucee. Uses the full BoxLang module surface: BIFs, components, interceptors, module settings, CLI `main()`, closures/lambdas bridged to Java functional interfaces.
+2. **New project.** cbPlaywright and commandbox-cbplaywright are inspiration only. No compat layer, no migration shims.
+3. **Bundle all jars, including `driver-bundle` (~204 MB)**, so the module works offline out of the box. `PLAYWRIGHT_NODEJS_PATH` stays as an optional override (system Node).
+4. **TestBox adapter lives in TestBox core.** bx-playwright provides the engine and a stable testing SPI (lifecycle, artifact hooks, assertion API). TestBox builds its specs, matchers and reporting on top (see 7).
+
+Proposed (not yet confirmed):
+
+5. **One module, `bx-playwright`**, registered as `playwright`. CLI and runtime DSL in the same module.
+6. **Single version source**: the Playwright version comes from the bundled jars at build time (Gradle). Driver and Node always match it.
+7. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/` (extracted once from the bundled jars via `CLI install-driver`) and `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch and browsers install only via the CLI.
+8. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
 
 ## 4. Architecture
 
@@ -84,7 +90,9 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 bx-playwright/
   src/main/bx/
     ModuleConfig.bx          settings, onLoad env wiring, main( args ) for the CLI
-    bifs/                    Playwright(), and a few top-level BIFs (see 6.1)
+    bifs/                    Playwright() and utility BIFs (see 6.7)
+    components/              bx:playwright, bx:page, ... (see 6.8)
+    interceptors/            lifecycle events for extensions (see 6.9)
     models/
       PlaywrightService.bx   home/driver/node/browsers resolution, install, doctor
       Manager.bx             thread-confined Playwright + browser cache
@@ -93,11 +101,9 @@ bx-playwright/
       OptionsMapper.bx       struct -> Java *Options via reflection
       Devices.bx             device descriptors (JSON shipped with the module)
       cli/                   one class per CLI command
-    testing/
-      PlaywrightSpec.bx, BrowserSpec.bx, ContextSpec.bx, PageSpec.bx
-      Matchers.bx, ArtifactPolicy.bx, TestBoxModule (onSpecFailure)
+      testing/               framework-agnostic testing SPI consumed by TestBox (see 7)
   src/main/java/             only if needed (e.g. image diff, event bridging)
-  libs/                      playwright + driver jars (+ gson, etc.)
+  libs/                      playwright, driver, driver-bundle jars (+ gson, etc.)
 ```
 
 Key internal pieces:
@@ -217,37 +223,70 @@ playwright.macro( "page", "loginAs", ( page, user ) => ... )     // page and loc
 
 Framework-aware waits: `page.waitForIdle()` (network idle + optional cbWire/HTMX hooks).
 
-## 7. TestBox Integration
+### 6.7 BIFs
 
-- Tiered base specs (pick how much lifecycle you want):
-  - `PlaywrightSpec`: manager only.
-  - `BrowserSpec`: shared browser per bundle.
-  - `ContextSpec`: fresh context per spec.
-  - `PageSpec`: fresh context + page per spec, exposed as `variables.page` and `visit()`.
-- Config via module settings, `this.playwright = {}` on the spec, or env vars (`BX_PLAYWRIGHT_HEADLESS`, `BX_PLAYWRIGHT_BROWSER`, ...). CLI-friendly for CI.
-- Artifact policies (pytest style): `trace`, `video`, `screenshot` each `off | on | only-on-failure | retain-on-failure`. Written to `tests/results/playwright/<bundle>/<spec>/`. Uses `onSpecFailure` / `aroundEach`; plus console log and page HTML dump on failure.
-- Matchers registered via `addMatchers`: `expect( page ).toHaveTitle()`, `expect( locator ).toBeVisible()`, `toHaveText`, `toHaveURL`, `toHaveCount`, etc., mapped to web-first assertions.
-- Browser matrix: `browsers: [ "chromium", "firefox", "webkit" ]` runs specs per browser (phase 3).
-- Retries for flaky UI specs with trace on first retry (depends on what TestBox exposes; to confirm).
-- Optional `webServer` setting: start the app (e.g. `boxlang miniserver`) and wait for a URL before specs.
-- ColdBox: a `ColdBoxPageSpec` that combines `BaseTestCase` and the page lifecycle (phase 3).
+Keep the global surface small; everything else hangs off the returned objects.
 
-## 8. Migration from cbPlaywright
+| BIF | Returns / does |
+|---|---|
+| `playwright( [options] )` | Thread-confined manager (entry point for everything) |
+| `playwrightScreenshot( url, path, [options] )` | One-shot screenshot, cleans up |
+| `playwrightPDF( url, path, [options] )` | One-shot PDF (Chromium) |
+| `playwrightContent( url, [options] )` | Rendered HTML after JS (scraping) |
+| `playwrightDevices( [name] )` | Device descriptor struct(s) |
 
-- Provide `playwright.compat.PlaywrightTestCase` exposing the old free functions (`navigate`, `click`, `fill`, `getByRole`, `launchBrowser`, `traceContext`, ...) implemented on top of the new DSL, so existing specs run with a changed `extends`.
-- Migration guide mapping each old helper to the fluent equivalent.
-- Deprecate `commandbox-cbplaywright` and `cbPlaywright` with a pointer to bx-playwright (CFML engines keep the old modules).
+### 6.8 Components
 
-## 9. Phased Roadmap and Tasks
+For templates, scripts and scheduled tasks, a block style that auto-manages cleanup:
+
+```js
+bx:playwright browser="chromium" headless=true variable="pw" {
+    bx:page url="https://site.com/report" device="iPhone 15" variable="page" {
+        page.click( "Export" )
+        bx:playwrightScreenshot path="report.png" fullPage=true;
+    }
+}
+```
+
+Candidates: `bx:playwright`, `bx:browserContext`, `bx:page`, `bx:playwrightTrace`, `bx:playwrightScreenshot`, `bx:playwrightPDF`. Scope to agree on in phase 2.
+
+### 6.9 Interceptors (extension points)
+
+Announced events so other modules (and TestBox) can hook in without subclassing:
+`onPlaywrightCreate`, `onBrowserLaunch`, `onContextCreate`, `onPageCreate`, `onPageClose`, `onPlaywrightAssertionFailure`, `onPlaywrightArtifact` (screenshot/trace/video written). TestBox uses these to attach artifacts and apply policies.
+
+## 7. TestBox Integration (lives in TestBox core)
+
+Split of responsibilities:
+
+| bx-playwright provides (testing SPI) | TestBox core builds |
+|---|---|
+| Manager/context/page lifecycle API with scopes (run, bundle, spec) | Base specs or annotations that wire those scopes into spec lifecycle |
+| Artifact API: start/stop trace, video, screenshot, console log, HTML dump, with a policy object (`off, on, only-on-failure, retain-on-failure`) | Applying policies on spec pass/fail, attaching artifacts to results and reporters |
+| Web-first assertion API throwing `AssertionFailedError` | `expect( page ).toHaveTitle()`, `expect( locator ).toBeVisible()` matchers |
+| Interceptor events (6.9) | Listeners, reporting, TestBox RUN UI integration |
+| Device registry, storage-state sessions, webServer helper | Browser matrix, retries, sharding, config (`this.playwright = {}`, env vars) |
+
+Proposed TestBox-side features (for the TestBox team to own):
+
+- Tiered base specs (pick how much lifecycle you want): `PlaywrightSpec` (manager), `BrowserSpec` (shared browser), `ContextSpec` (fresh context per spec), `PageSpec` (fresh page per spec, exposes `page` and `visit()`).
+- Artifacts written to `tests/results/playwright/<bundle>/<spec>/`, linked from reporters.
+- Browser matrix, retries with trace on first retry, optional `webServer` to boot the app before specs.
+- A generic "attach artifact to spec result" API in TestBox (currently not in TestBox docs), useful beyond Playwright.
+
+Interface contract between the two repos must be agreed early (phase 0) since they release separately. bx-playwright ships a minimal internal harness for its own tests only.
+
+## 8. Phased Roadmap and Tasks
 
 ### Phase 0: Foundations
 - [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
-- [ ] Gradle: add `playwright` + `driver` deps, shadow into `libs/`, stamp version into `box.json` and `ModuleConfig`.
+- [ ] Gradle: add `playwright`, `driver`, `driver-bundle` deps into `libs/`, stamp version into `box.json` and `ModuleConfig`. Check module zip size and ForgeBox limits.
+- [ ] Draft the testing SPI contract with the TestBox team.
 - [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and system Node. Confirm thread confinement behavior under BoxLang.
 - [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time).
 
 ### Phase 1: Install and CLI
-- [ ] `PlaywrightService`: home resolution, platform detection (incl. `mac-arm64`, `linux-arm64`, `win32_x64`), Node download from `driver-bundle`, `install-driver`, env wiring.
+- [ ] `PlaywrightService`: home resolution, one-time driver extraction from bundled jars (`install-driver`), env wiring, `PLAYWRIGHT_NODEJS_PATH` override.
 - [ ] `ModuleConfig.main()` dispatcher and commands: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `run`.
 - [ ] Commands: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
 - [ ] GitHub Action example for CI (install with deps, cache browsers).
@@ -259,11 +298,11 @@ Framework-aware waits: `page.waitForIdle()` (network idle + optional cbWire/HTMX
 - [ ] Assertions (inline + `pwExpect`), web-first, configurable timeout.
 - [ ] Network (`intercept`, events), `request()` API testing, storage state `session()`, tracing, video, screenshots, PDF, clock.
 
-### Phase 3: TestBox adapter
-- [ ] Base specs (4 tiers), config resolution, matchers.
-- [ ] Artifact policies and failure dumps.
-- [ ] Browser matrix, webServer, ColdBox spec.
-- [ ] cbPlaywright compat layer + migration guide.
+### Phase 3: BIFs, components, interceptors, testing SPI
+- [ ] BIFs (6.7) and components (6.8).
+- [ ] Interceptor events (6.9).
+- [ ] Testing SPI: lifecycle scopes, artifact API and policies, device registry, webServer helper.
+- [ ] Support the TestBox team building the adapter in TestBox core (tracked in the TestBox repo).
 
 ### Phase 4: Advanced
 - [ ] Page objects, components, macros.
@@ -277,22 +316,20 @@ Framework-aware waits: `page.waitForIdle()` (network idle + optional cbWire/HTMX
 - [ ] Docs book, examples repo, TestBox docs page.
 - [ ] Optional: BoxLang AI / MCP integration story.
 
-## 10. Risks and Unknowns
+## 9. Risks and Unknowns
 
 - Codegen emits Java/JS/Python/.NET only. A BoxLang target needs translation of Java output or a custom recorder. Unverified effort.
 - Device descriptors are not a public Java API; extraction path from the driver bundle needs a spike.
 - Visual diff needs a pixel comparison implementation (Java has only `screenshot()`).
 - Thread confinement vs BoxLang web requests and async: needs design validation in the Phase 0 spike.
-- On-demand Node download depends on Maven Central availability; allow a custom mirror URL and `PLAYWRIGHT_NODEJS_PATH`.
+- Bundling `driver-bundle` makes the module ~204 MB (all platforms). Confirm ForgeBox/download limits; a later option is per-platform builds.
+- TestBox adapter lives in another repo with its own release cycle: the SPI must be versioned and stable early.
 - TestBox retries and artifact attachment to results: confirm what TestBox 7 exposes.
 
-## 11. Open Questions
+## 10. Open Questions
 
-1. BoxLang only, or must the runtime DSL also work on Adobe/Lucee? (Plan assumes BoxLang only.)
-2. Module registration name: `playwright` (BIF `playwright()`) OK?
-3. Bundle Node (204 MB) vs download on demand? (Plan: download on demand.)
-4. TestBox adapter in this repo (recommended) or in TestBox core?
-5. Minimum BoxLang version and JDK (template says BoxLang 1.13.0, JDK 21).
-6. Keep a CommandBox command namespace (`box playwright ...`) or rely on `box boxlang cli module:playwright`?
-7. Assertion style preference: Dusk-style `assertSee()`, expect-style, or both (plan: both)?
-8. Should we ship a cbPlaywright compat layer, or clean break?
+1. Module registration name: `playwright` (BIF `playwright()`) OK?
+2. Minimum BoxLang version and JDK (template says BoxLang 1.13.0, JDK 21).
+3. Keep a CommandBox command namespace (`box playwright ...`) or rely on `box boxlang cli module:playwright`?
+4. Assertion style: Dusk-style `assertSee()`, expect-style, or both (plan: both)?
+5. Components: which ones are worth shipping in v1 (6.8)?
