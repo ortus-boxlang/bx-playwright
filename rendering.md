@@ -46,10 +46,10 @@ bx:playwrightRender type="png" variable="card" viewport="1200x630" {
 |---|---|
 | `type` | `pdf` (default), `png`, `jpeg`, `webp` |
 | `path` / `variable` | Write a file and/or store the result (at least one) |
-| `baseURL` | Resolves relative assets in the body |
+| `baseURL` | Resolves relative links and assets in the body (a `<base href>` is added unless the body has one) |
 | `waitFor`, `waitUntil` | Wait for a selector, or `load` / `networkidle` |
 | `format`, `landscape`, `margin`, `printBackground`, `headerTemplate`, `footerTemplate`, `scale`, `pageRanges` | PDF options |
-| `viewport` (`WxH`), `fullPage`, `omitBackground`, `quality`, `device` | Image options |
+| `viewport` (`WxH`, or a `{ width, height }` struct in `render()`), `fullPage`, `omitBackground`, `quality`, `device` | Image options |
 | `profile`, `options` | A profile, and any extra render() option |
 
 Defaults come from the `render` setting.

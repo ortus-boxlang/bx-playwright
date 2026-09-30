@@ -23,6 +23,10 @@ playwright( "tablet", { locale : "es-ES" } )     // plus overrides
 
 See every value with `bxPlaywright profiles` or one resolved with `bxPlaywright profiles mobile`.
 
+The `default` profile is empty: `playwright()` uses your module settings (`browser`, `headless`, `viewport`, ...) as they are.
+
+Profiles and options apply in order and the last one wins, also between devices and viewports: `playwright( [ "android", "desktop" ] )` and `playwright( "android", { viewport : { width : 500, height : 500 } } )` keep the Pixel 7 user agent and touch with the later viewport, while `playwright( [ "desktop", "android" ] )` uses the Pixel 7 screen.
+
 ## Your own profiles
 
 ```json

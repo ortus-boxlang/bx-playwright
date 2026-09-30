@@ -235,7 +235,8 @@
 
 		
 		<h1 id="cli"><a href="#cli" id="cli" name="cli" class="anchor"></a>CLI</h1>
-<p><code>bxPlaywright &lt;verb&gt; [options]</code> (or <code>boxlang module:playwright &lt;verb&gt;</code>). Bash completions are installed with the module. Add <code>--json</code> for machine readable output.</p>
+<p><code>bxPlaywright &lt;verb&gt; [options]</code> (or <code>boxlang module:playwright &lt;verb&gt;</code>). Bash completions are installed with the module. Add <code>--json</code> for machine readable output: only the JSON document goes to standard output (progress and Playwright output go to standard error), and errors are printed as <code>{&quot;error&quot;: {&quot;type&quot;: &quot;...&quot;, &quot;message&quot;: &quot;...&quot;, &quot;detail&quot;: &quot;...&quot;}}</code>.</p>
+<p>Options are <code>--flag</code>, <code>--flag=value</code> or <code>--flag value</code>, and <code>--no-flag</code> for false. Built-in verbs reject options they do not know (so a typo such as <code>--with-dep</code> fails and lists the valid options); verbs that forward to Playwright (<code>codegen</code>, <code>open</code>, <code>screenshot</code>, <code>pdf</code>, <code>show-trace</code>, <code>mcp</code>, <code>install-deps</code>, <code>uninstall</code>, <code>run</code>) pass unknown options through.</p>
 <div class="bxsites-table-wrap" x-data="{ q: '' }"><input type="search" class="bxsites-table-filter" x-model="q" placeholder="Filter table..." aria-label="Filter table"><table class="table">
 <thead>
 <tr><th>Verb</th><th>Does</th></tr>
@@ -245,16 +246,16 @@
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>install-node [--force]</code></td><td>Only Node.js</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>install-deps [browsers...]</code></td><td>Operating system packages (Linux)</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>uninstall [--all]</code></td><td>Remove browsers</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>doctor</code></td><td>Check versions, paths, Node.js and browsers with fix hints</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>version</code></td><td>Module, Playwright and Node.js versions</td></tr>
+<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>doctor</code></td><td>Check versions, paths, Node.js and browsers with fix hints (a <code>nodePath</code> that does not run fails)</td></tr>
+<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>version</code></td><td>Module, Playwright and the Node.js actually used (or <code>none</code>)</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>devices</code></td><td>Device descriptors</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>profiles [name]</code></td><td>List profiles or show one resolved</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>clean</code></td><td>Remove the extracted driver and Node.js (keeps browsers)</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>codegen [url] [--output=file.bxs] [--target=boxlang]</code></td><td>Record actions as BoxLang code</td></tr>
+<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>codegen [url] [--output=file.bxs\|-o file.bxs] [--target=boxlang]</code></td><td>Record actions as BoxLang code (relative outputs are relative to the current directory; untranslated lines are kept as <code>// TODO translate:</code> comments)</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>open [url]</code></td><td>Open a headed browser</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>screenshot &lt;url&gt; &lt;file&gt;</code>, <code>pdf &lt;url&gt; &lt;file&gt;</code></td><td>Quick captures</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>show-trace [trace.zip]</code></td><td>Trace viewer</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>mcp</code></td><td>Playwright MCP server</td></tr>
+<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>mcp</code></td><td>Playwright MCP server (uses the configured browser, <code>--browser=chromium</code> by default, unless you pass <code>--browser</code>)</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>run &lt;args...&gt;</code></td><td>Any Playwright CLI command</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>completions</code></td><td>Print the bash completion script</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>help [verb] [--json]</code></td><td>Help</td></tr>
@@ -266,7 +267,7 @@
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/cli.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/cli.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Sep 30, 2026, 6&#x3a;30&#x3a;02 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/cli.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/cli.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Sep 30, 2026, 7&#x3a;24&#x3a;11 PM</span></div>
 	
 </article>
 
