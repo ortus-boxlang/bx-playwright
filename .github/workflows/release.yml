@@ -89,7 +89,14 @@ jobs:
           npm install -g markdownlint-cli
           markdownlint changelog.md --fix
           ./gradlew downloadBoxLang
+          # Small distribution: bx-playwright
           ./gradlew build -x test --stacktrace --console=plain
+          mv build/distributions build/distributions-small
+          cp -r build/module build/module-small
+          # Full distribution: bx-playwright-full (bundles Node.js for every platform)
+          ./gradlew shadowJar -Pflavor=full -x test --stacktrace --console=plain
+          mv build/distributions build/distributions-full
+          mv build/module build/module-full
 
       - name: Commit Changelog [unreleased] with latest version
         uses: EndBug/add-and-commit@v10.0.0
@@ -125,8 +132,19 @@ jobs:
           AWS_S3_BUCKET: "downloads.ortussolutions.com"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
-          SOURCE_DIR: "build/distributions"
+          SOURCE_DIR: "build/distributions-small"
           DEST_DIR: "ortussolutions/boxlang-modules/${{ env.MODULE_ID }}/${{ env.VERSION }}"
+
+      - name: Upload Full Distribution to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: "downloads.ortussolutions.com"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
+          SOURCE_DIR: "build/distributions-full"
+          DEST_DIR: "ortussolutions/boxlang-modules/${{ env.MODULE_ID }}-full/${{ env.VERSION }}"
 
       - name: Upload API Docs to S3
         uses: jakejarvis/s3-sync-action@master
@@ -141,7 +159,9 @@ jobs:
 
       - name: Publish to ForgeBox
         run: |
-          cd build/module
+          cd build/module-small
+          box forgebox publish --force
+          cd $GITHUB_WORKSPACE/build/module-full
           box forgebox publish --force
           cd $GITHUB_WORKSPACE
 

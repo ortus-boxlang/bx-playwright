@@ -63,11 +63,27 @@ jobs:
       #    printf "DB_BUNDLEVERSION=8.0.19\n" >> .env
       #    printf "DB_BUNDLENAME=com.mysql.cj\n" >> .env
 
+      # Node.js and browsers downloaded by the end-to-end tests
+      - name: Cache Playwright Home
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: build/playwright-home
+          key: playwright-home-${{ runner.os }}-${{ hashFiles( 'gradle.properties' ) }}
+
       - name: Test Module
+        env:
+          # End-to-end tests drive a real browser, only on Linux
+          PLAYWRIGHT_E2E: ${{ runner.os == 'Linux' }}
         run: |
           ./gradlew downloadBoxLang
           # this is done in order to build the module structure before testing
           ./gradlew shadowJar test --stacktrace --console=plain
+
+      - name: Test Full Distribution
+        if: runner.os == 'Linux'
+        run: |
+          ./gradlew shadowJar test -Pflavor=full --tests '*PlaywrightHomeTest' --stacktrace --console=plain
 
       - name: Publish Test Reports
         uses: mikepenz/action-junit-report@v6.4.0

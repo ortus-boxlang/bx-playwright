@@ -223,8 +223,10 @@ public class PlaywrightHome {
 	 * @return The driver directory
 	 */
 	public Path installDriver( boolean force ) {
-		Path target = getDriverDir();
-		if ( isDriverInstalled() && !force ) {
+		Path	target				= getDriverDir();
+		// Switching from the small to the full distribution on the same home must extract the bundled Node.js
+		boolean	bundledNodeMissing	= hasBundledNode() && !Files.isRegularFile( getBundledNodeExecutable() );
+		if ( isDriverInstalled() && !force && !bundledNodeMissing ) {
 			return target;
 		}
 		Path staging = target.resolveSibling( target.getFileName() + ".tmp-" + UUID.randomUUID() );

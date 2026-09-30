@@ -243,6 +243,7 @@ shadowJar.finalizedBy( createModuleStructure )
 
 test {
     useJUnitPlatform()
+	systemProperty 'bx.playwright.flavor', project.flavor
     testLogging {
 		showStandardStreams = true
 		events "passed", "skipped", "failed"

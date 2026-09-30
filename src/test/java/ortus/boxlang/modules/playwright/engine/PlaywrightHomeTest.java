@@ -67,6 +67,18 @@ public class PlaywrightHomeTest {
 		assertThat( home( null ).hasBundledNode() ).isFalse();
 	}
 
+	@DisplayName( "The full distribution extracts and uses its bundled Node.js" )
+	@Test
+	public void testBundledNodeInFullFlavor() {
+		PlaywrightHome home = home( null );
+		if ( !home.hasBundledNode() ) {
+			return;
+		}
+		home.installDriver( false );
+		assertThat( Files.isRegularFile( home.getBundledNodeExecutable() ) ).isTrue();
+		assertThat( home.resolveNode().get().getSource() ).isEqualTo( NodeRuntime.Source.BUNDLED );
+	}
+
 	@DisplayName( "An explicit Node.js path wins" )
 	@Test
 	public void testExplicitNode() throws IOException {
