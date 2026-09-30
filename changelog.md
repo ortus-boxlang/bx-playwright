@@ -31,6 +31,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Locator.texts()` returns the text of visible elements only
 * `Locator.nth( 0 )` throws `Playwright.InvalidOption` instead of returning the last element
 * `upload( files )` on a locator uploads to the locator itself, like `fill( value )` (codegen output such as `page.getByLabel( "Resume" ).upload( "cv.pdf" )` works)
+* Smart selectors with spaces inside quotes, brackets or parentheses (`input[placeholder="Your email"]`, `button:has-text("Sign in")`) and Playwright chains (`div >> text=Foo`, `nav >> nth=0`) are used as selectors instead of visible text
+* `click( "text" )` waits briefly for a matching button or link before falling back to visible text, so a button rendered a moment later still wins over a same text heading
+* `click( "Save" )` prefers the button or link named exactly "Save" over one named "Save draft"
+* `fill( "Email" )` follows its documented priority (exact label, label, placeholder, name) instead of document order, so "Backup email" or a placeholder no longer wins over the "Email" label
+* Options set to `null` reach Playwright (e.g. `viewport : null` disables the fixed viewport); nulls are only skipped for primitive options
+* Concurrent driver extraction is safe: installs are serialized per home (JVM and file lock), the shared jar file system is no longer closed under other threads, and an installed driver is never deleted by a late thread
+* Node.js installs extract into a private staging folder, check that the executable runs and then move it into place, so a failed or interrupted install never counts as installed
+* Concurrent Node.js installs use their own download file and staging folder and are serialized by a file lock, downloading only once
+* Unsupported platforms throw the typed `Playwright.UnsupportedPlatform` error, and Windows ARM64 works when `nodePath` is set (using the Windows x64 layout, like Playwright Java)
+* Only x64 (`amd64`, `x86_64`) and arm64 (`aarch64`, `arm64`) CPUs are accepted; other architectures (x86, arm, ppc64le, s390x, riscv64) no longer silently map to x64
+* `bx:playwrightRender` no longer overrides `options={ type : "png" }` with a PDF, and an invalid `viewport` such as `1200xabc` throws `Playwright.InvalidOption`
+* The Node.js version probe cannot hang: a node executable that never exits is killed after the timeout
+* CLI passthrough commands no longer set `PW_LANG_NAME=java`, so Playwright's help and hints stop suggesting `mvn exec:java` commands
+* An explicit `nodePath` that does not exist or is not executable is no longer reported as available; using it fails with `Playwright.NotInstalled` naming the bad path
 
 ### Added
 

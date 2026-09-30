@@ -29,7 +29,9 @@ public class SmartSelectorTest {
 	@ParameterizedTest( name = "[{0}] is a selector" )
 	@ValueSource( strings = {
 	    "#email", ".btn", "[data-x=1]", "//div", "(//a)[2]", "*", "h1", "button", "input[name=email]", "div > span", "a:has-text('x')",
-	    "ul li", "css=.x", "text=Hello", "role=button[name=\"Save\"]", "xpath=//a", "div.card", "form#login"
+	    "ul li", "css=.x", "text=Hello", "role=button[name=\"Save\"]", "xpath=//a", "div.card", "form#login",
+	    "input[placeholder=\"Your email\"]", "button:has-text(\"Sign in\")", "div >> text=Foo", "nav >> nth=0", "a", "input",
+	    "button.primary", "input[placeholder='Your email'] >> nth=1", "li:has(a[title=\"Read more\"])"
 	} )
 	public void testSelectors( String value ) {
 		assertThat( SmartSelector.isSelector( value ) ).isTrue();
@@ -42,7 +44,7 @@ public class SmartSelectorTest {
 	 */
 	@ParameterizedTest( name = "[{0}] is text" )
 	@ValueSource( strings = { "Save", "Sign in", "Email", "Save changes", "Remember me", "Welcome back!", "Continue to checkout", "Menu", "Summary",
-	    "Button" } )
+	    "Button", "OK", "Add to cart", "Email address", "v1.2", "Next >> Page", "Sign in (beta)", "Don't save" } )
 	public void testText( String value ) {
 		assertThat( SmartSelector.isSelector( value ) ).isFalse();
 	}

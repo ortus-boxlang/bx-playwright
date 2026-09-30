@@ -14,16 +14,12 @@
  */
 package ortus.boxlang.modules.playwright.engine;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
+import java.io.InputStream;
+import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +27,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +35,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -118,7 +117,8 @@ public class PlaywrightHome {
 		    playwrightVersion,
 		    nodeVersion,
 		    isBlank( explicitNodePath ) ? null : Paths.get( explicitNodePath ),
-		    Platform.current()
+		    // An explicit Node.js lets Windows ARM64 run with the x64 layout, see Platform.of()
+		    Platform.current( !isBlank( explicitNodePath ) )
 		);
 	}
 
@@ -233,41 +233,96 @@ public class PlaywrightHome {
 	 * Extract the driver from the jars into {@link #getDriverDir()}. When the jars bundle Node.js
 	 * (full distribution), the runtime for this platform is extracted as well.
 	 * <p>
+	 * Installs are serialized per home (a JVM-wide lock plus a file lock in the home, so other processes wait too) and
+	 * the installed state is checked again once the lock is held, so concurrent callers extract only once.
 	 * Extraction happens in a temporary sibling folder that is then moved into place, so a
-	 * half-extracted driver is never used.
+	 * half-extracted driver is never used, and an existing driver is only replaced when forced (or when the bundled
+	 * Node.js is missing).
 	 *
 	 * @param force Re-extract even if the driver is already installed
 	 *
 	 * @return The driver directory
 	 */
 	public Path installDriver( boolean force ) {
-		Path	target				= getDriverDir();
-		// Switching from the small to the full distribution on the same home must extract the bundled Node.js
-		boolean	bundledNodeMissing	= hasBundledNode() && !Files.isRegularFile( getBundledNodeExecutable() );
-		if ( isDriverInstalled() && !force && !bundledNodeMissing ) {
+		Path target = getDriverDir();
+		if ( !needsDriverInstall( force ) ) {
 			return target;
 		}
-		Path staging = target.resolveSibling( target.getFileName() + ".tmp-" + UUID.randomUUID() );
 		try {
-			Files.createDirectories( staging );
-			extractResource( DRIVER_RESOURCE + "package", staging.resolve( "package" ) );
-			if ( hasBundledNode() ) {
-				extractResource( DRIVER_RESOURCE + platform.getDriverFolder(), staging );
-			}
-			if ( Files.exists( target ) ) {
-				deleteRecursively( target );
-			}
-			Files.move( staging, target, StandardCopyOption.ATOMIC_MOVE );
-			return target;
-		} catch ( IOException | URISyntaxException e ) {
+			return InstallLock.with( home.resolve( "driver" ).resolve( ".install-" + playwrightVersion + ".lock" ), () -> {
+				// Another thread or process may have installed it while this one waited for the lock
+				if ( !force && !needsDriverInstall( false ) ) {
+					return target;
+				}
+				Path staging = target.resolveSibling( target.getFileName() + ".tmp-" + UUID.randomUUID() );
+				try {
+					Files.createDirectories( staging );
+					extractResource( DRIVER_RESOURCE + "package", staging.resolve( "package" ) );
+					if ( hasBundledNode() ) {
+						extractResource( DRIVER_RESOURCE + platform.getDriverFolder(), staging );
+					}
+					replaceWith( staging, target );
+					return target;
+				} finally {
+					deleteQuietly( staging );
+				}
+			} );
+		} catch ( IOException e ) {
 			throw PlaywrightErrors.of(
 			    PlaywrightErrors.NOT_INSTALLED,
 			    "Failed to extract the Playwright driver into [" + target + "]: " + e.getMessage(),
 			    "Check that the directory is writable, or change the 'home' setting of the playwright module.",
 			    e
 			);
-		} finally {
-			deleteQuietly( staging );
+		} catch ( InterruptedException e ) {
+			Thread.currentThread().interrupt();
+			throw PlaywrightErrors.of(
+			    PlaywrightErrors.NOT_INSTALLED,
+			    "Interrupted while extracting the Playwright driver into [" + target + "].",
+			    "Run the command again."
+			);
+		}
+	}
+
+	/**
+	 * Decide if the driver must be extracted.
+	 *
+	 * @param force True to extract even when it is installed
+	 *
+	 * @return True when forced, when the driver is missing, or when the jars bundle a Node.js runtime that is not extracted
+	 *         yet (switching from the small to the full distribution on the same home)
+	 */
+	private boolean needsDriverInstall( boolean force ) {
+		boolean bundledNodeMissing = hasBundledNode() && !Files.isRegularFile( getBundledNodeExecutable() );
+		return force || !isDriverInstalled() || bundledNodeMissing;
+	}
+
+	/**
+	 * Move a fully prepared folder into place. An existing target is first renamed aside, so the target path never
+	 * holds a partial copy, then deleted.
+	 *
+	 * @param staging The prepared folder
+	 * @param target  The final location
+	 *
+	 * @throws IOException when a move fails
+	 */
+	static void replaceWith( Path staging, Path target ) throws IOException {
+		Path old = null;
+		if ( Files.exists( target ) ) {
+			old = target.resolveSibling( target.getFileName() + ".old-" + UUID.randomUUID() );
+			Files.move( target, old, StandardCopyOption.ATOMIC_MOVE );
+		}
+		try {
+			Files.move( staging, target, StandardCopyOption.ATOMIC_MOVE );
+		} catch ( IOException e ) {
+			if ( old != null ) {
+				// Put the previous install back rather than leaving nothing
+				Files.move( old, target, StandardCopyOption.ATOMIC_MOVE );
+			}
+			throw e;
+		}
+		if ( old != null ) {
+			deleteQuietly( old );
 		}
 	}
 
@@ -286,11 +341,19 @@ public class PlaywrightHome {
 	 * <li>{@code node} on the system PATH, if its version is supported</li>
 	 * </ol>
 	 *
-	 * @return The node executable, or empty if none is available
+	 * @return The node executable, or empty if none is available (including an explicit path that does not exist, is
+	 *         not executable and does not run as a command)
 	 */
 	public Optional<NodeRuntime> resolveNode() {
 		if ( explicitNodePath != null ) {
-			return Optional.of( new NodeRuntime( explicitNodePath, NodeRuntime.Source.EXPLICIT, probeNodeVersion( explicitNodePath.toString() ) ) );
+			// An explicit path is used as is (no fallback to other runtimes), but only when it is an executable file or a
+			// command that runs; otherwise nothing is resolved and requireNode() names the bad path
+			String	version		= probeNodeVersion( explicitNodePath.toString() );
+			boolean	executable	= Files.isRegularFile( explicitNodePath ) && Files.isExecutable( explicitNodePath );
+			if ( !executable && version == null ) {
+				return Optional.empty();
+			}
+			return Optional.of( new NodeRuntime( explicitNodePath, NodeRuntime.Source.EXPLICIT, version ) );
 		}
 		if ( Files.isRegularFile( getBundledNodeExecutable() ) ) {
 			return Optional
@@ -312,6 +375,14 @@ public class PlaywrightHome {
 	 * @return The runtime
 	 */
 	public NodeRuntime requireNode() {
+		if ( explicitNodePath != null ) {
+			return resolveNode().orElseThrow( () -> PlaywrightErrors.of(
+			    PlaywrightErrors.NOT_INSTALLED,
+			    "The configured Node.js executable [" + explicitNodePath + "] does not exist or is not executable.",
+			    "Point the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) at a Node.js " + MIN_NODE_MAJOR
+			        + "+ executable, or unset it to use the runtime downloaded by [bxPlaywright install]."
+			) );
+		}
 		return resolveNode().orElseThrow( () -> PlaywrightErrors.of(
 		    PlaywrightErrors.NOT_INSTALLED,
 		    "No Node.js runtime is available for Playwright.",
@@ -328,26 +399,47 @@ public class PlaywrightHome {
 	 * @return The version without the leading {@code v}, or null
 	 */
 	public static String probeNodeVersion( String executable ) {
+		return probeNodeVersion( executable, TimeUnit.SECONDS.toMillis( NODE_PROBE_SECONDS ) );
+	}
+
+	/**
+	 * Run {@code <executable> --version} and return the version, or null if it cannot run or does not finish in time.
+	 * The output goes to a temporary file, so a process that never writes or never exits cannot block the caller:
+	 * it is killed when the timeout expires.
+	 *
+	 * @param executable    The node executable or command name
+	 * @param timeoutMillis How long to wait for the process to exit
+	 *
+	 * @return The version without the leading {@code v}, or null
+	 */
+	static String probeNodeVersion( String executable, long timeoutMillis ) {
+		Path output = null;
 		try {
-			Process	process	= new ProcessBuilder( executable, "--version" ).redirectErrorStream( true ).start();
-			String	output;
-			try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream(), StandardCharsets.UTF_8 ) ) ) {
-				output = reader.readLine();
-			}
-			if ( !process.waitFor( NODE_PROBE_SECONDS, TimeUnit.SECONDS ) ) {
+			output = Files.createTempFile( "bx-playwright-node-", ".txt" );
+			Process process = new ProcessBuilder( executable, "--version" )
+			    .redirectErrorStream( true )
+			    .redirectOutput( output.toFile() )
+			    .start();
+			process.getOutputStream().close();
+			if ( !process.waitFor( timeoutMillis, TimeUnit.MILLISECONDS ) ) {
 				process.destroyForcibly();
 				return null;
 			}
-			if ( process.exitValue() != 0 || output == null ) {
+			if ( process.exitValue() != 0 ) {
 				return null;
 			}
-			Matcher matcher = NODE_VERSION.matcher( output.trim() );
+			String	line	= Files.readString( output, StandardCharsets.UTF_8 ).trim().lines().findFirst().orElse( "" );
+			Matcher	matcher	= NODE_VERSION.matcher( line.trim() );
 			return matcher.find() ? matcher.group( 1 ) + "." + matcher.group( 2 ) + "." + matcher.group( 3 ) : null;
 		} catch ( IOException e ) {
 			return null;
 		} catch ( InterruptedException e ) {
 			Thread.currentThread().interrupt();
 			return null;
+		} finally {
+			if ( output != null ) {
+				deleteQuietly( output );
+			}
 		}
 	}
 
@@ -428,9 +520,9 @@ public class PlaywrightHome {
 		command.add( getDriverDir().resolve( "package" ).resolve( "cli.js" ).toString() );
 		command.addAll( args );
 		ProcessBuilder builder = new ProcessBuilder( command );
+		// PW_LANG_NAME is deliberately not set: Playwright would then print Java/Maven commands ("mvn exec:java ...") in
+		// its help and hints. The driver used by the Java API gets it from Playwright Java itself, and codegen passes --target.
 		builder.environment().putAll( env );
-		builder.environment().put( "PW_LANG_NAME", "java" );
-		builder.environment().put( "PW_LANG_NAME_VERSION", String.valueOf( Runtime.version().feature() ) );
 		return builder;
 	}
 
@@ -507,47 +599,93 @@ public class PlaywrightHome {
 
 	/**
 	 * Copy a resource folder from the jars (or the file system during development) into a directory.
+	 * <p>
+	 * Jar resources are read through a private, uncached {@link JarFile}: a shared zip {@code FileSystem} is never
+	 * created or closed here, so concurrent extractions (and other code reading the same jar) cannot close it under
+	 * each other.
 	 *
 	 * @param resourcePath The resource folder path
 	 * @param destination  The directory to copy into
 	 *
-	 * @throws IOException        when the resource is missing or a file cannot be copied
-	 * @throws URISyntaxException when the resource URL is not a valid URI
+	 * @throws IOException when the resource is missing or a file cannot be copied
 	 */
-	private static void extractResource( String resourcePath, Path destination ) throws IOException, URISyntaxException {
+	private static void extractResource( String resourcePath, Path destination ) throws IOException {
 		URL url = resource( resourcePath );
 		if ( url == null ) {
 			throw new IOException( "Resource not found in the Playwright jars: " + resourcePath );
 		}
-		URI			uri			= url.toURI();
-		FileSystem	fileSystem	= null;
+		if ( "jar".equals( url.getProtocol() ) ) {
+			extractFromJar( url, destination );
+			return;
+		}
+		Path source;
 		try {
-			if ( "jar".equals( uri.getScheme() ) ) {
-				try {
-					fileSystem = FileSystems.newFileSystem( uri, Collections.emptyMap() );
-				} catch ( FileSystemAlreadyExistsException e ) {
-					fileSystem = null;
+			source = Paths.get( url.toURI() );
+		} catch ( URISyntaxException e ) {
+			throw new IOException( "Invalid resource URL: " + url, e );
+		}
+		try ( Stream<Path> paths = Files.walk( source ) ) {
+			for ( Path from : paths.toList() ) {
+				Path to = destination.resolve( source.relativize( from ).toString() );
+				if ( Files.isDirectory( from ) ) {
+					Files.createDirectories( to );
+				} else {
+					copyFile( Files.newInputStream( from ), to );
 				}
 			}
-			Path source = Paths.get( uri );
-			try ( Stream<Path> paths = Files.walk( source ) ) {
-				for ( Path from : paths.toList() ) {
-					Path to = destination.resolve( source.relativize( from ).toString() );
-					if ( Files.isDirectory( from ) ) {
-						Files.createDirectories( to );
-					} else {
-						Files.createDirectories( to.getParent() );
-						Files.copy( from, to, StandardCopyOption.REPLACE_EXISTING );
-						if ( isExecutable( to ) ) {
-							to.toFile().setExecutable( true, true );
-						}
-					}
+		}
+	}
+
+	/**
+	 * Copy the entries under a jar folder URL ({@code jar:file:...!/folder}) into a directory.
+	 *
+	 * @param url         The jar URL of the folder
+	 * @param destination The directory to copy into
+	 *
+	 * @throws IOException when the jar cannot be read or a file cannot be written
+	 */
+	private static void extractFromJar( URL url, Path destination ) throws IOException {
+		JarURLConnection connection = ( JarURLConnection ) url.openConnection();
+		// A private JarFile: the cached one is shared by the class loader and must not be closed
+		connection.setUseCaches( false );
+		String	entryName	= connection.getEntryName();
+		String	prefix		= entryName.endsWith( "/" ) ? entryName : entryName + "/";
+		Path	root		= destination.toAbsolutePath().normalize();
+		try ( JarFile jar = connection.getJarFile() ) {
+			Enumeration<JarEntry> entries = jar.entries();
+			while ( entries.hasMoreElements() ) {
+				JarEntry entry = entries.nextElement();
+				if ( !entry.getName().startsWith( prefix ) || entry.getName().length() == prefix.length() ) {
+					continue;
+				}
+				Path to = root.resolve( entry.getName().substring( prefix.length() ) ).normalize();
+				if ( !to.startsWith( root ) ) {
+					throw new IOException( "Refusing to extract an entry outside the destination: " + entry.getName() );
+				}
+				if ( entry.isDirectory() ) {
+					Files.createDirectories( to );
+				} else {
+					copyFile( jar.getInputStream( entry ), to );
 				}
 			}
-		} finally {
-			if ( fileSystem != null ) {
-				fileSystem.close();
-			}
+		}
+	}
+
+	/**
+	 * Write a stream to a file, creating its folders, and mark it executable when it looks like one.
+	 *
+	 * @param input The content, closed when done
+	 * @param to    The file to write
+	 *
+	 * @throws IOException when the file cannot be written
+	 */
+	private static void copyFile( InputStream input, Path to ) throws IOException {
+		Files.createDirectories( to.getParent() );
+		try ( InputStream in = input ) {
+			Files.copy( in, to, StandardCopyOption.REPLACE_EXISTING );
+		}
+		if ( isExecutable( to ) ) {
+			to.toFile().setExecutable( true, true );
 		}
 	}
 
@@ -570,7 +708,7 @@ public class PlaywrightHome {
 	 *
 	 * @throws IOException when a file cannot be deleted
 	 */
-	private static void deleteRecursively( Path path ) throws IOException {
+	static void deleteRecursively( Path path ) throws IOException {
 		if ( !Files.exists( path ) ) {
 			return;
 		}
@@ -586,7 +724,7 @@ public class PlaywrightHome {
 	 *
 	 * @param path The file or directory to delete
 	 */
-	private static void deleteQuietly( Path path ) {
+	static void deleteQuietly( Path path ) {
 		try {
 			deleteRecursively( path );
 		} catch ( IOException e ) {

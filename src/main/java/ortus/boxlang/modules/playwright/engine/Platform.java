@@ -54,10 +54,26 @@ public enum Platform {
 	 *
 	 * @return The current platform
 	 *
-	 * @throws UnsupportedOperationException if the OS or architecture is not supported by Playwright
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException of type {@code Playwright.UnsupportedPlatform} if
+	 *                                                                    the OS or architecture is not supported by Playwright
 	 */
 	public static Platform current() {
-		return of( System.getProperty( "os.name" ), System.getProperty( "os.arch" ) );
+		return current( false );
+	}
+
+	/**
+	 * Detect the platform of the running JVM, optionally for a home that uses an explicit Node.js executable.
+	 *
+	 * @param explicitNode True when an explicit Node.js executable is configured ({@code nodePath}), which lets Windows ARM64
+	 *                     use the Windows x64 layout (see {@link #of(String, String, boolean)})
+	 *
+	 * @return The current platform
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException of type {@code Playwright.UnsupportedPlatform} if
+	 *                                                                    the OS or architecture is not supported by Playwright
+	 */
+	public static Platform current( boolean explicitNode ) {
+		return of( System.getProperty( "os.name" ), System.getProperty( "os.arch" ), explicitNode );
 	}
 
 	/**
@@ -69,17 +85,63 @@ public enum Platform {
 	 *
 	 * @return The matching platform
 	 *
-	 * @throws UnsupportedOperationException if the OS or architecture is not supported by Playwright
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException of type {@code Playwright.UnsupportedPlatform} if
+	 *                                                                    the OS or architecture is not supported by Playwright
 	 */
 	public static Platform of( String osName, String osArch ) {
+		return of( osName, osArch, false );
+	}
+
+	/**
+	 * Resolve a platform from an OS name and an architecture, using the same values as the
+	 * {@code os.name} and {@code os.arch} system properties.
+	 * <p>
+	 * Only {@code amd64}/{@code x86_64} (x64) and {@code aarch64}/{@code arm64} are supported; any other architecture
+	 * (x86, arm, ppc64le, s390x, riscv64...) is rejected because Playwright ships no driver or browsers for it.
+	 * <p>
+	 * Windows ARM64: Playwright ships no Windows ARM64 Node.js runtime in its driver bundle (Playwright Java itself uses
+	 * the x64 layout on every Windows machine). Without an explicit Node.js executable it is rejected, since the Node.js
+	 * runtime could not be provided. With one ({@code nodePath}), the Windows x64 layout is used: the driver is plain
+	 * JavaScript, the configured Node.js runs it and the platform only names folders that are then not used.
+	 *
+	 * @param osName       The operating system name
+	 * @param osArch       The CPU architecture
+	 * @param explicitNode True when an explicit Node.js executable is configured
+	 *
+	 * @return The matching platform
+	 *
+	 * @throws ortus.boxlang.runtime.types.exceptions.BoxRuntimeException of type {@code Playwright.UnsupportedPlatform} if
+	 *                                                                    the OS or architecture is not supported by Playwright
+	 */
+	public static Platform of( String osName, String osArch, boolean explicitNode ) {
 		String	name	= osName == null ? "" : osName.toLowerCase( Locale.ROOT );
 		String	arch	= osArch == null ? "" : osArch.toLowerCase( Locale.ROOT );
 		boolean	isArm	= arch.equals( "aarch64" ) || arch.equals( "arm64" );
+		boolean	isX64	= arch.equals( "amd64" ) || arch.equals( "x86_64" ) || arch.equals( "x64" );
+		boolean	known	= name.contains( "windows" ) || name.contains( "linux" ) || name.contains( "mac" ) || name.contains( "darwin" );
 
+		if ( !known ) {
+			throw PlaywrightErrors.of(
+			    PlaywrightErrors.UNSUPPORTED_PLATFORM,
+			    "Unsupported operating system for Playwright: [" + osName + " / " + osArch + "]",
+			    "Playwright runs on Linux, macOS and Windows (x64 or arm64). Run BoxLang on one of them, or connect to a remote browser."
+			);
+		}
+		if ( !isArm && !isX64 ) {
+			throw PlaywrightErrors.of(
+			    PlaywrightErrors.UNSUPPORTED_PLATFORM,
+			    "Unsupported CPU architecture for Playwright: [" + osName + " / " + osArch + "]",
+			    "Playwright only ships drivers and browsers for x64 (amd64, x86_64) and arm64 (aarch64). "
+			        + "Use a 64-bit JVM on a supported CPU, or connect to a remote browser."
+			);
+		}
 		if ( name.contains( "windows" ) ) {
-			if ( isArm ) {
-				throw new UnsupportedOperationException(
-				    "Playwright does not ship a Windows ARM64 driver. Use an x64 JVM (emulated) or set a Node.js path with the 'nodePath' setting."
+			if ( isArm && !explicitNode ) {
+				throw PlaywrightErrors.of(
+				    PlaywrightErrors.UNSUPPORTED_PLATFORM,
+				    "Playwright does not ship a Node.js runtime for Windows ARM64: [" + osName + " / " + osArch + "]",
+				    "Set the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) to a Node.js " + PlaywrightHome.MIN_NODE_MAJOR
+				        + "+ executable, or run an x64 JVM (emulated)."
 				);
 			}
 			return WINDOWS_X64;
@@ -87,10 +149,7 @@ public enum Platform {
 		if ( name.contains( "linux" ) ) {
 			return isArm ? LINUX_ARM64 : LINUX_X64;
 		}
-		if ( name.contains( "mac" ) || name.contains( "darwin" ) ) {
-			return isArm ? MAC_ARM64 : MAC_X64;
-		}
-		throw new UnsupportedOperationException( "Unsupported operating system for Playwright: [" + osName + " / " + osArch + "]" );
+		return isArm ? MAC_ARM64 : MAC_X64;
 	}
 
 	/**

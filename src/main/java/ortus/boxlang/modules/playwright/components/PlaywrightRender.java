@@ -16,6 +16,8 @@ package ortus.boxlang.modules.playwright.components;
 
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ortus.boxlang.modules.playwright.engine.PlaywrightErrors;
 import ortus.boxlang.runtime.bifs.BIFDescriptor;
@@ -49,27 +51,32 @@ import ortus.boxlang.runtime.validation.Validator;
 @BoxComponent( requiresBody = true )
 public class PlaywrightRender extends Component {
 
-	private static final Key			PLAYWRIGHT	= Key.of( "playwright" );
-	private static final Key			RENDER		= Key.of( "render" );
-	private static final Key			TYPE		= Key.of( "type" );
-	private static final Key			PATH		= Key.of( "path" );
-	private static final Key			VARIABLE	= Key.of( "variable" );
-	private static final Key			PROFILE		= Key.of( "profile" );
-	private static final Key			OPTIONS		= Key.of( "options" );
-	private static final Key			VIEWPORT	= Key.of( "viewport" );
-	private static final Key			MARGIN		= Key.of( "margin" );
+	private static final Key			PLAYWRIGHT		= Key.of( "playwright" );
+	private static final Key			RENDER			= Key.of( "render" );
+	private static final Key			TYPE			= Key.of( "type" );
+	private static final Key			PATH			= Key.of( "path" );
+	private static final Key			VARIABLE		= Key.of( "variable" );
+	private static final Key			PROFILE			= Key.of( "profile" );
+	private static final Key			OPTIONS			= Key.of( "options" );
+	private static final Key			VIEWPORT		= Key.of( "viewport" );
+	private static final Key			MARGIN			= Key.of( "margin" );
 
 	/**
 	 * Attributes copied as-is into the render() options when present.
 	 */
-	private static final List<String>	PASSTHROUGH	= List.of(
+	private static final List<String>	PASSTHROUGH		= List.of(
 	    "baseURL", "waitFor", "waitUntil", "device", "colorScheme", "locale", "timezone",
 	    "format", "landscape", "printBackground", "headerTemplate", "footerTemplate", "displayHeaderFooter", "scale", "pageRanges",
 	    "width", "height", "preferCSSPageSize",
 	    "fullPage", "omitBackground", "quality"
 	);
 
-	private static final Set<String>	TYPES		= Set.of( "pdf", "png", "jpeg", "webp" );
+	private static final Set<String>	TYPES			= Set.of( "pdf", "png", "jpeg", "webp" );
+
+	/**
+	 * A viewport attribute: WIDTHxHEIGHT with positive sizes of up to 5 digits, e.g. 1200x630.
+	 */
+	private static final Pattern		VIEWPORT_SIZE	= Pattern.compile( "\\s*([1-9]\\d{0,4})\\s*[xX]\\s*([1-9]\\d{0,4})\\s*" );
 
 	/**
 	 * Create the component and declare its attributes.
@@ -77,7 +84,8 @@ public class PlaywrightRender extends Component {
 	public PlaywrightRender() {
 		super();
 		declaredAttributes = new Attribute[] {
-		    new Attribute( TYPE, "string", "pdf", Set.of( Validator.valueOneOf( TYPES.toArray( new String[ 0 ] ) ) ) ),
+		    // No default: render() defaults to pdf, and options={ type : "png" } must not be overwritten
+		    new Attribute( TYPE, "string", Set.of( Validator.valueOneOf( TYPES.toArray( new String[ 0 ] ) ) ) ),
 		    new Attribute( PATH, "string" ),
 		    new Attribute( VARIABLE, "string" ),
 		    new Attribute( PROFILE, "any" ),
@@ -160,7 +168,10 @@ public class PlaywrightRender extends Component {
 		if ( attributes.get( OPTIONS ) instanceof IStruct extra ) {
 			options.putAll( extra );
 		}
-		options.put( TYPE, attributes.getAsString( TYPE ) );
+		String type = attributes.getAsString( TYPE );
+		if ( !isBlank( type ) ) {
+			options.put( TYPE, type );
+		}
 		String path = attributes.getAsString( PATH );
 		if ( !isBlank( path ) ) {
 			options.put( PATH, path );
@@ -173,11 +184,11 @@ public class PlaywrightRender extends Component {
 		}
 		Object viewport = attributes.get( VIEWPORT );
 		if ( viewport instanceof String size && !size.isBlank() ) {
-			String[] parts = size.toLowerCase().split( "x" );
-			if ( parts.length != 2 ) {
+			Matcher matcher = VIEWPORT_SIZE.matcher( size );
+			if ( !matcher.matches() ) {
 				throw PlaywrightErrors.of( PlaywrightErrors.INVALID_OPTION, "Invalid viewport [" + size + "].", "Use WIDTHxHEIGHT, e.g. 1200x630." );
 			}
-			options.put( VIEWPORT, Struct.of( "width", Integer.parseInt( parts[ 0 ].trim() ), "height", Integer.parseInt( parts[ 1 ].trim() ) ) );
+			options.put( VIEWPORT, Struct.of( "width", Integer.parseInt( matcher.group( 1 ) ), "height", Integer.parseInt( matcher.group( 2 ) ) ) );
 		} else if ( viewport instanceof IStruct ) {
 			options.put( VIEWPORT, viewport );
 		}

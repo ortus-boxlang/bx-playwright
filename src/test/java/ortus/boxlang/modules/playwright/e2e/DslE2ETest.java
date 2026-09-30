@@ -101,6 +101,43 @@ public class DslE2ETest extends BaseIntegrationTest {
 	}
 
 	/**
+	 * Smart selectors: a button rendered a moment later still wins over a same text heading, an exact button name wins
+	 * over a longer one ("Save" over "Save draft"), fill() follows the label, placeholder, name priority instead of
+	 * document order, and selectors with spaces inside quotes or with the >> chain operator are used as selectors.
+	 */
+	@DisplayName( "Smart selectors: delayed buttons, exact names, fill priority and selectors with spaces" )
+	@Test
+	public void testSmartSelectorPriorities() {
+		// @formatter:off
+		Object value = bx( """
+			results = []
+			page = pw.newPage()
+			page.setContent( "<h2>Sign in</h2><div id=out></div><script>setTimeout( () => { const b = document.createElement( 'button' ); b.textContent = 'Sign in'; b.onclick = () => out.textContent = 'button'; document.body.append( b ) }, 300 )</script>" )
+			results.append( page.click( "Sign in" ).text( "##out" ) )
+
+			page.setContent( "<button>Save draft</button><button>Save</button><div id=out></div><script>document.querySelectorAll( 'button' ).forEach( b => b.onclick = () => out.textContent = 'clicked ' + b.textContent )</script>" )
+			results.append( page.click( "Save" ).text( "##out" ) )
+
+			page.setContent( "<label>Backup email <input id=a></label><label>Email <input id=b></label>" )
+			page.fill( "Email", "x" )
+			results.append( page.value( "##a" ) & "|" & page.value( "##b" ) )
+
+			page.setContent( "<input id=p placeholder='Email'><label>Email <input id=l></label>" )
+			page.fill( "Email", "y" )
+			results.append( page.value( "##p" ) & "|" & page.value( "##l" ) )
+
+			page.setContent( "<input placeholder='Your email'><div><span>Foo</span></div><nav>first</nav><nav>second</nav>" )
+			page.fill( 'input[placeholder="Your email"]', "z" )
+			results.append( page.value( "input" ) )
+			results.append( page.text( "div >> text=Foo" ) )
+			results.append( page.text( "nav >> nth=0" ) )
+			result = results.toList( ";" )
+			""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "button;clicked Save;|x;|y;z;Foo;first" );
+	}
+
+	/**
 	 * A login form is filled with smart selectors, submitted and asserted through the fluent page API, ending on the dashboard URL.
 	 */
 	@DisplayName( "Fill a form with smart selectors, submit and assert" )
@@ -351,10 +388,22 @@ public class DslE2ETest extends BaseIntegrationTest {
 			} catch ( "Playwright.InvalidOption" e ) {
 				errors.append( "missing target" )
 			}
-			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & errors.toList()
+			bx:playwrightRender options={ type : "png" } variable="fromOptions" {
+				writeOutput( "<h1>Options</h1>" )
+			}
+			try {
+				bx:playwrightRender type="png" variable="bad" viewport="1200xabc" {
+					writeOutput( "<h1>Bad viewport</h1>" )
+				}
+			} catch ( "Playwright.InvalidOption" e ) {
+				errors.append( "bad viewport" )
+			}
+			// PNG files start with 0x89 'P' 'N' 'G'
+			isPng = fromOptions[ 2 ] == 80 && fromOptions[ 3 ] == 78 && fromOptions[ 4 ] == 71
+			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & isPng & "|" & errors.toList()
 		""".formatted( dir ) );
 		// @formatter:on
-		assertThat( value ).isEqualTo( "true|true|missing target" );
+		assertThat( value ).isEqualTo( "true|true|true|missing target,bad viewport" );
 	}
 
 	/**
