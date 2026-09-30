@@ -404,9 +404,8 @@ What TestBox core would build on top (TestBox's scope, listed here for alignment
 ### Phase 0: Foundations
 - [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
 - [ ] Gradle: add `playwright`, `driver`, `driver-bundle` deps into `libs/`, stamp version into `box.json` and `ModuleConfig`. Check module zip size and ForgeBox limits.
-- [ ] Spike device registry and validate built-in profile device names.
-- [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and system Node. Confirm thread confinement behavior under BoxLang.
-- [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time).
+- [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
+- [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
 
 ### Phase 1: Install and CLI
 - [ ] `PlaywrightService`: home resolution, one-time driver extraction from bundled jars (`install-driver`), env wiring, `PLAYWRIGHT_NODEJS_PATH` override.
