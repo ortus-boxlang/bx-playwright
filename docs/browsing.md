@@ -50,22 +50,23 @@ All return the page (or locator), so they chain.
 | `waitForPopup( fn )`, `waitForDownload( fn, path )` | New tabs and downloads |
 | `within( sel, fn )` | Scope actions to an element |
 
-On a locator, actions without a selector act on the locator: `page.byLabel( "Email" ).fill( "a@b.com" )`.
+On a locator, actions without a selector act on the locator: `page.byLabel( "Email" ).fill( "a@b.com" )`, `page.byLabel( "Resume" ).upload( "cv.pdf" )`.
 
 ## Locators
 
 ```js
 todos = page.locator( ".todos li" )
 todos.count()                  // 3
-todos.texts()                  // [ "Write specs", ... ]
-todos.nth( 2 ).text()          // 1-based
+todos.texts()                  // [ "Write specs", ... ] (visible elements only)
+todos.nth( 2 ).text()          // 1-based: nth( 0 ) throws
 todos.filter( { hasText : "Ship" } ).click()
+todos.filter( { has : page.locator( ".done" ) } ).count()
 todos.all().each( ( item ) => println( item.text() ) )
 ```
 
 ## Reading
 
-`url()`, `title()`, `content()`, `text( sel )`, `html( sel )`, `value( sel )`, `attribute( sel, name )`, `count( sel )`, `isVisible( sel )`, `evaluate( js, arg )`, `snapshot()`.
+`url()`, `title()`, `content()`, `text( sel )`, `html( sel )`, `value( sel )`, `attribute( sel, name )`, `count( sel )` (every match), `isVisible( sel )` (true when any match is visible), `evaluate( js, arg )`, `snapshot()`.
 
 ## Discover the API
 

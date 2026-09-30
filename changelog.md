@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
 * `assertSee()` and `assertDontSee()` only count rendered text: text in hidden elements is not seen
 * Release builds ship the `META-INF/services` registration, so `bx:playwrightRender` is found in installed modules (the build now fails if it is missing)
+* `assertVisible()`, `assertMissing()`, `isVisible()`, `waitFor()` and `waitForText()` judge every match: a hidden element with the same text or selector no longer hides a visible one, and `assertMissing()` no longer hits strict mode errors with several hidden matches
+* `count( text )` and `expect( text ).toHaveCount()` count every element with the text instead of at most one
+* `assertCount()` resolves `@alias` selectors from page objects and components
+* `assertPathIs()` is case sensitive and works for URLs without a host, such as `file://`
+* `assertNoSmoke()` reports JavaScript errors on every visited URL, also after a URL that had errors
+* `freezeTime()` accepts BoxLang dates
+* `filter( { has, hasNot } )` and screenshot `mask` options accept Locators: no more duplication errors, and locators built from the page (now scoped with `:scope`) match inside `has`
+* `assertScreenshotMatches()` resolves a relative `directory` against the working directory instead of the installed module
+* A nested `soft()` adds its failures to the outer `soft()` instead of losing them
+* `Locator.texts()` returns the text of visible elements only
+* `Locator.nth( 0 )` throws `Playwright.InvalidOption` instead of returning the last element
+* `upload( files )` on a locator uploads to the locator itself, like `fill( value )` (codegen output such as `page.getByLabel( "Resume" ).upload( "cv.pdf" )` works)
 
 ### Added
 

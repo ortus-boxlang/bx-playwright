@@ -69,6 +69,7 @@ class extends="Scope" {
 
 	/**
 	 * Soft assertions: run the callback, collect every failed assertion, then fail once with all of them.
+	 * Nested soft() calls add their failures to the outer one, which fails once at the end.
 	 *
 	 * <pre>
 	 * page.soft( ( page ) => {
@@ -79,12 +80,18 @@ class extends="Scope" {
 	 * @callback Receives the page
 	 */
 	function soft( required function callback ) {
+		var outer            = variables.softErrors ?: nullValue()
 		variables.softErrors = []
 		try {
 			arguments.callback( this )
 		} finally {
 			var errors           = variables.softErrors
-			variables.softErrors = nullValue()
+			variables.softErrors = outer ?: nullValue()
+		}
+		if ( !isNull( outer ) ) {
+			// Inside another soft(): the outer one reports every failure at the end
+			outer.append( errors, true )
+			return this
 		}
 		if ( errors.len() ) {
 			var numbered = []
@@ -110,12 +117,13 @@ class extends="Scope" {
 	}
 
 	/**
-	 * The Playwright locator that scopes the page: the document root element.
+	 * The Playwright locator that scopes the page: the document itself (:scope), so locators built from it
+	 * also work inside filter( { has, hasNot } ).
 	 *
-	 * @return A Playwright locator for :root
+	 * @return A Playwright locator for :scope
 	 */
 	function root() {
-		return variables.java.locator( ":root" )
+		return variables.java.locator( ":scope" )
 	}
 
 	/**
@@ -411,12 +419,17 @@ class extends="Scope" {
 	 * Take a screenshot.
 	 *
 	 * @path    The file path, or empty to return the image bytes
-	 * @options fullPage, type (png, jpeg, webp), quality, clip, omitBackground, animations, mask
+	 * @options fullPage, type (png, jpeg, webp), quality, clip, omitBackground, animations,
+	 *          mask (smart selectors or Locators to paint over)
 	 *
 	 * @return The path, or the bytes when no path is given
 	 */
 	function screenshot( string path = "", struct options = {} ) {
-		var values = duplicate( arguments.options )
+		// Shallow copy: the options can hold Java objects (mask locators) that cannot be duplicated
+		var values = structCopy( arguments.options )
+		if ( values.keyExists( "mask" ) ) {
+			values.mask = maskLocators( values.mask )
+		}
 		if ( len( arguments.path ) ) {
 			values.path = expandPath( arguments.path )
 		}
@@ -584,12 +597,13 @@ class extends="Scope" {
 	}
 
 	/**
-	 * The URL path is exactly this, ignoring the host, query string and hash.
+	 * The URL path is exactly this (case sensitive), ignoring the scheme, host, query string and hash.
+	 * Works for URLs without a host too, such as file:///tmp/report.html.
 	 *
 	 * @path The path, e.g. /dashboard
 	 */
 	function assertPathIs( required string path ) {
-		expect().toHaveURL( regex( "^[a-z]+://[^/]+" & quoteRegex( arguments.path ) & "(\?.*)?(##.*)?$", "i" ) )
+		expect().toHaveURL( regex( "^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]*" & quoteRegex( arguments.path ) & "(\?.*)?(##.*)?$" ) )
 		return this
 	}
 
@@ -658,11 +672,19 @@ class extends="Scope" {
 	/**
 	 * Freeze the page time: Date.now() always returns this moment (timers keep running).
 	 *
-	 * @dateTime An ISO string such as 2026-01-01T09:00:00, or a date
+	 * @dateTime An ISO string such as 2026-01-01T09:00:00, a BoxLang date (now(), createDateTime()) or a java.util.Date
 	 */
 	function freezeTime( required any dateTime ) {
-		// Playwright parses ISO strings itself; BoxLang dates are passed as java.util.Date
-		var moment = isSimpleValue( arguments.dateTime ) ? toString( arguments.dateTime ) : javacast( "java.util.Date", arguments.dateTime )
+		var moment = arguments.dateTime
+		if ( isInstanceOf( moment, "java.util.Date" ) ) {
+			moment = javacast( "long", moment.getTime() )
+		} else if ( !isInstanceOf( moment, "java.lang.String" ) && isDate( moment ) ) {
+			// BoxLang dates are simple values too: send the instant, not their {ts '...'} string
+			moment = javacast( "long", moment.toEpochMillis() )
+		} else {
+			// Playwright parses ISO strings itself
+			moment = toString( moment )
+		}
 		variables.java.clock().setFixedTime( moment )
 		return this
 	}
@@ -721,7 +743,6 @@ class extends="Scope" {
 		var problems = []
 		var targets  = arguments.urls.len() ? arguments.urls : [ url() ]
 		for ( var target in targets ) {
-			var before     = consoleErrors().len()
 			var navigation = buildOptions( "Page.NavigateOptions", { waitUntil : arguments.options.waitUntil ?: "load" } )
 			var response   = nullValue()
 			try {
@@ -733,9 +754,8 @@ class extends="Scope" {
 			if ( !isNull( response ) && response.status() >= 400 ) {
 				problems.append( "#target#: HTTP #response.status()#" )
 			}
-			var errors = consoleErrors()
-			for ( var i = before + 1; i <= errors.len(); i++ ) {
-				var error = errors[ i ]
+			// Playwright clears console messages and page errors on navigation: every error listed belongs to this URL
+			for ( var error in consoleErrors() ) {
 				if ( !skip.some( ( pattern ) => error contains pattern ) ) {
 					problems.append( "#target#: #error#" )
 				}

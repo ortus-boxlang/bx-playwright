@@ -15,15 +15,17 @@ import java:com.microsoft.playwright.assertions.PlaywrightAssertions@playwright;
 class extends="Base" {
 
 	/**
-	 * @target    A Page, a Locator, a Response, or the Java object they wrap
-	 * @timeout   The assertion timeout in milliseconds
-	 * @collector An array that collects failures instead of throwing (soft assertions), or null
+	 * @target      A Page, a Locator, a Response, or the Java object they wrap
+	 * @timeout     The assertion timeout in milliseconds
+	 * @collector   An array that collects failures instead of throwing (soft assertions), or null
+	 * @countTarget The locator of every match, used by toHaveCount() when the target is narrowed to its first match, or null
 	 */
-	function init( required any target, numeric timeout = 5000, any collector ) {
+	function init( required any target, numeric timeout = 5000, any collector, any countTarget ) {
 		variables.timeout   = arguments.timeout
 		variables.collector = arguments.collector ?: nullValue()
-		variables.negate  = false
-		variables.java    = isObject( arguments.target ) && structKeyExists( arguments.target, "getJava" ) ? arguments.target.getJava() : arguments.target
+		variables.negate    = false
+		variables.java      = isObject( arguments.target ) && structKeyExists( arguments.target, "getJava" ) ? arguments.target.getJava() : arguments.target
+		variables.countJava = arguments.countTarget ?: variables.java
 		if ( isInstanceOf( variables.java, "com.microsoft.playwright.Page" ) ) {
 			variables.kind = "PageAssertions"
 		} else if ( isInstanceOf( variables.java, "com.microsoft.playwright.Locator" ) ) {
@@ -212,7 +214,13 @@ class extends="Base" {
 	 */
 	function toHaveCount( required numeric count ) {
 		var expected = javacast( "int", arguments.count )
-		return check( "toHaveCount( #arguments.count# )", ( a, o ) => a.hasCount( expected, o ), "HasCount" )
+		return check(
+			"toHaveCount( #arguments.count# )",
+			( a, o ) => a.hasCount( expected, o ),
+			"HasCount",
+			{},
+			variables.countJava
+		)
 	}
 
 	/**
@@ -321,11 +329,12 @@ class extends="Base" {
 	 * @assertion   A closure receiving the Playwright assertions object and the options
 	 * @optionsName The Playwright options class suffix, e.g. IsVisible, or empty for none
 	 * @options     Extra options merged over the assertion timeout
+	 * @subject     The Playwright object to assert on, defaults to the target of this Expect
 	 *
 	 * @return This Expect, for chaining
 	 */
-	private function check( required string label, required function assertion, required string optionsName, struct options = {} ) {
-		var target = PlaywrightAssertions.assertThat( variables.java )
+	private function check( required string label, required function assertion, required string optionsName, struct options = {}, any subject ) {
+		var target = PlaywrightAssertions.assertThat( arguments.subject ?: variables.java )
 		var label  = ( variables.negate ? "not()." : "" ) & arguments.label
 		if ( variables.negate ) {
 			target = target.not()

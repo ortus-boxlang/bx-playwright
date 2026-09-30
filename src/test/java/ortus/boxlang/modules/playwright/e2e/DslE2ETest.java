@@ -692,4 +692,245 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "a@b.com|xyz|editor" );
 	}
 
+	/**
+	 * Visibility checks look at every match: a hidden element with the same text does not hide a visible one, and
+	 * assertMissing() passes only when no match is visible, without strict mode errors for several hidden matches.
+	 */
+	@DisplayName( "Visibility checks judge every match, not only the first one" )
+	@Test
+	public void testVisibilityChecksEveryMatch() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { action : 1000, assertion : 1000 } } )
+			page.setContent( "<span style='display:none'>Menu</span><span>Menu</span><p class=t style='display:none'>a</p><p class=t hidden>b</p>" )
+			page.assertVisible( "Menu" ).waitForText( "Menu", 1000 ).waitFor( "Menu", "visible", 1000 ).assertMissing( ".t" )
+			missingFailed = false
+			try {
+				page.assertMissing( "Menu" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				missingFailed = true
+			}
+			result = page.isVisible( "Menu" ) & "|" & page.locator( "span" ).isVisible() & "|" & page.isVisible( ".t" ) & "|" & missingFailed
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|false|true" );
+	}
+
+	/**
+	 * count( text ) and expect( text ).toHaveCount() count every element with the text, not only the first one.
+	 */
+	@DisplayName( "count() and toHaveCount() count every text match" )
+	@Test
+	public void testCountEveryTextMatch() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 1000 } } )
+			page.setContent( "<p>Apple pie</p><p>Apple tart</p><div>Pear</div>" )
+			page.expect( "Apple" ).toHaveCount( 2 ).toHaveText( "Apple pie" )
+			result = page.count( "Apple" ) & "|" & page.locator( "body" ).count( "Apple" ) & "|" & page.count( "p" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2|2|2" );
+	}
+
+	/**
+	 * assertCount() resolves @alias selectors registered by page objects and components.
+	 */
+	@DisplayName( "assertCount() honors element aliases" )
+	@Test
+	public void testAssertCountAliases() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 1000 } } )
+			page.setContent( "<div id=cart>2 items</div><p>Apple pie</p><p>Apple tart</p><b data-testid=total>3</b>" )
+			page.useElements( { cartBox : "##cart", fruit : "Apple" } )
+				.assertCount( "@cartBox", 1 )
+				.assertCount( "@fruit", 2 )
+				.assertCount( "@total", 1 )
+			result = page.count( "@fruit" )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).isEqualTo( "2" );
+	}
+
+	/**
+	 * assertPathIs() is case sensitive and works for file URLs, which have no host.
+	 */
+	@DisplayName( "assertPathIs() is case sensitive and supports file URLs" )
+	@Test
+	public void testAssertPathIsCaseAndFileUrls() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext( { timeouts : { assertion : 500 } } ) ).newPage()
+			page.visit( "/dashboard" ).assertPathIs( "/dashboard" )
+			wrongCase = false
+			try {
+				page.assertPathIs( "/Dashboard" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				wrongCase = true
+			}
+			tempFile = createObject( "java", "java.io.File" ).createTempFile( "bxpw-path", ".html" )
+			tempFile.deleteOnExit()
+			fileWrite( tempFile.getAbsolutePath(), "<p>on disk</p>" )
+			pw.newPage().visit( tempFile.toURI().toString() ).assertPathIs( tempFile.toURI().getPath() )
+			result = wrongCase
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( true );
+	}
+
+	/**
+	 * assertNoSmoke() reports JavaScript errors on every visited URL, also after a page that had errors of its own.
+	 */
+	@DisplayName( "assertNoSmoke() catches errors on every visited URL" )
+	@Test
+	public void testSmokeCatchesErrorsOnEveryUrl() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<p>start</p>" )
+			failure = ""
+			try {
+				page.assertNoSmoke( [
+					"data:text/html,<script>console.error( 'first-boom' )</script>",
+					"data:text/html,<script>console.error( 'second-boom' )</script>",
+					"data:text/html,<p>clean</p>"
+				] )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			result = ( failure contains "2 problem(s)" ) & "|" & ( failure contains "first-boom" ) & "|" & ( failure contains "second-boom" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true" );
+	}
+
+	/**
+	 * freezeTime() accepts BoxLang dates as well as ISO strings.
+	 */
+	@DisplayName( "freezeTime() accepts BoxLang dates" )
+	@Test
+	public void testFreezeTimeWithBoxLangDate() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.freezeTime( createDateTime( 2031, 6, 15, 12, 0, 0 ) )
+			page.setContent( "<p>x</p>" )
+			result = page.evaluate( "new Date().getFullYear()" )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "2031(\\.0)?" );
+	}
+
+	/**
+	 * filter( { has, hasNot } ) works with locators built from the page, and screenshots accept Locators and selectors as masks.
+	 */
+	@DisplayName( "filter( has/hasNot ) with page locators, screenshot masks with Locators" )
+	@Test
+	public void testFilterHasAndScreenshotMasks() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<ul><li>One <b>x</b></li><li>Two</li></ul>" )
+			items   = page.locator( "li" )
+			has     = items.filter( { has : page.locator( "b" ) } ).texts()
+			hasNot  = items.filter( { hasNot : page.locator( "b" ) } ).texts()
+			shot    = page.screenshot( "", { mask : [ page.locator( "b" ), "Two" ] } )
+			element = items.first().screenshot( "", { mask : page.locator( "b" ) } )
+			result  = has.toList() & "|" & hasNot.toList() & "|" & ( arrayLen( shot ) > 0 ) & "|" & ( arrayLen( element ) > 0 ) & "|" & page.count( "b" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "One x|Two|true|true|1" );
+	}
+
+	/**
+	 * assertScreenshotMatches() resolves a relative directory against the working directory, not the installed module.
+	 */
+	@DisplayName( "assertScreenshotMatches() resolves a relative directory against the working directory" )
+	@Test
+	public void testScreenshotRelativeDirectory() {
+		String	relative	= "build/e2e-relative-snapshots-" + System.nanoTime();
+		Path	expected	= Path.of( System.getProperty( "user.dir" ), relative, "relative.png" );
+		// @formatter:off
+		bx( """
+			page = pw.newPage()
+			page.setContent( "<h1>Relative</h1>" )
+			page.assertScreenshotMatches( "relative", { directory : "%s" } )
+			result = true
+		""".formatted( relative ) );
+		// @formatter:on
+		assertThat( expected.toFile().exists() ).isTrue();
+	}
+
+	/**
+	 * A nested soft() adds its failures to the outer soft(), which fails once with all of them.
+	 */
+	@DisplayName( "Nested soft() keeps the outer failures" )
+	@Test
+	public void testNestedSoftAssertions() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 300 } } )
+			page.setContent( "<h1>Home</h1>" )
+			failure = ""
+			try {
+				page.soft( ( p ) => {
+					p.assertSee( "outer-missing" )
+					p.soft( ( q ) => q.assertSee( "inner-missing" ) )
+					p.assertSee( "Home" )
+				} )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			result = ( failure contains "2 soft assertion(s)" ) & "|" & ( failure contains "outer-missing" ) & "|" & ( failure contains "inner-missing" ) & "|" & isNull( page.softCollector() )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true|true" );
+	}
+
+	/**
+	 * Locator.texts() skips hidden elements, and nth( 0 ) throws a typed error instead of returning the last element.
+	 */
+	@DisplayName( "texts() returns visible text only, nth( 0 ) throws" )
+	@Test
+	public void testTextsVisibleAndNthZero() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<ul><li>one</li><li style='display:none'>secret</li><li>three</li></ul>" )
+			items = page.locator( "li" )
+			error = ""
+			try {
+				items.nth( 0 )
+			} catch ( "Playwright.InvalidOption" e ) {
+				error = e.message
+			}
+			result = items.texts().toList() & "|" & items.nth( 3 ).getJava().textContent() & "|" & ( error contains "1-based" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "one,three|three|true" );
+	}
+
+	/**
+	 * upload( files ) on a locator sets the files of the locator itself, like fill( value ) and select( value ).
+	 */
+	@DisplayName( "Locator upload( files ) uploads to the locator itself" )
+	@Test
+	public void testLocatorUploadShortcut() {
+		// @formatter:off
+		Object value = bx( """
+			one = createObject( "java", "java.io.File" ).createTempFile( "bxpw-cv", ".pdf" )
+			two = createObject( "java", "java.io.File" ).createTempFile( "bxpw-cover", ".txt" )
+			one.deleteOnExit()
+			two.deleteOnExit()
+			page = pw.newPage()
+			page.setContent( "<label>Resume <input type=file id=cv></label><label>Docs <input type=file id=docs multiple></label>" )
+			page.byLabel( "Resume" ).upload( one.getAbsolutePath() )
+			page.byLabel( "Docs" ).upload( [ one.getAbsolutePath(), two.getAbsolutePath() ] )
+			result = page.evaluate( "document.getElementById( 'cv' ).files[ 0 ].name.endsWith( '.pdf' ) + '|' + document.getElementById( 'docs' ).files.length" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|2" );
+	}
+
 }

@@ -322,12 +322,17 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * Set the files of a file input.
+	 * Set the files of a file input. On a locator, upload( files ) sets the files of the locator itself.
 	 *
-	 * @selector Smart selector
+	 * @selector Smart selector (or the files, on a locator)
 	 * @files    One path or an array of paths
 	 */
-	function upload( required string selector, required any files ) {
+	function upload( required any selector, any files ) {
+		// On a locator, upload( "cv.pdf" ) or upload( [ ... ] ) uploads to the locator itself
+		if ( isNull( arguments.files ) ) {
+			arguments.files    = arguments.selector
+			arguments.selector = ""
+		}
 		var target = target( arguments.selector, "fill" )
 		var list   = isArray( arguments.files ) ? arguments.files : [ arguments.files ]
 		var paths  = list.map( ( file ) => createObject( "java", "java.io.File" ).init( expandPath( file ) ).toPath() )
@@ -383,14 +388,15 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * Wait for an element to reach a state.
+	 * Wait for an element to reach a state. For the visible state any matching element counts:
+	 * a hidden element with the same text or selector does not hide a visible one.
 	 *
 	 * @selector Smart selector
 	 * @state    visible (default), hidden, attached or detached
 	 * @timeout  Milliseconds, 0 for the default action timeout
 	 */
 	function waitFor( string selector = "", string state = "visible", numeric timeout = 0 ) {
-		var target  = target( arguments.selector, "any" )
+		var target  = arguments.state == "visible" ? firstVisible( arguments.selector ) : target( arguments.selector, "any" )
 		var options = { state : arguments.state }
 		if ( arguments.timeout > 0 ) {
 			options.timeout = arguments.timeout
@@ -401,13 +407,13 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * Wait until some text is visible.
+	 * Wait until some text is visible in any element (hidden elements with the same text are skipped).
 	 *
 	 * @text    The text
 	 * @timeout Milliseconds, 0 for the default action timeout
 	 */
 	function waitForText( required string text, numeric timeout = 0 ) {
-		var target  = root().getByText( arguments.text ).first()
+		var target  = visibleOnly( root().getByText( arguments.text ) ).first()
 		var options = { state : "visible" }
 		if ( arguments.timeout > 0 ) {
 			options.timeout = arguments.timeout
@@ -467,21 +473,21 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * The number of elements matching a selector, right now (no waiting).
+	 * The number of elements matching a selector, right now (no waiting). Text selectors count every element with the text.
 	 *
 	 * @selector Smart selector
 	 */
 	numeric function count( string selector = "" ) {
-		return target( arguments.selector, "any" ).count()
+		return ( len( arguments.selector ) ? resolveAll( arguments.selector ) : self() ).count()
 	}
 
 	/**
-	 * Is an element visible right now (no waiting)?
+	 * Is an element visible right now (no waiting)? True when any matching element is visible.
 	 *
 	 * @selector Smart selector
 	 */
 	boolean function isVisible( string selector = "" ) {
-		return target( arguments.selector, "any" ).isVisible()
+		return firstVisible( arguments.selector ).isVisible()
 	}
 
 	/**
@@ -509,8 +515,11 @@ abstract class extends="Base" {
 	 * @selector Smart selector, empty for this scope (or the page)
 	 */
 	function expect( string selector = "" ) {
-		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : expectTarget()
-		return newExpect( target )
+		if ( !len( arguments.selector ) ) {
+			return newExpect( expectTarget() )
+		}
+		// toHaveCount() counts every match, the other assertions check the first one
+		return newExpect( resolve( arguments.selector, "any" ), resolveAll( arguments.selector ) )
 	}
 
 	/**
@@ -535,22 +544,22 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * An element is visible.
+	 * An element is visible: at least one element matching the selector is visible.
 	 *
 	 * @selector Smart selector
 	 */
 	function assertVisible( required string selector ) {
-		expect( arguments.selector ).toBeVisible()
+		newExpect( firstVisible( arguments.selector ) ).toBeVisible()
 		return this
 	}
 
 	/**
-	 * An element is hidden or not in the page.
+	 * An element is hidden or not in the page: no element matching the selector is visible.
 	 *
 	 * @selector Smart selector
 	 */
 	function assertMissing( required string selector ) {
-		expect( arguments.selector ).toBeHidden()
+		newExpect( visibleOnly( resolveAll( arguments.selector ) ) ).toHaveCount( 0 )
 		return this
 	}
 
@@ -623,11 +632,7 @@ abstract class extends="Base" {
 	 * @count    The expected number
 	 */
 	function assertCount( required string selector, required numeric count ) {
-		var sel     = arguments.selector
-		var matches = sel.startsWith( "@" ) ? root().getByTestId( sel.mid( 2, sel.len() ) ) : (
-			SmartSelector.isSelector( sel ) ? root().locator( sel ) : root().getByText( sel )
-		)
-		newExpect( matches ).toHaveCount( arguments.count )
+		newExpect( resolveAll( arguments.selector ) ).toHaveCount( arguments.count )
 		return this
 	}
 
@@ -665,14 +670,13 @@ abstract class extends="Base" {
 			if ( [ "threshold", "maxDiffPixels", "maxDiffPixelRatio", "update", "directory" ].findNoCase( key ) ) {
 				settings[ key ] = arguments.options[ key ]
 			} else if ( key == "mask" ) {
-				var selectors = isArray( arguments.options.mask ) ? arguments.options.mask : [ arguments.options.mask ]
-				shot.mask     = selectors.map( ( selector ) => resolve( selector, "any" ) )
+				shot.mask = maskLocators( arguments.options.mask )
 			} else {
 				shot[ key ] = arguments.options[ key ]
 			}
 		}
 
-		var directory = len( settings.directory ?: "" ) ? settings.directory : page().manager().getConfigService().snapshotsPath( getConfig() )
+		var directory = len( settings.directory ?: "" ) ? absolutePath( settings.directory ) : page().manager().getConfigService().snapshotsPath( getConfig() )
 		var baseName  = arguments.name.reReplace( "[^A-Za-z0-9_-]+", "-", "all" )
 		var baseline  = directory & "/" & baseName & ".png"
 		var actualPng = directory & "/" & baseName & "-actual.png"
@@ -775,6 +779,91 @@ abstract class extends="Base" {
 	}
 
 	/**
+	 * Resolve a smart selector to every matching element inside this scope, for counts and "any match" checks.
+	 * Unlike resolve(), visible text is not narrowed to its first match.
+	 *
+	 * @selector The smart selector (@alias, @testId, ref=, CSS, XPath or visible text)
+	 *
+	 * @return The Playwright locator matching all the elements
+	 */
+	private function resolveAll( required string selector ) {
+		var target = arguments.selector.trim()
+		if ( target.startsWith( "@" ) ) {
+			var aliases = getAliases()
+			var name    = target.mid( 2, target.len() )
+			if ( aliases.keyExists( name ) ) {
+				target = aliases[ name ]
+			}
+		}
+		if ( ( target.startsWith( "@" ) && target.len() > 1 ) || target.startsWith( "ref=" ) || !len( target ) ) {
+			// Test ids and element refs are not narrowed; an empty selector throws the usual typed error
+			return SmartSelector.locate( root(), target, "any" )
+		}
+		return SmartSelector.isSelector( target ) ? root().locator( target ) : root().getByText( target )
+	}
+
+	/**
+	 * Keep only the visible elements of a Playwright locator.
+	 *
+	 * @javaLocator The Playwright locator
+	 *
+	 * @return The filtered Playwright locator
+	 */
+	private function visibleOnly( required any javaLocator ) {
+		return arguments.javaLocator.filter( buildOptions( "Locator.FilterOptions", { visible : true } ) )
+	}
+
+	/**
+	 * The first visible element among all the matches of a selector (or of this locator when the selector is empty).
+	 *
+	 * @selector A smart selector, or empty for this scope
+	 *
+	 * @return A Playwright locator
+	 */
+	private function firstVisible( required string selector ) {
+		return visibleOnly( len( arguments.selector ) ? resolveAll( arguments.selector ) : self() ).first()
+	}
+
+	/**
+	 * Turn screenshot mask entries into Playwright locators: smart selectors are resolved,
+	 * Locator wrappers are unwrapped and Playwright locators are kept.
+	 *
+	 * @mask One entry or an array of selectors, Locators or Playwright locators
+	 *
+	 * @return An array of Playwright locators
+	 */
+	private array function maskLocators( required any mask ) {
+		var entries  = isArray( arguments.mask ) ? arguments.mask : [ arguments.mask ]
+		var locators = []
+		for ( var entry in entries ) {
+			if ( isSimpleValue( entry ) ) {
+				locators.append( resolve( entry, "any" ) )
+			} else if ( isObject( entry ) && structKeyExists( entry, "getJava" ) ) {
+				locators.append( entry.getJava() )
+			} else {
+				locators.append( entry )
+			}
+		}
+		return locators
+	}
+
+	/**
+	 * Resolve a relative path against the working directory (user.dir), so files never land inside the installed module.
+	 *
+	 * @path An absolute or relative path
+	 *
+	 * @return The absolute, normalized path
+	 */
+	private string function absolutePath( required string path ) {
+		var file = createObject( "java", "java.io.File" ).init( arguments.path )
+		if ( file.isAbsolute() ) {
+			return arguments.path
+		}
+		var system = createObject( "java", "java.lang.System" )
+		return createObject( "java", "java.io.File" ).init( system.getProperty( "user.dir" ), arguments.path ).toPath().normalize().toString()
+	}
+
+	/**
 	 * Element aliases usable as @name selectors (from page objects and components).
 	 */
 	struct function getAliases() {
@@ -791,10 +880,18 @@ abstract class extends="Base" {
 	/**
 	 * Create an Expect bound to the page's soft assertion collector.
 	 *
-	 * @target The Playwright object to assert on
+	 * @target      The Playwright object to assert on
+	 * @countTarget The Playwright locator of every match, used by toHaveCount(); defaults to the target
+	 *
+	 * @return The Expect
 	 */
-	function newExpect( required any target ) {
-		return new models.Expect@playwright( arguments.target, getConfig().timeouts.assertion ?: 5000, page().softCollector() )
+	function newExpect( required any target, any countTarget ) {
+		return new models.Expect@playwright(
+			arguments.target,
+			getConfig().timeouts.assertion ?: 5000,
+			page().softCollector(),
+			arguments.countTarget ?: nullValue()
+		)
 	}
 
 	/**
