@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft v2 (engine, bundling, TestBox location and scope decisions confirmed). No code yet. API shapes below are proposals to agree on before implementation.
+Status: draft v3 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -72,17 +72,21 @@ One BoxLang module that replaces both `cbPlaywright` and `commandbox-cbplaywrigh
 
 Confirmed:
 
-1. **BoxLang native only.** No Adobe/Lucee. Uses the full BoxLang module surface: BIFs, components, interceptors, module settings, CLI `main()`, closures/lambdas bridged to Java functional interfaces.
+1. **BoxLang native only.** No Adobe/Lucee. Uses the BoxLang module surface: BIFs, interceptors, components when needed, module settings, CLI `main()`, closures/lambdas bridged to Java functional interfaces.
 2. **New project.** cbPlaywright and commandbox-cbplaywright are inspiration only. No compat layer, no migration shims.
 3. **Bundle all jars, including `driver-bundle` (~204 MB)**, so the module works offline out of the box. `PLAYWRIGHT_NODEJS_PATH` stays as an optional override (system Node).
 4. **TestBox adapter lives in TestBox core.** bx-playwright provides the engine and a stable testing SPI (lifecycle, artifact hooks, assertion API). TestBox builds its specs, matchers and reporting on top (see 7).
+5. **One module, `bx-playwright`**, registered as `playwright`; main entry BIF `playwright()`.
+6. **Targets BoxLang 1.17.x on JRE 21.**
+7. **Own CLI, no CommandBox.** A `bxPlaywright` executable plus bash completions, using the module descriptor `boxlang.executable` / `boxlang.completions` fields (same pattern as bx-sites and bx-agents). See 5.
+8. **Both assertion styles**: fluent inline (`page.assertSee()`) and expect style (`expect( locator ).toBeVisible()`).
+9. **Components only where a body is needed.** None in v1 (see 6.8).
 
 Proposed (not yet confirmed):
 
-5. **One module, `bx-playwright`**, registered as `playwright`. CLI and runtime DSL in the same module.
-6. **Single version source**: the Playwright version comes from the bundled jars at build time (Gradle). Driver and Node always match it.
-7. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/` (extracted once from the bundled jars via `CLI install-driver`) and `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch and browsers install only via the CLI.
-8. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
+10. **Single version source**: the Playwright version comes from the bundled jars at build time (Gradle). Driver and Node always match it.
+11. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/` (extracted once from the bundled jars via `CLI install-driver`) and `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch and browsers install only via the CLI.
+12. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
 
 ## 4. Architecture
 
@@ -90,8 +94,7 @@ Proposed (not yet confirmed):
 bx-playwright/
   src/main/bx/
     ModuleConfig.bx          settings, onLoad env wiring, main( args ) for the CLI
-    bifs/                    Playwright() and utility BIFs (see 6.7)
-    components/              bx:playwright, bx:page, ... (see 6.8)
+    bifs/                    Playwright() (see 6.7)
     interceptors/            lifecycle events for extensions (see 6.9)
     models/
       PlaywrightService.bx   home/driver/node/browsers resolution, install, doctor
@@ -100,7 +103,9 @@ bx-playwright/
       Expect.bx              web-first assertions (wraps PlaywrightAssertions)
       OptionsMapper.bx       struct -> Java *Options via reflection
       Devices.bx             device descriptors (JSON shipped with the module)
-      cli/                   one class per CLI command
+      cli/                   one class per CLI verb, each with run( options )
+  completions/
+    bxPlaywright.bash        bash completions (generated from the verb registry)
       testing/               framework-agnostic testing SPI consumed by TestBox (see 7)
   src/main/java/             only if needed (e.g. image diff, event bridging)
   libs/                      playwright, driver, driver-bundle jars (+ gson, etc.)
@@ -112,23 +117,49 @@ Key internal pieces:
 - **Raw escape hatch**: every wrapper exposes `.$raw()` (or `getJava()`) returning the underlying Java object.
 - **Events**: BoxLang closures bridged to Java `Consumer`/`Runnable` via BoxLang's native functional interface support (no Runnable proxy class needed).
 
-## 5. CLI
+## 5. CLI (`bxPlaywright`)
 
-Entry point is BoxLang's module CLI convention: `ModuleConfig.main( args )`, invoked as `boxlang module:playwright <command>`. CommandBox users run `box boxlang cli module:playwright <command>` (or a thin CommandBox alias later if wanted).
+No CommandBox. The module ships its own executable through the module descriptor ([docs](https://boxlang.ortusbooks.com/boxlang-framework/module-development/module-descriptor#cli-executables-and-completions)):
 
-| Command | Purpose |
+```json
+"boxlang": {
+    "minimumVersion": "1.17.0",
+    "moduleName": "playwright",
+    "executable": "bxPlaywright",
+    "completions": "completions/bxPlaywright.bash"
+}
+```
+
+- `install-bx-module bx-playwright` creates `~/.boxlang/bin/bxPlaywright` (or `./boxlang_modules/.bin/bxPlaywright` with `--local`), equivalent to `boxlang module:playwright "$@"`.
+- Completions are copied to `~/.boxlang/completions/` and auto-sourced by BVM shell init.
+- Note from the docs: these fields are only processed by the OS installer (`install-bx-module` / BVM), not by `box install`. That matches the "no CommandBox" decision.
+
+Structure, following bx-agents (`src/main/bx/ModuleConfig.bx`):
+
+- `main( args )` only calls `CLIExit( dispatch( args ) )`, so exit codes reach the OS (a module `main()` return value is not the process exit code).
+- `dispatch( args )` is testable in-process: a verb registry (`verb -> models.cli.X`), descriptions, per-verb value flags, `--help` anywhere, `--version`, unknown verb handling.
+- Each verb is a class in `models/cli/` with `run( struct options )` returning `{ exitCode, message }`.
+- The completions script is generated at build time from the same verb registry and flags, so it never drifts. It also completes browser names (`chromium firefox webkit msedge chrome`) and device names.
+
+Verbs:
+
+| Verb | Purpose |
 |---|---|
-| `install [chromium firefox webkit msedge chrome] [--with-deps] [--only-shell]` | Ensure driver + Node, then install browsers |
-| `install-deps [browsers]` | OS dependencies (Linux) |
+| `install [browsers...] [--with-deps] [--only-shell] [--force]` | Extract the driver (first run) and install browsers |
+| `install-deps [browsers...]` | OS dependencies (Linux) |
 | `uninstall [--all]` | Remove browsers |
-| `doctor` | Report versions, paths, platform, Node, installed browsers, and fix hints |
-| `version` | Module, Playwright, and browser versions |
-| `codegen [url] [--device --viewport --load-storage --save-storage]` | Record actions (Java target for now; BoxLang target later, see 10) |
-| `open [url]`, `screenshot <url> <file>`, `pdf <url> <file>` | Quick utilities |
-| `show-trace [file]` | Open the trace viewer |
+| `doctor [--json]` | Versions, paths, platform, Node, installed browsers, fix hints |
+| `version` / `--version` | Module, Playwright and browser versions |
+| `codegen [url] [--device --viewport --load-storage --save-storage]` | Record actions (Java target for now; BoxLang target later, see 9) |
+| `open [url]` | Open a headed browser |
+| `screenshot <url> <file> [--full-page --device]` | One-shot screenshot |
+| `pdf <url> <file> [--format]` | One-shot PDF (Chromium) |
+| `show-trace [file]` | Trace viewer |
 | `mcp [options]` | Start the Playwright MCP server (bundled in driver) |
-| `devices` | List device descriptors |
+| `devices [--json]` | List device descriptors |
+| `clean` | Remove extracted driver/cache in the playwright home |
 | `run <args...>` | Raw passthrough to the Playwright CLI |
+| `help` | Usage |
 
 ## 6. Runtime DSL (API shape)
 
@@ -225,30 +256,43 @@ Framework-aware waits: `page.waitForIdle()` (network idle + optional cbWire/HTMX
 
 ### 6.7 BIFs
 
-Keep the global surface small; everything else hangs off the returned objects.
+One BIF: `playwright()`. Everything else hangs off the returned manager, which keeps the global namespace clean and makes the API discoverable.
 
-| BIF | Returns / does |
-|---|---|
-| `playwright( [options] )` | Thread-confined manager (entry point for everything) |
-| `playwrightScreenshot( url, path, [options] )` | One-shot screenshot, cleans up |
-| `playwrightPDF( url, path, [options] )` | One-shot PDF (Chromium) |
-| `playwrightContent( url, [options] )` | Rendered HTML after JS (scraping) |
-| `playwrightDevices( [name] )` | Device descriptor struct(s) |
+```js
+playwright()                                   // defaults from module settings
+playwright( "firefox" )                        // shorthand: browser name
+playwright( { browser: "webkit", headless: false, baseURL: "..." } )
+
+// One-shot helpers as methods (no extra BIFs)
+playwright().screenshot( url, path, { fullPage: true } )
+playwright().pdf( url, path, { format: "A4" } )
+playwright().content( url )                     // rendered HTML after JS
+playwright().devices()                          // device descriptors
+
+// Scoped usage with auto cleanup (covers what a body component would do)
+playwright().browse( ( page ) => page.visit( "/" ).assertSee( "Hi" ) )
+```
+
+Other entry ideas to decide on:
+
+- `playwright().visit( url )` as the fastest path to a page (lazy launch of browser/context/page).
+- Named profiles in module settings: `playwright( "mobile" )` resolves a profile (browser, device, baseURL, locale) when the string is not a browser name.
+- `playwright().request()` for API testing without a browser.
+- `playwright().connect( wsEndpoint )` / `connectOverCDP()` for remote browsers or grids.
 
 ### 6.8 Components
 
-For templates, scripts and scheduled tasks, a block style that auto-manages cleanup:
+Rule: only when wrapping a body. Closures (`browse()`) already give scoping and cleanup in script and templates, so v1 ships **no components**.
 
-```js
-bx:playwright browser="chromium" headless=true variable="pw" {
-    bx:page url="https://site.com/report" device="iPhone 15" variable="page" {
-        page.click( "Export" )
-        bx:playwrightScreenshot path="report.png" fullPage=true;
-    }
-}
+The one real body use case, for later: render body content with Chromium, e.g. HTML to PDF or image in templates:
+
+```html
+<bx:playwrightRender type="pdf" path="invoice.pdf" format="A4">
+    <h1>Invoice #bx:output#...</h1>
+</bx:playwrightRender>
 ```
 
-Candidates: `bx:playwright`, `bx:browserContext`, `bx:page`, `bx:playwrightTrace`, `bx:playwrightScreenshot`, `bx:playwrightPDF`. Scope to agree on in phase 2.
+This overlaps with bx-pdf, so it is only worth it if Chromium rendering (modern CSS, JS) is a real need. Decide after v1.
 
 ### 6.9 Interceptors (extension points)
 
@@ -287,8 +331,12 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 
 ### Phase 1: Install and CLI
 - [ ] `PlaywrightService`: home resolution, one-time driver extraction from bundled jars (`install-driver`), env wiring, `PLAYWRIGHT_NODEJS_PATH` override.
-- [ ] `ModuleConfig.main()` dispatcher and commands: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `run`.
-- [ ] Commands: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
+- [ ] `box.json` `boxlang.executable` (`bxPlaywright`) and `boxlang.completions`.
+- [ ] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`.
+- [ ] Verbs: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `clean`, `run`.
+- [ ] Verbs: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
+- [ ] Build step that generates `completions/bxPlaywright.bash` from the verb registry.
+- [ ] CLI specs calling `dispatch()` in-process.
 - [ ] GitHub Action example for CI (install with deps, cache browsers).
 
 ### Phase 2: Core DSL
@@ -298,8 +346,8 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 - [ ] Assertions (inline + `pwExpect`), web-first, configurable timeout.
 - [ ] Network (`intercept`, events), `request()` API testing, storage state `session()`, tracing, video, screenshots, PDF, clock.
 
-### Phase 3: BIFs, components, interceptors, testing SPI
-- [ ] BIFs (6.7) and components (6.8).
+### Phase 3: BIF, interceptors, testing SPI
+- [ ] `playwright()` BIF, profiles, one-shot helpers (6.7).
 - [ ] Interceptor events (6.9).
 - [ ] Testing SPI: lifecycle scopes, artifact API and policies, device registry, webServer helper.
 - [ ] Support the TestBox team building the adapter in TestBox core (tracked in the TestBox repo).
@@ -309,6 +357,7 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 - [ ] Devices and emulation modifiers.
 - [ ] Quality checks: console/smoke, axe accessibility, aria snapshots.
 - [ ] Visual regression (baseline + pixel diff + diff image).
+- [ ] Evaluate `bx:playwrightRender` body component (6.8).
 - [ ] Soft assertions, multi-user `browse()`.
 
 ### Phase 5: Tooling and docs
@@ -328,8 +377,7 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 
 ## 10. Open Questions
 
-1. Module registration name: `playwright` (BIF `playwright()`) OK?
-2. Minimum BoxLang version and JDK (template says BoxLang 1.13.0, JDK 21).
-3. Keep a CommandBox command namespace (`box playwright ...`) or rely on `box boxlang cli module:playwright`?
-4. Assertion style: Dusk-style `assertSee()`, expect-style, or both (plan: both)?
-5. Components: which ones are worth shipping in v1 (6.8)?
+1. Executable casing: `bxPlaywright` (matches `bxSites`, `bxAgents`) or all lowercase `bxplaywright`?
+2. Entry ideas in 6.7: named profiles, `visit()` shortcut, `connect()`. Keep all?
+3. Is `bx:playwrightRender` (Chromium HTML to PDF/image) worth doing after v1, given bx-pdf?
+4. Who on the TestBox side owns the adapter and the SPI contract?
