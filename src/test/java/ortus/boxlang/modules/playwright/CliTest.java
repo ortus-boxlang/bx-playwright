@@ -271,7 +271,8 @@ public class CliTest extends BaseIntegrationTest {
 		String	doctor	= capture( setup + "result = cli.run( [ \"doctor\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( doctor ).contains( "[fail] node" );
-		assertThat( doctor ).contains( "/nope/bin/node" );
+		// Windows prints the path with backslashes
+		assertThat( doctor.replace( '\\', '/' ) ).contains( "/nope/bin/node" );
 		assertThat( doctor ).contains( "nodePath" );
 		assertThat( doctor ).doesNotContain( "[ok]   node" );
 		String json = capture( setup + "result = cli.run( [ \"doctor\", \"--json\" ] )" );

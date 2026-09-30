@@ -113,7 +113,7 @@ public class CliE2ETest extends BaseIntegrationTest {
 		String	output	= capture( bad + "result = cli.run( [ \"install\", \"chromium\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( output ).contains( "Error [Playwright.NotInstalled]" );
-		assertThat( output ).contains( "/nope/bin/node" );
+		assertThat( output.replace( '\\', '/' ) ).contains( "/nope/bin/node" );
 		assertThat( output ).doesNotContain( "Ready." );
 	}
 
