@@ -59,6 +59,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `BrowserContext.close()` always closes and forgets the context even when collecting screenshots or traces fails, and `browse()` no longer hides the callback error behind a close error
 * Session names map to distinct files (`a b` and `a-b` no longer share one); simple names such as `admin` keep their file
 * A relative `snapshots.directory` resolves against the current directory instead of the module folder
+* CLI `codegen --output` writes relative paths to the current directory (not the module folder) and reports the absolute path
+* CLI `codegen --output file` and `-o file` (space separated) work: flags that take a value accept the next argument, and it is no longer forwarded to Playwright as a URL
+* CLI `codegen` produces BoxLang that runs: `#` and quotes in strings are escaped, Java escapes resolved, `Pattern.compile()` becomes `page.regex()` with flags, enum constants become strings, `locator().contentFrame()` becomes `frame()`, popups, downloads and dialogs become callbacks, and multi-line aria snapshots are kept
+* CLI `--json` prints only valid JSON for `install`, `install-node` and `codegen` (progress and Playwright output go to standard error), and passthrough verbs no longer forward `--json` to Playwright
+* CLI `help nope --json` and `nope --json` print a `Playwright.InvalidOption` JSON error and exit with 1
+* CLI `doctor` fails (and `install` stops with an error) when the Node.js runtime cannot run, such as an explicit `nodePath` that does not exist, instead of reporting it as ok
+* CLI `version` reports the Node.js runtime actually used and its source, or `none`
+* CLI `mcp` uses the configured browser (`--browser=chromium` by default) instead of the branded Chrome that `install` does not install
+* CLI `--x="abc` keeps its value: quotes are only stripped when the value starts and ends with the same quote
+* CLI built-in verbs reject unknown options (such as `install --with-dep`) with `Playwright.InvalidOption` listing the valid ones, instead of ignoring them
+* Release workflow: a build of a snapshot version or from the development branch (including a manual run) is never tagged or released
 
 ### Added
 

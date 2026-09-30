@@ -7,8 +7,10 @@
  * page.byRole( "button", { name : "Save" } ).click()
  * </pre>
  *
- * Boilerplate (imports, class, Playwright/browser/context setup) is dropped. Statements that cannot be
- * translated are kept as comments so nothing recorded is lost.
+ * Java string literals become BoxLang strings (`#` doubled, `\"` as `""`, escapes resolved), `Pattern.compile()` becomes
+ * `page.regex()`, enum constants become strings, `locator( x ).contentFrame()` becomes `frame( x )`, and popup, download
+ * and dialog handlers become DSL callbacks. Boilerplate (imports, class, Playwright/browser/context setup) is dropped.
+ * Statements that cannot be translated are kept as comments so nothing recorded is lost.
  */
 class {
 
@@ -28,6 +30,21 @@ class {
 	}
 
 	/**
+	 * DSL finders whose second argument is the `exact` boolean instead of an options struct.
+	 */
+	variables.EXACT_FINDERS = [ "byText", "byLabel", "byPlaceholder", "byAltText", "byTitle" ]
+
+	/**
+	 * DSL actions taking `( selector, options )`: on a locator the options are passed by name.
+	 */
+	variables.OPTION_ACTIONS = [ "click", "dblclick" ]
+
+	/**
+	 * Variables whose statements are translated: the page, popups and dialog handler arguments.
+	 */
+	variables.roots = [ "page" ]
+
+	/**
 	 * Translate a recorded Java file into a BoxLang script.
 	 *
 	 * @java The Java source recorded by codegen
@@ -35,14 +52,31 @@ class {
 	 * @return BoxLang source
 	 */
 	string function translate( required string java ) {
-		var nl    = char( 10 )
-		var lines = [ "playwright().browse( ( page ) => {" ]
+		variables.roots = [ "page" ]
+		var nl          = char( 10 )
+		var lines       = [ "playwright().browse( ( page ) => {" ]
+		var closers     = []
 		for ( var statement in statements( arguments.java ) ) {
+			var indent = repeatString( char( 9 ), closers.len() + 1 )
+			if ( reFind( "->\s*\{$", statement ) ) {
+				var opened = translateOpener( statement )
+				lines.append( indent & opened.code )
+				closers.append( opened.closer )
+				continue
+			}
+			if ( statement == "})" && closers.len() ) {
+				lines.append( repeatString( char( 9 ), closers.len() ) & closers.last() )
+				closers.deleteAt( closers.len() )
+				continue
+			}
 			if ( isBoilerplate( statement ) ) {
 				continue
 			}
-			var converted = translateStatement( statement )
-			lines.append( "	" & converted )
+			lines.append( indent & translateStatement( statement ) )
+		}
+		while ( closers.len() ) {
+			lines.append( repeatString( char( 9 ), closers.len() ) & closers.last() )
+			closers.deleteAt( closers.len() )
 		}
 		lines.append( "} )" )
 		return lines.toList( nl ) & nl
@@ -57,21 +91,38 @@ class {
 	 */
 	string function translateStatement( required string statement ) {
 		var code = trim( arguments.statement )
-		if ( !code.startsWith( "page." ) && !code.startsWith( "assertThat(" ) ) {
-			return "// TODO translate: " & code
-		}
+		var todo = "// TODO translate: " & code
 		// assertThat( x ).hasText( y )  ->  x.expect().toHaveText( y )
-		var assertion = reFind( "^assertThat\((.*?)\)\.(not\(\)\.)?(is|has|contains|matches)([A-Za-z]+)\((.*)\)$", code, 1, true )
-		if ( assertion.pos[ 1 ] ) {
-			var subject  = translateExpression( assertion.match[ 2 ] )
-			var negation = len( assertion.match[ 3 ] ) ? ".not()" : ""
-			var verb     = assertion.match[ 4 ]
-			var name     = assertion.match[ 5 ]
-			var method   = verb == "is" ? "toBe" & name : ( verb == "has" ? "toHave" & name : ( verb == "contains" ? "toContain" & name : "toMatch" & name ) )
-			var args     = translateArguments( assertion.match[ 6 ] )
-			return "#subject#.expect()#negation#.#method#(#len( args ) ? " #args# " : ""#)"
+		if ( code.startsWith( "assertThat(" ) ) {
+			var calls = splitCalls( code )
+			var index = 2
+			var neg   = ""
+			if ( calls.len() >= 3 && calls[ 2 ].name == "not" && !calls[ 2 ].isField ) {
+				neg   = ".not()"
+				index = 3
+			}
+			if ( calls.len() != index || calls[ index ].isField || !isRooted( calls[ 1 ].args ) ) {
+				return todo
+			}
+			var assertion = reFind( "^(is|has|contains|matches)([A-Za-z]+)$", calls[ index ].name, 1, true )
+			if ( !assertion.pos[ 1 ] ) {
+				return todo
+			}
+			var verb    = assertion.match[ 2 ]
+			var method  = ( verb == "is" ? "toBe" : ( verb == "has" ? "toHave" : ( verb == "contains" ? "toContain" : "toMatch" ) ) ) & assertion.match[ 3 ]
+			var subject = translateExpression( calls[ 1 ].args )
+			var args    = translateArgumentList( calls[ index ].args )
+			if ( subject.find( ".contentFrame(" ) ) {
+				return todo
+			}
+			return "#subject#.expect()#neg#.#method#(#args.len() ? " #args.toList( ", " )# " : ""#)"
 		}
-		return translateExpression( code )
+		if ( !isRooted( code ) ) {
+			return todo
+		}
+		var translated = translateExpression( code )
+		// contentFrame() is only supported right after locator( selector )
+		return translated.find( ".contentFrame(" ) ? todo : translated
 	}
 
 	/**
@@ -82,54 +133,74 @@ class {
 	 * @return The BoxLang expression
 	 */
 	string function translateExpression( required string expression ) {
-		var calls  = splitCalls( arguments.expression )
+		var calls = []
+		// locator( selector ).contentFrame()  ->  frameLocator( selector ), which becomes frame( selector )
+		for ( var call in splitCalls( arguments.expression ) ) {
+			if (
+				call.name == "contentFrame" && !call.isField && calls.len() > 1
+				&& calls.last().name == "locator" && splitTopLevel( calls.last().args, "," ).len() == 1
+			) {
+				calls.last().name = "frameLocator"
+				continue
+			}
+			calls.append( call )
+		}
 		var result = calls[ 1 ].name
 		for ( var i = 2; i <= calls.len(); i++ ) {
 			var call = calls[ i ]
 			var name = variables.FINDERS[ call.name ] ?: call.name
-			var args = translateArguments( call.args )
-			if ( call.name == "nth" && isNumeric( args ) ) {
-				args = args + 1
-			}
 			if ( call.isField ) {
 				result &= "." & name
-			} else {
-				result &= ".#name#(#len( args ) ? " #args# " : ""#)"
+				continue
 			}
+			var rawArgs = splitTopLevel( call.args, "," ).map( ( part ) -> trim( part ) ).filter( ( part ) -> len( part ) > 0 )
+			var args    = translateArgumentList( call.args )
+			if ( call.name == "nth" && args.len() == 1 && isNumeric( args[ 1 ] ) ) {
+				args[ 1 ] = args[ 1 ] + 1
+			}
+			if ( variables.EXACT_FINDERS.find( name ) && rawArgs.len() == 2 && isOptions( rawArgs[ 2 ] ) ) {
+				// byText( text, exact )
+				var exact = optionValue( rawArgs[ 2 ], "exact" )
+				args = len( exact ) ? [ args[ 1 ], exact ] : [ args[ 1 ] ]
+			} else if ( call.name == "locator" && rawArgs.len() == 2 && isOptions( rawArgs[ 2 ] ) ) {
+				// locator( selector, { hasText } )  ->  locator( selector ).filter( { hasText } )
+				result &= ".locator( #args[ 1 ]# ).filter( #args[ 2 ]# )"
+				continue
+			} else if ( variables.OPTION_ACTIONS.find( name ) && rawArgs.len() == 1 && isOptions( rawArgs[ 1 ] ) ) {
+				args = [ "options = " & args[ 1 ] ]
+			}
+			result &= ".#name#(#args.len() ? " #args.toList( ", " )# " : ""#)"
 		}
 		return result
 	}
 
 	/**
-	 * Translate a Java argument list, converting roles, option builders, patterns and paths.
+	 * Translate a Java argument list, converting strings, roles, enums, option builders, patterns, paths and arrays.
 	 *
 	 * @args The comma separated Java arguments
 	 *
 	 * @return The BoxLang arguments, comma separated
 	 */
 	string function translateArguments( required string args ) {
-		var parts  = splitTopLevel( arguments.args, "," )
+		return translateArgumentList( arguments.args ).toList( ", " )
+	}
+
+	/**
+	 * Translate a Java argument list into BoxLang arguments.
+	 *
+	 * @args The comma separated Java arguments
+	 *
+	 * @return The BoxLang arguments
+	 */
+	array function translateArgumentList( required string args ) {
 		var result = []
-		for ( var part in parts ) {
+		for ( var part in splitTopLevel( arguments.args, "," ) ) {
 			part = trim( part )
-			if ( !len( part ) ) {
-				continue
-			}
-			if ( part.startsWith( "AriaRole." ) ) {
-				result.append( """#lCase( part.listLast( "." ) ).replace( "_", "" )#""" )
-			} else if ( part.startsWith( "new " ) && part.find( "Options()" ) ) {
-				result.append( optionsToStruct( part ) )
-			} else if ( part.startsWith( "Pattern.compile(" ) ) {
-				result.append( "page.regex(" & part.mid( 17, part.len() - 17 ) & ")" )
-			} else if ( part.startsWith( "Paths.get(" ) ) {
-				result.append( part.mid( 11, part.len() - 11 ) )
-			} else if ( part.startsWith( "page." ) ) {
-				result.append( translateExpression( part ) )
-			} else {
-				result.append( part )
+			if ( len( part ) ) {
+				result.append( translateArgument( part ) )
 			}
 		}
-		return result.toList( ", " )
+		return result
 	}
 
 	/**
@@ -154,29 +225,338 @@ class {
 	}
 
 	/**
-	 * Split Java source into statements, joining multi-line ones. Comments, imports and block braces are skipped.
+	 * Convert a Java string literal into a BoxLang string literal: Java escapes are resolved, then `"` is doubled and
+	 * `#` is doubled so it is not read as interpolation.
+	 *
+	 * @literal The Java string literal, with its quotes
+	 *
+	 * @return The BoxLang string literal
+	 */
+	string function toBoxString( required string literal ) {
+		return """" & unescapeJava( arguments.literal.mid( 2, arguments.literal.len() - 2 ) ).replace( """", """""", "all" ).replace( "##", "####", "all" ) & """"
+	}
+
+	/**
+	 * Resolve the escape sequences of the body of a Java string literal: \\ \" \' \n \t \r \b \f \s \0 and \uXXXX.
+	 *
+	 * @text The literal body, without quotes
+	 *
+	 * @return The text the literal stands for
+	 */
+	string function unescapeJava( required string text ) {
+		var escapes = { "n" : char( 10 ), "t" : char( 9 ), "r" : char( 13 ), "b" : char( 8 ), "f" : char( 12 ), "s" : " ", "0" : char( 0 ) }
+		var result  = createObject( "java", "java.lang.StringBuilder" ).init()
+		var i       = 1
+		while ( i <= arguments.text.len() ) {
+			var c = arguments.text.mid( i, 1 )
+			if ( c == "\" && i < arguments.text.len() ) {
+				var next = arguments.text.mid( i + 1, 1 )
+				if ( next == "u" && reFind( "^[0-9a-fA-F]{4}$", arguments.text.mid( i + 2, 4 ) ) ) {
+					result.append( char( inputBaseN( arguments.text.mid( i + 2, 4 ), 16 ) ) )
+					i += 6
+					continue
+				}
+				result.append( escapes.keyExists( next ) && !reFind( "[A-Z]", next ) ? escapes[ next ] : next )
+				i += 2
+				continue
+			}
+			result.append( c )
+			i++
+		}
+		return result.toString()
+	}
+
+	/**
+	 * Split Java source into statements, joining multi-line ones and turning text blocks into string literals.
+	 * Comments, imports and block braces are skipped; lambda openers (`... -> {`) are kept with their brace.
 	 *
 	 * @source The Java source
 	 *
 	 * @return The statements, without trailing semicolons
 	 */
 	array function statements( required string source ) {
-		var result  = []
-		var current = ""
-		for ( var line in listToArray( arguments.source, char( 10 ) ) ) {
+		var result     = []
+		var current    = ""
+		var blockLines = []
+		var inBlock    = false
+		for ( var line in listToArray( arguments.source.replace( char( 13 ), "", "all" ), char( 10 ), true ) ) {
 			var text = trim( line )
-			if ( !len( text ) || text.startsWith( "//" ) || text.startsWith( "import " ) ) {
-				continue
+			if ( inBlock ) {
+				var closePos = line.find( """""""" )
+				if ( !closePos ) {
+					blockLines.append( line )
+					continue
+				}
+				blockLines.append( line.left( closePos - 1 ) )
+				current &= textBlockLiteral( blockLines, !len( trim( line.left( closePos - 1 ) ) ) )
+				inBlock = false
+				text    = trim( line.mid( closePos + 3, line.len() ) )
+			} else {
+				if ( !len( text ) || text.startsWith( "//" ) || text.startsWith( "import " ) ) {
+					continue
+				}
+				var openPos = text.find( """""""" )
+				if ( openPos ) {
+					current    = joinLine( current, text.left( openPos - 1 ) )
+					blockLines = []
+					inBlock    = true
+					continue
+				}
 			}
-			current &= ( len( current ) ? " " : "" ) & text
+			current = joinLine( current, text )
 			if ( current.endsWith( ";" ) ) {
-				result.append( current.left( current.len() - 1 ).reReplace( "\(\s+", "(", "all" ).reReplace( "\s+\.", ".", "all" ) )
+				result.append( current.left( current.len() - 1 ) )
 				current = ""
-			} else if ( current.endsWith( "{" ) || current.endsWith( "}" ) ) {
+			} else if ( current.endsWith( "{" ) ) {
+				if ( reFind( "->\s*\{$", current ) ) {
+					result.append( current )
+				}
+				current = ""
+			} else if ( current.endsWith( "}" ) ) {
 				current = ""
 			}
 		}
 		return result
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Private
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Translate one Java argument.
+	 *
+	 * @part The trimmed Java argument
+	 *
+	 * @return The BoxLang argument
+	 */
+	private string function translateArgument( required string part ) {
+		if ( isStringLiteral( arguments.part ) ) {
+			return toBoxString( arguments.part )
+		}
+		if ( arguments.part.startsWith( "AriaRole." ) ) {
+			return """#lCase( arguments.part.listLast( "." ) ).replace( "_", "", "all" )#"""
+		}
+		if ( arguments.part.startsWith( "Pattern.compile(" ) ) {
+			return patternToRegex( arguments.part )
+		}
+		// MouseButton.RIGHT, LoadState.DOMCONTENTLOADED, KeyboardModifier.SHIFT, ...
+		if ( reFind( "^[A-Z]\w*\.[A-Z][A-Z0-9_]*$", arguments.part ) ) {
+			return """#lCase( arguments.part.listLast( "." ) ).replace( "_", "-", "all" )#"""
+		}
+		if ( isOptions( arguments.part ) ) {
+			return optionsToStruct( arguments.part )
+		}
+		if ( arguments.part.startsWith( "Paths.get(" ) ) {
+			return translateArgumentList( splitCalls( arguments.part )[ 2 ].args ).toList( " & ""/"" & " )
+		}
+		// new Path[] { Paths.get( "a" ), Paths.get( "b" ) } or new String[] { "a", "b" }
+		var arrayMatch = reFind( "^new\s+\w+\[\]\s*\{(.*)\}$", arguments.part, 1, true )
+		if ( arrayMatch.pos[ 1 ] ) {
+			var items = translateArgumentList( arrayMatch.match[ 2 ] )
+			return items.len() ? "[ #items.toList( ", " )# ]" : "[]"
+		}
+		if ( reFind( "^new\s+\w+\[0\]$", arguments.part ) ) {
+			return "[]"
+		}
+		// Arrays.asList( a, b ) or List.of( a, b )
+		if ( reFind( "^(Arrays\.asList|List\.of)\(", arguments.part ) ) {
+			var listItems = translateArgumentList( splitCalls( arguments.part )[ 2 ].args )
+			return listItems.len() ? "[ #listItems.toList( ", " )# ]" : "[]"
+		}
+		if ( isRooted( arguments.part ) ) {
+			return translateExpression( arguments.part )
+		}
+		return arguments.part
+	}
+
+	/**
+	 * Convert `Pattern.compile("x", Pattern.CASE_INSENSITIVE)` into `page.regex( "x", "i" )`.
+	 *
+	 * @pattern The Java Pattern.compile() call
+	 *
+	 * @return The page.regex() call
+	 */
+	private string function patternToRegex( required string pattern ) {
+		var args   = splitTopLevel( splitCalls( arguments.pattern )[ 2 ].args, "," )
+		var source = trim( args[ 1 ] )
+		if ( isStringLiteral( source ) ) {
+			source = toBoxString( source )
+		}
+		var flags = ""
+		if ( args.len() > 1 ) {
+			flags &= args[ 2 ].find( "CASE_INSENSITIVE" ) ? "i" : ""
+			flags &= args[ 2 ].find( "MULTILINE" ) ? "m" : ""
+			flags &= args[ 2 ].find( "DOTALL" ) ? "s" : ""
+		}
+		return "page.regex( #source##len( flags ) ? ", ""#flags#""" : ""# )"
+	}
+
+	/**
+	 * Translate a statement that opens a Java lambda block, such as `Page page1 = page.waitForPopup(() -> {`.
+	 * Popups, downloads and dialogs become DSL callbacks; anything else is kept as a comment.
+	 *
+	 * @statement The Java statement ending with `-> {`
+	 *
+	 * @return { code, closer }: the BoxLang opening line and the line that closes it
+	 */
+	private struct function translateOpener( required string statement ) {
+		var todo  = { code : "// TODO translate: " & arguments.statement, closer : "// TODO translate: })" }
+		var match = reFind( "^(?:[\w.<>]+\s+(\w+)\s*=\s*)?(\w+)\.(\w+)\((.*)->\s*\{$", arguments.statement, 1, true )
+		if ( !match.pos[ 1 ] || !variables.roots.find( match.match[ 3 ] ) ) {
+			return todo
+		}
+		var variable = match.match[ 2 ]
+		var root     = match.match[ 3 ]
+		var method   = match.match[ 4 ]
+		var params   = trim( match.match[ 5 ] )
+		if ( !reFind( "^\(?\s*\w*\s*\)?$", params ) ) {
+			return todo
+		}
+		var lambdaParam = trim( params.reReplace( "[()]", "", "all" ) )
+		var assign = len( variable ) ? "var #variable# = " : ""
+		switch ( method ) {
+			case "waitForPopup":
+				if ( len( variable ) ) {
+					variables.roots.append( variable )
+				}
+				return { code : "#assign##root#.waitForPopup( () => {", closer : "} )" }
+			case "waitForDownload":
+				return { code : "#assign##root#.waitForDownload( () => {", closer : "} )" }
+			case "onDialog":
+			case "onceDialog":
+				if ( !len( lambdaParam ) ) {
+					return todo
+				}
+				variables.roots.append( lambdaParam )
+				// onceDialog() handles one dialog only: call it on the Playwright page to keep that behavior
+				var target = method == "onDialog" ? "#root#.onDialog" : "#root#.getJava().onceDialog"
+				return { code : "#target#( ( #lambdaParam# ) => {", closer : "} )" }
+			default:
+				return todo
+		}
+	}
+
+	/**
+	 * Build a Java string literal from the lines of a text block, removing the common indentation like Java does.
+	 *
+	 * @lines        The text block lines; the last one is the text before the closing delimiter
+	 * @closingAlone Whether the closing delimiter is on its own line (the text then ends with a line break)
+	 *
+	 * @return A Java string literal with the same value
+	 */
+	private string function textBlockLiteral( required array lines, required boolean closingAlone ) {
+		var indent = 1000000
+		for ( var i = 1; i <= arguments.lines.len(); i++ ) {
+			var line = arguments.lines[ i ]
+			if ( len( trim( line ) ) || ( i == arguments.lines.len() && arguments.closingAlone ) ) {
+				indent = min( indent, line.len() - line.reReplace( "^\s+", "" ).len() )
+			}
+		}
+		var content = []
+		var last    = arguments.closingAlone ? arguments.lines.len() - 1 : arguments.lines.len()
+		for ( var i = 1; i <= last; i++ ) {
+			content.append( arguments.lines[ i ].mid( indent + 1, arguments.lines[ i ].len() ).reReplace( "\s+$", "" ) )
+		}
+		var text   = content.toList( char( 10 ) ) & ( arguments.closingAlone ? char( 10 ) : "" )
+		var result = ""
+		var i      = 1
+		while ( i <= text.len() ) {
+			var c = text.mid( i, 1 )
+			if ( c == "\" ) {
+				result &= text.mid( i, 2 )
+				i      += 2
+				continue
+			}
+			result &= c == """" ? "\""" : ( c == char( 10 ) ? "\n" : c )
+			i++
+		}
+		return """" & result & """"
+	}
+
+	/**
+	 * Join a line to a statement being assembled, without a space around dots and parentheses.
+	 *
+	 * @current The statement so far
+	 * @text    The next trimmed line
+	 *
+	 * @return The joined statement
+	 */
+	private string function joinLine( required string current, required string text ) {
+		if ( !len( arguments.current ) || !len( arguments.text ) ) {
+			return arguments.current & arguments.text
+		}
+		var tight = arguments.text.startsWith( "." ) || arguments.text.startsWith( ")" ) || arguments.current.endsWith( "(" )
+		return arguments.current & ( tight ? "" : " " ) & arguments.text
+	}
+
+	/**
+	 * Whether a Java expression is a single string literal.
+	 *
+	 * @part The trimmed Java expression
+	 *
+	 * @return True for "..." with no other code around it
+	 */
+	private boolean function isStringLiteral( required string part ) {
+		if ( arguments.part.len() < 2 || !arguments.part.startsWith( """" ) || !arguments.part.endsWith( """" ) ) {
+			return false
+		}
+		var i = 2
+		while ( i < arguments.part.len() ) {
+			var c = arguments.part.mid( i, 1 )
+			if ( c == "\" ) {
+				i += 2
+				continue
+			}
+			if ( c == """" ) {
+				return false
+			}
+			i++
+		}
+		return i == arguments.part.len()
+	}
+
+	/**
+	 * Whether a Java expression is an options builder such as `new Page.GetByRoleOptions().setName("Save")`.
+	 *
+	 * @part The trimmed Java expression
+	 *
+	 * @return True for an options builder
+	 */
+	private boolean function isOptions( required string part ) {
+		return arguments.part.startsWith( "new " ) && arguments.part.find( "Options()" ) > 0
+	}
+
+	/**
+	 * Read the value one setter of an options builder sets, translated to BoxLang.
+	 *
+	 * @options The Java options builder
+	 * @key     The option name, e.g. `exact` for setExact()
+	 *
+	 * @return The BoxLang value, or empty when the setter is not called
+	 */
+	private string function optionValue( required string options, required string key ) {
+		var setter = "set" & uCase( arguments.key.left( 1 ) ) & arguments.key.mid( 2, arguments.key.len() )
+		for ( var call in splitCalls( arguments.options ) ) {
+			if ( call.name == setter && !call.isField ) {
+				return translateArguments( call.args )
+			}
+		}
+		return ""
+	}
+
+	/**
+	 * Whether an expression starts with a variable whose statements are translated (the page, a popup, a dialog).
+	 *
+	 * @expression The Java expression
+	 *
+	 * @return True when the expression is rooted in a known variable
+	 */
+	private boolean function isRooted( required string expression ) {
+		var root = reFind( "^(\w+)(\.|$)", trim( arguments.expression ), 1, true )
+		return root.pos[ 1 ] > 0 && variables.roots.find( root.match[ 2 ] ) > 0
 	}
 
 	/**
@@ -208,29 +588,33 @@ class {
 		var i     = 1
 		while ( i <= text.len() ) {
 			var c = text.mid( i, 1 )
-			if ( c == """" && ( i == 1 || text.mid( i - 1, 1 ) != "\" ) ) {
-				quote = !quote
-			} else if ( !quote ) {
-				if ( c == "(" ) {
-					if ( depth == 0 ) {
-						name  = trim( text.mid( start, i - start ) )
-						start = i + 1
-					}
-					depth++
-				} else if ( c == ")" ) {
-					depth--
-					if ( depth == 0 ) {
-						calls.append( { name : name, args : text.mid( start, i - start ), isField : false } )
-						start = i + 2
-						i++
-					}
-				} else if ( c == "." && depth == 0 && i >= start ) {
-					var segment = trim( text.mid( start, i - start ) )
-					if ( len( segment ) ) {
-						calls.append( { name : segment, args : "", isField : calls.len() > 0 } )
-					}
+			if ( quote ) {
+				if ( c == "\" ) {
+					i++
+				} else if ( c == """" ) {
+					quote = false
+				}
+			} else if ( c == """" ) {
+				quote = true
+			} else if ( c == "(" ) {
+				if ( depth == 0 ) {
+					name  = trim( text.mid( start, i - start ) )
 					start = i + 1
 				}
+				depth++
+			} else if ( c == ")" ) {
+				depth--
+				if ( depth == 0 ) {
+					calls.append( { name : name, args : text.mid( start, i - start ), isField : false } )
+					start = i + 2
+					i++
+				}
+			} else if ( c == "." && depth == 0 && i >= start ) {
+				var segment = trim( text.mid( start, i - start ) )
+				if ( len( segment ) ) {
+					calls.append( { name : segment, args : "", isField : calls.len() > 0 } )
+				}
+				start = i + 1
 			}
 			i++
 		}
@@ -254,22 +638,34 @@ class {
 		var depth   = 0
 		var quote   = false
 		var current = ""
-		for ( var i = 1; i <= arguments.text.len(); i++ ) {
+		var i       = 1
+		while ( i <= arguments.text.len() ) {
 			var c = arguments.text.mid( i, 1 )
-			if ( c == """" && ( i == 1 || arguments.text.mid( i - 1, 1 ) != "\" ) ) {
-				quote = !quote
-			}
-			if ( !quote && ( c == "(" || c == "{" ) ) {
-				depth++
-			} else if ( !quote && ( c == ")" || c == "}" ) ) {
-				depth--
-			}
-			if ( !quote && depth == 0 && c == arguments.separator ) {
+			if ( quote ) {
+				if ( c == "\" ) {
+					current &= arguments.text.mid( i, 2 )
+					i       += 2
+					continue
+				}
+				if ( c == """" ) {
+					quote = false
+				}
+				current &= c
+			} else if ( c == """" ) {
+				quote    = true
+				current &= c
+			} else if ( depth == 0 && c == arguments.separator ) {
 				parts.append( current )
 				current = ""
 			} else {
+				if ( c == "(" || c == "{" ) {
+					depth++
+				} else if ( c == ")" || c == "}" ) {
+					depth--
+				}
 				current &= c
 			}
+			i++
 		}
 		parts.append( current )
 		return parts

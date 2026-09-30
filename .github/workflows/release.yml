@@ -25,7 +25,8 @@ env:
   MODULE_ID: ${{ github.event.repository.name }}
   JDK: 21
   BUILD_ID: ${{ github.run_number }}
-  SNAPSHOT: ${{ inputs.snapshot || false }}
+  # Builds from development (including a manual run on it) are always snapshots: never tag, finalize the changelog or release them
+  SNAPSHOT: ${{ inputs.snapshot || github.ref == 'refs/heads/development' }}
 
 jobs:
   #############################################
@@ -66,6 +67,10 @@ jobs:
           fi
           # Set the version in the environment
           echo "VERSION=$TMPVERSION" >> $GITHUB_ENV
+          # A snapshot version is never tagged or released, whatever triggered the build
+          if [[ "$TMPVERSION" == *-snapshot ]]; then
+            echo "SNAPSHOT=true" >> $GITHUB_ENV
+          fi
 
           # Branch
           echo "Github Ref is $GITHUB_REF"

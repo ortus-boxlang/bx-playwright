@@ -6,10 +6,12 @@
  *
  * - `--flag`          -> true
  * - `--flag=value`    -> value
+ * - `--flag value`    -> value, for the flags a verb declares in `values` (short aliases such as `-o` too)
  * - `--no-flag`       -> false
  * - anything else     -> a positional, collected in order in `_positionals`
  *
- * `--json` prints the verb's `data` as JSON instead of the human readable message.
+ * Built-in verbs reject flags they do not declare. Verbs that forward to Playwright accept anything.
+ * `--json` prints the verb's `data` as JSON instead of the human readable message, errors included.
  */
 class {
 
@@ -90,8 +92,11 @@ class {
 		"codegen"      : {
 			class       : "Codegen",
 			description : "Record browser actions and generate BoxLang code (or --target=java, javascript, python)",
-			usage       : "codegen [url] [--output=file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
+			usage       : "codegen [url] [--output=file.bxs|-o file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
 			flags       : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
+			values      : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
+			aliases     : { "-o" : "--output" },
+			forwards    : true,
 			words       : []
 		},
 		"open"         : {
@@ -100,6 +105,7 @@ class {
 			description : "Open a headed browser",
 			usage       : "open [url]",
 			flags       : [ "--device", "--browser" ],
+			values      : [ "--device", "--browser" ],
 			words       : []
 		},
 		"screenshot"   : {
@@ -108,6 +114,7 @@ class {
 			description : "Take a screenshot of a URL",
 			usage       : "screenshot <url> <file> [--full-page] [--device=name]",
 			flags       : [ "--full-page", "--device", "--browser" ],
+			values      : [ "--device", "--browser" ],
 			words       : "@files"
 		},
 		"pdf"          : {
@@ -116,6 +123,7 @@ class {
 			description : "Save a URL as PDF (Chromium)",
 			usage       : "pdf <url> <file> [--paper-format=A4]",
 			flags       : [ "--paper-format" ],
+			values      : [ "--paper-format" ],
 			words       : "@files"
 		},
 		"show-trace"   : {
@@ -132,6 +140,7 @@ class {
 			description : "Start the Playwright MCP server for AI agents",
 			usage       : "mcp [options]",
 			flags       : [ "--headless", "--browser", "--port" ],
+			values      : [ "--browser", "--port" ],
 			words       : []
 		},
 		"run"          : {
@@ -176,8 +185,10 @@ class {
 	 * @return The exit code
 	 */
 	numeric function run( array args = [] ) {
-		var first = arrayLen( arguments.args ) ? arguments.args[ 1 ] : ""
-		var rest  = arguments.args.len() > 1 ? arguments.args.slice( 2 ) : []
+		var first   = arrayLen( arguments.args ) ? arguments.args[ 1 ] : ""
+		var rest    = arguments.args.len() > 1 ? arguments.args.slice( 2 ) : []
+		var json    = rest.findNoCase( "--json" ) > 0
+		var options = { json : json }
 
 		if ( first == "--version" || first == "-v" ) {
 			first = "version"
@@ -186,37 +197,42 @@ class {
 			printUsage()
 			return len( first ) ? 0 : 1
 		}
-		if ( first == "help" ) {
-			return help( parseOptions( rest ) )
-		}
-		if ( !variables.VERBS.keyExists( first ) ) {
-			println( "Unknown verb [#first#]." )
-			println( "" )
-			printUsage()
-			return 1
-		}
-		if ( first != "run" && ( rest.findNoCase( "--help" ) || rest.findNoCase( "-h" ) ) ) {
-			return help( { _positionals : [ first ] } )
-		}
-
-		var verb    = variables.VERBS[ first ]
-		var options = parseOptions( rest )
-		options._verb = first
-		options._raw  = rest
 
 		try {
+			if ( first == "help" ) {
+				options = parseOptions( rest, variables.VERBS.help )
+				validateOptions( "help", variables.VERBS.help, options )
+				return help( options )
+			}
+			if ( !variables.VERBS.keyExists( first ) ) {
+				if ( !json ) {
+					println( "Unknown verb [#first#]." )
+					println( "" )
+					printUsage()
+					return 1
+				}
+				throw(
+					type    = "Playwright.InvalidOption",
+					message = "Unknown verb [#first#].",
+					detail  = "Run [bxPlaywright help] to list the verbs."
+				)
+			}
+			if ( first != "run" && ( rest.findNoCase( "--help" ) || rest.findNoCase( "-h" ) ) ) {
+				return help( { _positionals : [ first ], json : json } )
+			}
+
+			var verb = variables.VERBS[ first ]
+			options  = parseOptions( rest, verb )
+			if ( isStrict( verb ) ) {
+				validateOptions( first, verb, options )
+			}
+			options._verb = first
+			options._raw  = rest
+
 			var result = new "models.cli.#verb.class#@playwright"().run( options, getConfig(), verb )
 			return output( result, options.json ?: false )
 		} catch ( any e ) {
-			if ( options.json ?: false ) {
-				println( jsonSerialize( { "error" : { "type" : e.type, "message" : e.message, "detail" : e.detail } } ) )
-			} else {
-				println( "Error [#e.type#]: #e.message#" )
-				if ( len( e.detail ) ) {
-					println( "Fix: #e.detail#" )
-				}
-			}
-			return 1
+			return printError( e, options.json ?: json )
 		}
 	}
 
@@ -224,27 +240,42 @@ class {
 	 * Parse CLI arguments into an options struct.
 	 *
 	 * @args The arguments after the verb
+	 * @verb The verb registry entry: its `values` flags take the next argument as their value and its `aliases` map short flags to long ones
 	 *
 	 * @return The options, with positionals in `_positionals`
+	 *
+	 * @throws Playwright.InvalidOption when a value flag has no value
 	 */
-	struct function parseOptions( array args = [] ) {
+	struct function parseOptions( array args = [], struct verb = {} ) {
 		var options = { _positionals : [] }
-		for ( var token in arguments.args ) {
-			if ( token.startsWith( "--no-" ) ) {
-				options[ token.mid( 6, token.len() ) ] = false
-			} else if ( token.startsWith( "--" ) ) {
-				var body  = token.mid( 3, token.len() )
-				var eqPos = body.find( "=" )
-				if ( eqPos ) {
-					options[ body.left( eqPos - 1 ) ] = stripQuotes( body.mid( eqPos + 1, body.len() ) )
-				} else {
-					options[ body ] = true
-				}
+		for ( var token in tokenize( arguments.args, arguments.verb ) ) {
+			if ( token.keyExists( "name" ) ) {
+				options[ token.name ] = token.value
 			} else {
-				options._positionals.append( token )
+				options._positionals.append( token.value )
 			}
 		}
 		return options
+	}
+
+	/**
+	 * Remove options (and the values they consumed) from raw CLI arguments, keeping everything else in order.
+	 * Used to forward arguments to Playwright without the options bxPlaywright handles itself.
+	 *
+	 * @args  The raw arguments after the verb
+	 * @names The option names to remove, without dashes, e.g. [ "output", "json" ]
+	 * @verb  The verb registry entry (`values` and `aliases`)
+	 *
+	 * @return The remaining raw arguments
+	 */
+	array function withoutOptions( array args = [], array names = [], struct verb = {} ) {
+		var kept = []
+		for ( var token in tokenize( arguments.args, arguments.verb ) ) {
+			if ( !token.keyExists( "name" ) || !arguments.names.findNoCase( token.name ) ) {
+				kept.append( token.raw, true )
+			}
+		}
+		return kept
 	}
 
 	/**
@@ -341,9 +372,18 @@ class {
 	 * @options The parsed options (`_positionals`, `json`)
 	 *
 	 * @return The exit code (1 when the verb is unknown)
+	 *
+	 * @throws Playwright.InvalidOption for an unknown verb with `--json`
 	 */
 	private numeric function help( required struct options ) {
 		var target = options._positionals.len() ? options._positionals[ 1 ] : ""
+		if ( len( target ) && !variables.VERBS.keyExists( target ) && ( options.json ?: false ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "Unknown verb [#target#].",
+				detail  = "Run [bxPlaywright help] to list the verbs."
+			)
+		}
 		if ( options.json ?: false ) {
 			var data = {}
 			for ( var name in variables.VERBS ) {
@@ -393,17 +433,138 @@ class {
 	}
 
 	/**
-	 * Remove surrounding quotes from a value that starts with a single or double quote.
+	 * Remove surrounding quotes from a value that starts and ends with the same single or double quote.
 	 *
 	 * @value The value to unquote
 	 *
 	 * @return The value without its first and last characters when quoted, otherwise unchanged
 	 */
 	private string function stripQuotes( required string value ) {
-		if ( arguments.value.len() >= 2 && ( arguments.value.startsWith( """" ) || arguments.value.startsWith( "'" ) ) ) {
+		if ( arguments.value.len() < 2 ) {
+			return arguments.value
+		}
+		var quote = arguments.value.left( 1 )
+		if ( ( quote == """" || quote == "'" ) && arguments.value.right( 1 ) == quote ) {
 			return arguments.value.mid( 2, arguments.value.len() - 2 )
 		}
 		return arguments.value
+	}
+
+	/**
+	 * Split raw CLI arguments into options and positionals. Value flags declared by the verb take the next
+	 * argument as their value (`--output file`), short aliases are expanded (`-o file` is `--output file`).
+	 *
+	 * @args The raw arguments after the verb
+	 * @verb The verb registry entry (`values` and `aliases`)
+	 *
+	 * @return One struct per option ({ name, value, raw }) or positional ({ value, raw }), `raw` holds the consumed arguments
+	 *
+	 * @throws Playwright.InvalidOption when a value flag has no value
+	 */
+	private array function tokenize( required array args, required struct verb ) {
+		var values  = arguments.verb.values ?: []
+		var aliases = arguments.verb.aliases ?: {}
+		var tokens  = []
+		var i       = 1
+		while ( i <= arguments.args.len() ) {
+			var raw   = arguments.args[ i ]
+			var token = raw
+			var flag  = token.listFirst( "=" )
+			if ( !token.startsWith( "--" ) && aliases.keyExists( flag ) ) {
+				token = aliases[ flag ] & token.mid( flag.len() + 1, token.len() )
+			}
+			if ( token.startsWith( "--no-" ) ) {
+				tokens.append( { name : token.mid( 6, token.len() ), value : false, raw : [ raw ] } )
+			} else if ( token.startsWith( "--" ) ) {
+				var body  = token.mid( 3, token.len() )
+				var eqPos = body.find( "=" )
+				if ( eqPos ) {
+					tokens.append( { name : body.left( eqPos - 1 ), value : stripQuotes( body.mid( eqPos + 1, body.len() ) ), raw : [ raw ] } )
+				} else if ( values.findNoCase( "--" & body ) ) {
+					if ( i == arguments.args.len() || arguments.args[ i + 1 ].startsWith( "-" ) ) {
+						throw(
+							type    = "Playwright.InvalidOption",
+							message = "The [#raw#] option needs a value.",
+							detail  = "Pass it as [--#body#=value] or [--#body# value]."
+						)
+					}
+					tokens.append( { name : body, value : arguments.args[ i + 1 ], raw : [ raw, arguments.args[ i + 1 ] ] } )
+					i++
+				} else {
+					tokens.append( { name : body, value : true, raw : [ raw ] } )
+				}
+			} else {
+				tokens.append( { value : raw, raw : [ raw ] } )
+			}
+			i++
+		}
+		return tokens
+	}
+
+	/**
+	 * Whether a verb validates its flags: built-in verbs do, verbs that forward their arguments to Playwright do not.
+	 *
+	 * @verb The verb registry entry
+	 *
+	 * @return True when unknown flags must be rejected
+	 */
+	private boolean function isStrict( required struct verb ) {
+		return arguments.verb.class != "Passthrough" && !( arguments.verb.forwards ?: false )
+	}
+
+	/**
+	 * Reject flags a built-in verb does not declare, so a typo such as `--with-dep` fails instead of being ignored.
+	 * `--json` is accepted by every verb.
+	 *
+	 * @name    The verb name
+	 * @verb    The verb registry entry
+	 * @options The parsed options
+	 *
+	 * @throws Playwright.InvalidOption for an unknown flag
+	 */
+	private void function validateOptions( required string name, required struct verb, required struct options ) {
+		var allowed = arguments.verb.flags.duplicate()
+		if ( !allowed.findNoCase( "--json" ) ) {
+			allowed.append( "--json" )
+		}
+		var unknown = []
+		for ( var key in arguments.options ) {
+			if ( key != "_positionals" && !allowed.findNoCase( "--" & key ) ) {
+				unknown.append( "--" & key )
+			}
+		}
+		for ( var positional in arguments.options._positionals ) {
+			if ( positional.len() > 1 && positional.startsWith( "-" ) ) {
+				unknown.append( positional )
+			}
+		}
+		if ( unknown.len() ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "Unknown option [#unknown.toList( ", " )#] for [#arguments.name#].",
+				detail  = "Valid options: #allowed.toList( ", " )#. See [bxPlaywright help #arguments.name#]."
+			)
+		}
+	}
+
+	/**
+	 * Print an error as text (type and fix) or, with `--json`, as `{ "error" : { type, message, detail } }`.
+	 *
+	 * @error The caught exception
+	 * @json  Whether to print JSON output
+	 *
+	 * @return The exit code, always 1
+	 */
+	private numeric function printError( required any error, boolean json = false ) {
+		if ( arguments.json ) {
+			println( jsonSerialize( { "error" : { "type" : arguments.error.type, "message" : arguments.error.message, "detail" : arguments.error.detail } } ) )
+		} else {
+			println( "Error [#arguments.error.type#]: #arguments.error.message#" )
+			if ( len( arguments.error.detail ) ) {
+				println( "Fix: #arguments.error.detail#" )
+			}
+		}
+		return 1
 	}
 
 }

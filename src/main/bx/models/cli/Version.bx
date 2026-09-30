@@ -4,7 +4,7 @@
 class {
 
 	/**
-	 * Report the module, Playwright, Node.js and installed browser versions.
+	 * Report the module, Playwright, Node.js (the runtime actually used, or none) and installed browser versions.
 	 *
 	 * @options CLI options
 	 * @config  The models.Config
@@ -15,16 +15,19 @@ class {
 	struct function run( required struct options, required any config, struct verb = {} ) {
 		var home  = arguments.config.home()
 		var build = arguments.config.buildInfo()
+		var node  = new models.cli.Terminal@playwright().node( home, arguments.config.nodePath() )
 		var data  = {
 			"module"       : build.module,
 			"distribution" : build.distribution,
 			"playwright"   : build.playwright,
-			"node"         : home.getNodeVersion(),
+			"node"         : node.ok ? node.version : "",
+			"nodeSource"   : node.ok ? node.source : "",
 			"browsers"     : home.installedBrowsers()
 		}
+		var nodeText = node.ok ? "#data.node# (#data.nodeSource#)" : "none"
 		return {
 			exitCode : 0,
-			message  : "bx-playwright #data.module# (#data.distribution#), Playwright #data.playwright#, Node.js #data.node#, browsers: #data.browsers.len() ? data.browsers.toList( ", " ) : "none"#",
+			message  : "bx-playwright #data.module# (#data.distribution#), Playwright #data.playwright#, Node.js #nodeText#, browsers: #data.browsers.len() ? data.browsers.toList( ", " ) : "none"#",
 			data     : data
 		}
 	}

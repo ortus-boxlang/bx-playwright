@@ -8,7 +8,7 @@ class {
 	/**
 	 * Download the pinned Node.js runtime into the playwright home.
 	 *
-	 * @options CLI options: force
+	 * @options CLI options: force, json
 	 * @config  The models.Config
 	 * @verb    The verb registry entry
 	 *
@@ -16,10 +16,11 @@ class {
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
 		var home       = arguments.config.home()
+		var terminal   = new models.cli.Terminal@playwright( arguments.options.json ?: false )
 		var executable = new NodeInstaller(
 			home,
 			arguments.config.getSettings().nodeDownloadURL ?: "",
-			( message ) => println( message )
+			( message ) => terminal.progress( message )
 		).install( arguments.options.force ?: false )
 		return {
 			exitCode : 0,

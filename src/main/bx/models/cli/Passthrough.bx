@@ -1,6 +1,7 @@
 /**
  * Verbs that forward their arguments to the Playwright CLI as-is:
- * codegen, open, screenshot, pdf, show-trace, mcp, install-deps, uninstall and run.
+ * open, screenshot, pdf, show-trace, mcp, install-deps, uninstall and run.
+ * Only `--json` belongs to bxPlaywright: it is never forwarded.
  */
 class {
 
@@ -14,13 +15,67 @@ class {
 	 * @return { exitCode, message, data }
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var cliArgs = len( arguments.verb.command ?: "" ) ? [ arguments.verb.command ] : []
-		cliArgs.append( arguments.options._raw ?: [], true )
+		var cliArgs = buildArgs( arguments.options, arguments.config, arguments.verb )
 		if ( cliArgs.isEmpty() ) {
-			return { exitCode : 1, message : "Nothing to run. Example: bxPlaywright run --help" }
+			return { exitCode : 1, message : "Nothing to run. Example: bxPlaywright run --help", data : { "exitCode" : 1 } }
 		}
-		var exitCode = arguments.config.home().runCli( cliArgs )
+		var exitCode = new models.cli.Terminal@playwright( arguments.options.json ?: false ).runPlaywright( arguments.config.home(), cliArgs )
 		return { exitCode : exitCode, message : "", data : { "exitCode" : exitCode } }
+	}
+
+	/**
+	 * Build the Playwright CLI arguments: the verb's command and the raw arguments without `--json`.
+	 * `mcp` without a browser choice gets the configured one (`--browser=chromium` by default), because the MCP
+	 * server otherwise wants the branded Chrome that `bxPlaywright install` does not install.
+	 *
+	 * @options CLI options, the raw arguments are in `_raw`
+	 * @config  The models.Config
+	 * @verb    The verb registry entry, `command` is the Playwright CLI command
+	 *
+	 * @return The Playwright CLI arguments
+	 */
+	array function buildArgs( required struct options, required any config, struct verb = {} ) {
+		var cliArgs = len( arguments.verb.command ?: "" ) ? [ arguments.verb.command ] : []
+		cliArgs.append( new models.cli.Cli@playwright().withoutOptions( arguments.options._raw ?: [], [ "json" ], arguments.verb ), true )
+		if ( ( arguments.verb.command ?: "" ) == "mcp" && !choosesBrowser( arguments.options ) ) {
+			cliArgs.append( "--browser=#mcpBrowser( arguments.config )#" )
+		}
+		return cliArgs
+	}
+
+	/**
+	 * Whether the MCP arguments already decide the browser: `--browser`, a config file, a CDP endpoint, the browser
+	 * extension or the PLAYWRIGHT_MCP_BROWSER variable.
+	 *
+	 * @options CLI options
+	 *
+	 * @return True when no browser should be added
+	 */
+	private boolean function choosesBrowser( required struct options ) {
+		for ( var name in [ "browser", "config", "cdp-endpoint", "extension" ] ) {
+			if ( arguments.options.keyExists( name ) ) {
+				return true
+			}
+		}
+		var fromEnv = createObject( "java", "java.lang.System" ).getenv( "PLAYWRIGHT_MCP_BROWSER" )
+		return !isNull( fromEnv ) && len( fromEnv ) > 0
+	}
+
+	/**
+	 * The MCP browser matching the configuration: the configured channel (chrome, msedge, ...) when set,
+	 * otherwise the configured browser (chromium, firefox or webkit).
+	 *
+	 * @config The models.Config
+	 *
+	 * @return The value for `--browser`
+	 */
+	private string function mcpBrowser( required any config ) {
+		var resolved = arguments.config.resolve()
+		if ( len( resolved.channel ?: "" ) ) {
+			return resolved.channel
+		}
+		var browser = lCase( resolved.browser ?: "chromium" )
+		return [ "chromium", "firefox", "webkit" ].find( browser ) ? browser : "chromium"
 	}
 
 }

@@ -1,0 +1,128 @@
+import java:java.lang.System;
+
+/**
+ * Console helpers shared by the CLI verbs.
+ *
+ * With `--json` only the final JSON document goes to standard output: progress messages and the output of the
+ * Playwright CLI child process go to standard error, so `bxPlaywright <verb> --json | jq` always gets valid JSON.
+ */
+class {
+
+	/**
+	 * Create the helper.
+	 *
+	 * @json Whether the verb runs with `--json`
+	 */
+	function init( boolean json = false ) {
+		variables.json = arguments.json
+		return this
+	}
+
+	/**
+	 * Print a progress message: to standard output, or to standard error with `--json`.
+	 *
+	 * @message The message
+	 *
+	 * @return This helper
+	 */
+	function progress( required string message ) {
+		if ( variables.json ) {
+			System.err.println( arguments.message )
+		} else {
+			println( arguments.message )
+		}
+		return this
+	}
+
+	/**
+	 * Run the Playwright CLI and wait for it. With `--json` its standard output is copied to standard error.
+	 *
+	 * @home The PlaywrightHome
+	 * @args The Playwright CLI arguments
+	 *
+	 * @return The process exit code
+	 *
+	 * @throws Playwright.NotInstalled when the Playwright CLI cannot be started
+	 */
+	numeric function runPlaywright( required any home, required array args ) {
+		if ( !variables.json ) {
+			return arguments.home.runCli( arguments.args )
+		}
+		var inherit = createObject( "java", "java.lang.ProcessBuilder$Redirect" ).INHERIT
+		var builder = arguments.home.cliProcess( arguments.args )
+		try {
+			var process = builder
+				.redirectInput( inherit )
+				.redirectError( inherit )
+				.start()
+			process.getInputStream().transferTo( System.err )
+			return process.waitFor()
+		} catch ( any e ) {
+			throw(
+				type    = "Playwright.NotInstalled",
+				message = "Failed to run the Playwright CLI: #e.message#",
+				detail  = "Run [bxPlaywright doctor]."
+			)
+		}
+	}
+
+	/**
+	 * Describe the Node.js runtime Playwright would use, flagging one that cannot run. An explicit Node.js path
+	 * (`nodePath` setting or PLAYWRIGHT_NODEJS_PATH) that is missing or does not run is reported as such and is
+	 * never replaced by another runtime, whether the home reports it with an empty version, as no runtime, or
+	 * by throwing a typed error.
+	 *
+	 * @home         The PlaywrightHome
+	 * @explicitPath The explicit Node.js path from the configuration, or empty
+	 *
+	 * @return { found, ok, executable, source, version, problem, fix }: `found` when a runtime was resolved or configured explicitly, `ok` when it can run
+	 */
+	struct function node( required any home, string explicitPath = "" ) {
+		var explicitFix = "Point the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) to a Node.js 20+ executable, or remove it so [bxPlaywright install] downloads one"
+		var info        = {
+			"found"      : len( arguments.explicitPath ) > 0,
+			"ok"         : false,
+			"executable" : arguments.explicitPath,
+			"source"     : len( arguments.explicitPath ) ? "explicit" : "",
+			"version"    : "",
+			"problem"    : "No Node.js runtime available",
+			"fix"        : "bxPlaywright install (downloads Node.js #arguments.home.getNodeVersion()#), or set the 'nodePath' setting"
+		}
+		try {
+			var resolved = arguments.home.resolveNode()
+		} catch ( any e ) {
+			info.found   = true
+			info.problem = e.message
+			info.fix     = len( e.detail ) ? e.detail : explicitFix
+			return info
+		}
+		if ( !resolved.isPresent() ) {
+			if ( len( arguments.explicitPath ) ) {
+				// The home refuses a broken explicit path: its requireNode() error names it
+				info.problem = "Node.js executable not found or not runnable at #arguments.explicitPath# (explicit)"
+				info.fix     = explicitFix
+				try {
+					arguments.home.requireNode()
+				} catch ( any e ) {
+					info.problem = e.message
+					info.fix     = len( e.detail ) ? e.detail : explicitFix
+				}
+			}
+			return info
+		}
+		info.append( resolved.get().toMap(), true )
+		info.found = true
+		// A command name found on the PATH (source system) is not a file; anything else must exist
+		var missing = info.source != "system" && !fileExists( info.executable )
+		if ( missing || !len( info.version ) ) {
+			info.problem = missing ? "Node.js executable not found at #info.executable# (#info.source#)" : "Node.js at #info.executable# (#info.source#) does not run or report a version"
+			info.fix     = info.source == "explicit" ? explicitFix : "bxPlaywright install --force (downloads Node.js #arguments.home.getNodeVersion()#)"
+			return info
+		}
+		info.ok      = true
+		info.problem = ""
+		info.fix     = ""
+		return info
+	}
+
+}
