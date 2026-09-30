@@ -40,6 +40,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The element aliases registered on this page.
+	 *
 	 * @return The element aliases usable as @name selectors
 	 */
 	struct function getAliases() {
@@ -57,6 +59,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The collector of failed soft assertions while running inside soft().
+	 *
 	 * @return The soft assertion collector while inside soft(), otherwise null
 	 */
 	function softCollector() {
@@ -97,6 +101,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The underlying Playwright Page Java object.
+	 *
 	 * @return The Playwright Page, for anything not covered by the DSL
 	 */
 	function getJava() {
@@ -172,6 +178,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The browser context this page belongs to.
+	 *
 	 * @return The BrowserContext wrapper that owns this page
 	 */
 	function context() {
@@ -179,6 +187,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The playwright() manager that owns this page, through its browser context.
+	 *
 	 * @return The playwright() manager that owns this page
 	 */
 	function manager() {
@@ -268,6 +278,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The current URL of the page.
+	 *
 	 * @return The current URL
 	 */
 	string function url() {
@@ -275,6 +287,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The title of the page.
+	 *
 	 * @return The page title
 	 */
 	string function title() {
@@ -282,6 +296,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The rendered HTML of the page, including changes made by scripts.
+	 *
 	 * @return The full HTML of the page, after JavaScript ran
 	 */
 	string function content() {
@@ -631,6 +647,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The Playwright Clock of the page, for fine-grained control of time beyond the DSL helpers.
+	 *
 	 * @return The Playwright Clock, to control Date, timers and animations
 	 */
 	function clock() {
@@ -797,6 +815,8 @@ class extends="Scope" {
 	}
 
 	/**
+	 * Whether the page has been closed.
+	 *
 	 * @return True if the page is closed
 	 */
 	boolean function isClosed() {

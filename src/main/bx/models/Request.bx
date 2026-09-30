@@ -25,6 +25,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The underlying Playwright APIRequestContext Java object.
+	 *
 	 * @return The Playwright APIRequestContext
 	 */
 	function getJava() {

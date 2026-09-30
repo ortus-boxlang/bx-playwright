@@ -35,6 +35,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The resolved configuration of this manager.
+	 *
 	 * @return The resolved configuration
 	 */
 	struct function getConfig() {
@@ -42,6 +44,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * The configuration service that resolved this manager's configuration.
+	 *
 	 * @return The models.Config that resolved this manager's configuration
 	 */
 	function getConfigService() {
@@ -49,6 +53,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Whether the Playwright driver has been started.
+	 *
 	 * @return True once the Playwright driver is running
 	 */
 	boolean function isStarted() {
@@ -459,6 +465,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * List every device descriptor Playwright knows about, starting the driver if needed.
+	 *
 	 * @return Every device descriptor: [ { name, descriptor } ]
 	 */
 	array function devices() {
@@ -466,6 +474,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Look up the emulation descriptor of a named device, starting the driver if needed.
+	 *
 	 * @name The device name, e.g. iPhone 15
 	 *
 	 * @return The descriptor: userAgent, viewport, deviceScaleFactor, isMobile, hasTouch, defaultBrowserType

@@ -54,6 +54,8 @@ class {
 	}
 
 	/**
+	 * The URL of this page object, used when visiting it, or an empty string when none is set.
+	 *
 	 * @return The page URL (absolute, or relative to baseURL)
 	 */
 	string function getUrl() {
@@ -61,6 +63,8 @@ class {
 	}
 
 	/**
+	 * The element aliases this page object registers on its page.
+	 *
 	 * @return The element aliases: name to smart selector
 	 */
 	struct function getElements() {
@@ -68,6 +72,8 @@ class {
 	}
 
 	/**
+	 * The Page this page object is bound to. Throws Playwright.InvalidOption when it is not bound yet.
+	 *
 	 * @return The bound Page
 	 */
 	function getPage() {

@@ -12,6 +12,8 @@ class {
 	}
 
 	/**
+	 * The underlying Playwright APIResponse Java object.
+	 *
 	 * @return The Playwright APIResponse
 	 */
 	function getJava() {
@@ -19,6 +21,8 @@ class {
 	}
 
 	/**
+	 * The HTTP status code of the response.
+	 *
 	 * @return The HTTP status code
 	 */
 	numeric function status() {
@@ -26,6 +30,8 @@ class {
 	}
 
 	/**
+	 * Whether the response has a successful status code.
+	 *
 	 * @return True if the status code is in the 200-299 range
 	 */
 	boolean function ok() {
@@ -33,6 +39,8 @@ class {
 	}
 
 	/**
+	 * The URL of the response.
+	 *
 	 * @return The URL of the response
 	 */
 	string function url() {
@@ -40,6 +48,8 @@ class {
 	}
 
 	/**
+	 * The HTTP headers of the response.
+	 *
 	 * @return The response headers, with lowercased names
 	 */
 	struct function headers() {
@@ -47,6 +57,8 @@ class {
 	}
 
 	/**
+	 * The response body decoded as text.
+	 *
 	 * @return The response body as text
 	 */
 	string function text() {
@@ -54,6 +66,8 @@ class {
 	}
 
 	/**
+	 * The response body deserialized from JSON.
+	 *
 	 * @return The body parsed as JSON
 	 */
 	any function json() {

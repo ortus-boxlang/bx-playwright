@@ -80,6 +80,8 @@ public class NodeInstaller {
 	}
 
 	/**
+	 * The download URL of the Node.js archive.
+	 *
 	 * @return The URL of the Node.js archive for this home's platform and Node.js version
 	 */
 	public String archiveURL() {
@@ -87,6 +89,8 @@ public class NodeInstaller {
 	}
 
 	/**
+	 * The download URL of the checksums file used to verify the Node.js archive.
+	 *
 	 * @return The URL of the SHASUMS256.txt file of the Node.js release
 	 */
 	public String checksumsURL() {

@@ -50,6 +50,8 @@ public final class E2E {
 	}
 
 	/**
+	 * The playwright home for end-to-end tests: BX_PLAYWRIGHT_HOME if set, otherwise build/playwright-home.
+	 *
 	 * @return The home directory used by end-to-end tests
 	 */
 	public static Path homeDir() {

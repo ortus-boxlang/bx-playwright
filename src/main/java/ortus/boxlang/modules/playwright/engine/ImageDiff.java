@@ -58,6 +58,8 @@ public final class ImageDiff {
 	public record Result( boolean sameSize, int width, int height, long diffPixels, double diffRatio, byte[] diffImage ) {
 
 		/**
+		 * Convert this comparison result to a map of its fields.
+		 *
 		 * @return A map representation for BoxLang
 		 */
 		public Map<String, Object> toMap() {

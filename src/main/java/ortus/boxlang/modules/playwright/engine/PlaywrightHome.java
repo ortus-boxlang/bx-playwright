@@ -136,6 +136,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The driver directory for this home's Playwright version.
+	 *
 	 * @return The directory holding the extracted driver for this Playwright version
 	 */
 	public Path getDriverDir() {
@@ -143,6 +145,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The directory of downloaded Node.js runtimes.
+	 *
 	 * @return The directory where Node.js runtimes are downloaded
 	 */
 	public Path getNodeDir() {
@@ -150,6 +154,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The directory where Playwright browsers are installed.
+	 *
 	 * @return The browsers directory
 	 */
 	public Path getBrowsersPath() {
@@ -157,6 +163,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The Playwright version this home is set up for.
+	 *
 	 * @return The Playwright version
 	 */
 	public String getPlaywrightVersion() {
@@ -164,6 +172,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The Node.js version to download.
+	 *
 	 * @return The Node.js version downloaded when no runtime is available
 	 */
 	public String getNodeVersion() {
@@ -171,6 +181,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The platform this home runs on.
+	 *
 	 * @return The platform
 	 */
 	public Platform getPlatform() {
@@ -178,6 +190,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The path of the node executable in the downloaded Node.js runtime.
+	 *
 	 * @return The Node.js executable of the downloaded runtime (it may not exist yet)
 	 */
 	public Path getDownloadedNodeExecutable() {
@@ -185,6 +199,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * The path of the node executable bundled with the driver in the full distribution.
+	 *
 	 * @return The Node.js executable extracted from the full distribution (it may not exist)
 	 */
 	public Path getBundledNodeExecutable() {
@@ -205,6 +221,8 @@ public class PlaywrightHome {
 	}
 
 	/**
+	 * Whether the driver for this Playwright version has been extracted.
+	 *
 	 * @return True if the driver has been extracted into {@link #getDriverDir()}
 	 */
 	public boolean isDriverInstalled() {

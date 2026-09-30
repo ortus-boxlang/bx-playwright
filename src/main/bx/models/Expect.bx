@@ -62,6 +62,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the page URL equals the given URL or matches the regex.
+	 *
 	 * @url The full URL, or a regex from regex()
 	 */
 	function toHaveURL( required any url ) {
@@ -195,6 +197,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the input, textarea or select has the given value or a value matching the regex.
+	 *
 	 * @value The input value, or a regex from regex()
 	 */
 	function toHaveValue( required any value ) {
@@ -202,6 +206,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the locator matches exactly the given number of elements.
+	 *
 	 * @count The number of matching elements
 	 */
 	function toHaveCount( required numeric count ) {
@@ -210,6 +216,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element has the attribute with the given value or a value matching the regex.
+	 *
 	 * @name  The attribute name
 	 * @value The attribute value, or a regex from regex()
 	 */
@@ -222,6 +230,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element's full class attribute equals the given value or matches the regex.
+	 *
 	 * @className The full class attribute, or a regex from regex()
 	 */
 	function toHaveClass( required any className ) {
@@ -229,6 +239,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element has all of the given classes, ignoring any others.
+	 *
 	 * @className One or more classes that must be present
 	 */
 	function toContainClass( required string className ) {
@@ -236,6 +248,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element has the given id or an id matching the regex.
+	 *
 	 * @id The element id
 	 */
 	function toHaveId( required any id ) {
@@ -243,6 +257,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element's computed CSS property has the given value or a value matching the regex.
+	 *
 	 * @name  The CSS property
 	 * @value The computed value, or a regex from regex()
 	 */
@@ -251,6 +267,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element's accessible name equals the given name or matches the regex.
+	 *
 	 * @name The accessible name, or a regex from regex()
 	 */
 	function toHaveAccessibleName( required any name ) {
@@ -258,6 +276,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element has the given ARIA role.
+	 *
 	 * @role The ARIA role, e.g. button, heading, link
 	 */
 	function toHaveRole( required string role ) {
@@ -266,6 +286,8 @@ class extends="Base" {
 	}
 
 	/**
+	 * Assert that the element's accessibility tree matches the given ARIA snapshot.
+	 *
 	 * @snapshot The expected ARIA snapshot in YAML, see page.snapshot()
 	 */
 	function toMatchAriaSnapshot( required string snapshot ) {

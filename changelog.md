@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Homepage for [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) in the style of bxsites.io: hero, features, AI agents, distributions, ecosystem and professional services, plus a social card rendered by bx-playwright
 * Documentation site published from `docs/` to GitHub Pages at [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) by the `docs.yml` workflow
 
 ### Fixed

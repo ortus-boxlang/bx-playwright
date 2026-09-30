@@ -1,0 +1,549 @@
+<!---
+	bx-playwright homepage (`docs/index.md` has `layout: home`). Based on the bx-sites bootstrap
+	theme's own home.bxm: the head, header and footer machinery are the theme's, the page content is
+	bx-playwright's. The styling comes from bx-sites' shared assets/home.css. Like the original, this
+	layout never includes the Markdown body of index.md, which stays for search and llms.txt.
+--->
+<bx:include template="#variables.moduleAssetsDir#/icons.bxm">
+<bx:include template="#variables.moduleAssetsDir#/locale-flags.bxm">
+<bx:include template="includes/site-helpers.bxm">
+<bx:script>
+	// module spec section 7 - search is fully static/client-side (provider "local") by
+	// default, opt-out via bxsites.json's `search`; `searchProvider.provider` picks a
+	// different provider ("algolia"/"pagefind" built-in here, anything else left to a theme override)
+	variables.searchEnabled = ( variables.siteConfig.search ?: false ) ? true : false
+	variables.searchProviderName = lCase( trim( variables.siteConfig.searchProvider.provider ?: "local" ) )
+	variables.searchAlgolia = variables.siteConfig.searchProvider.algolia ?: {}
+
+	variables.repoUrl = trim( variables.siteConfig.repo.url ?: "" )
+	variables.socialLinks = variables.siteConfig.social ?: []
+	variables.footerEnabled = ( variables.siteConfig.footer ?: false ) ? true : false
+	variables.navCollapsible = ( variables.siteConfig.theme.options.navCollapsible ?: false ) ? true : false
+	variables.navExpandAll = ( variables.siteConfig.theme.options.navExpandAll ?: true ) ? true : false
+	variables.tocPosition = variables.siteConfig.theme.options.tocPosition ?: "top"
+	variables.mainContentClass = variables.tocPosition == "sticky" ? "col-xl-8" : "col-xl-10"
+	variables.pageMetaPosition = variables.siteConfig.theme.options.pageMetaPosition ?: "bottom"
+	variables.breadcrumbsEnabled = ( variables.siteConfig.theme.options.breadcrumbs ?: true ) ? true : false
+	variables.faviconUrl = trim( variables.siteConfig.theme.favicon ?: "" )
+	variables.ogImageUrl = len( trim( variables.page.ogImage ?: "" ) ) ? trim( variables.page.ogImage ) : trim( variables.siteConfig.ogImage ?: "" )
+	variables.ogDescription = len( variables.page.description ?: "" ) ? variables.page.description : ( variables.siteConfig.description ?: "" )
+	variables.analyticsProvider = trim( variables.siteConfig.analytics.provider ?: "" )
+	variables.analyticsId = trim( variables.siteConfig.analytics.id ?: "" )
+	variables.mermaidEnabled = ( variables.siteConfig.mermaid ?: false ) ? true : false
+	variables.mathEnabled = ( variables.siteConfig.math ?: false ) ? true : false
+	variables.openapiEnabled = ( variables.siteConfig.openapi ?: false ) ? true : false
+	variables.pageActionsEnabled = ( variables.siteConfig.pageActions ?: false ) ? true : false
+	variables.pageActionsPosition = variables.siteConfig.theme.options.pageActionsPosition ?: "top"
+	variables.accentColor = trim( variables.siteConfig.theme.options.accentColor ?: "" )
+	variables.accentColorDark = trim( variables.siteConfig.theme.options.accentColorDark ?: "" )
+</bx:script>
+<bx:output>
+<!doctype html>
+<html lang="#encodeForHTML( variables.currentLocale.len() ? variables.currentLocale : 'en' )#" dir="#encodeForHTML( variables.currentLocaleDir )#">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>#encodeForHTML( variables.page.title )# - #encodeForHTML( variables.siteConfig.name )#</title>
+	<meta property="og:type" content="#encodeForHTML( len( trim( variables.page.ogType ?: '' ) ) ? variables.page.ogType : 'website' )#">
+	<meta property="og:site_name" content="#encodeForHTML( variables.siteConfig.name )#">
+	<meta property="og:title" content="#encodeForHTML( variables.page.title )#">
+
+	<!--- Open Graph and meta tags for SEO --->
+	#renderArticleMeta()#
+
+	<!--- Canonical URL --->
+	<bx:if len( variables.page.canonicalUrl )>
+		<link rel="canonical" href="#encodeForHTML( variables.page.canonicalUrl )#">
+	</bx:if>
+
+	<!--- Meta description and Open Graph description --->
+	<bx:if len( variables.ogDescription )>
+		<meta name="description" content="#encodeForHTML( variables.ogDescription )#">
+		<meta property="og:description" content="#encodeForHTML( variables.ogDescription )#">
+	</bx:if>
+
+	<!--- Open Graph image and Twitter card --->
+	<bx:if len( variables.ogImageUrl )>
+		<meta property="og:image" content="#resolveAssetUrl( variables.ogImageUrl )#">
+		<meta name="twitter:card" content="summary_large_image">
+	</bx:if>
+
+	<!--- Favicon --->
+	<bx:if len( variables.faviconUrl )>
+		<link rel="icon" href="#resolveAssetUrl( variables.faviconUrl )#">
+	</bx:if>
+
+	<!--- Color mode detection (before CSS, to avoid flash) --->
+	<script>
+		( function () {
+			var configuredMode = "#variables.siteConfig.theme.options.colorMode ?: 'auto'#";
+			var stored = localStorage.getItem( "bxsites-theme" );
+			var prefersDark = window.matchMedia( "(prefers-color-scheme: dark)" ).matches;
+			var wantsDark = stored ? stored === "dark" : ( configuredMode === "dark" || ( configuredMode === "auto" && prefersDark ) );
+			if ( wantsDark ) {
+				document.documentElement.setAttribute( "data-theme", "dark" );
+			}
+		} )();
+	</script>
+
+	<!--- Base CSS and theme CSS (+ the homepage-only stylesheet) --->
+	<link rel="stylesheet" href="#variables.basePath#assets/vendor/bootstrap/bootstrap.min.css">
+	<link rel="stylesheet" href="#variables.basePath#assets/vendor/highlight/github.min.css">
+	<link rel="stylesheet" href="#variables.basePath##variables.siteConfig.theme.styleUrl ?: 'assets/theme/style.css'#">
+	<link rel="stylesheet" href="#variables.basePath#assets/home.css">
+	<style>
+		.pw-code{margin:0;padding:18px 20px;font:13.5px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:inherit;white-space:pre;overflow-x:auto;background:transparent}
+		.pw-code .k{color:##00c853}.pw-code .s{color:##0ea5e9}.pw-code .c{opacity:.55}
+		[data-theme=dark] .pw-code .k{color:##34d399}[data-theme=dark] .pw-code .s{color:##7dd3fc}
+		.pw-dist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+	</style>
+
+	<!--- Extra CSS --->
+	#renderExtraCss( variables.siteConfig.extraCss ?: [] )#
+
+	<!--- Accent color overrides --->
+	<bx:if len( variables.accentColor ) or len( variables.accentColorDark )>
+		<style>
+			<!--- Light mode accent color --->
+			<bx:if len( variables.accentColor )>
+				:root {
+					--bxsites-accent: #variables.accentColor#;
+					--bxsites-link: #variables.accentColor#;
+					--bxsites-link-hover: color-mix( in srgb, #variables.accentColor# 85%, black );
+				}
+			</bx:if>
+			<!--- Dark mode accent color --->
+			<bx:if len( variables.accentColorDark )>
+				[data-theme="dark"] {
+					--bxsites-accent: #variables.accentColorDark#;
+					--bxsites-link: #variables.accentColorDark#;
+					--bxsites-link-hover: color-mix( in srgb, #variables.accentColorDark# 85%, white );
+				}
+			</bx:if>
+		</style>
+	</bx:if>
+
+	<!--- Math CSS --->
+	<bx:if variables.mathEnabled>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+	</bx:if>
+
+	<!--- OpenAPI CSS --->
+	<bx:if variables.openapiEnabled>
+		<link rel="stylesheet" href="#variables.basePath#assets/vendor/swagger-ui/swagger-ui.css">
+	</bx:if>
+
+	<!--- Google Analytics --->
+	<bx:if variables.analyticsProvider == 'google'>
+		<script async src="https://www.googletagmanager.com/gtag/js?id=#encodeForHTML( variables.analyticsId )#"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js', new Date());
+			gtag('config', '#variables.analyticsId#');
+		</script>
+	</bx:if>
+
+	<!--- Local search CSS and JS --->
+	<bx:if variables.searchEnabled and variables.searchProviderName eq 'local'>
+		<script>window.__BXSITES_BASE_PATH__ = "#variables.basePath#";</script>
+		<script>window.__BXSITES_SEARCH_NO_RESULTS__ = "#encodeForJavaScript( variables.strings.searchNoResults )#";</script>
+		<script src="#variables.basePath#assets/vendor/minisearch/minisearch.js"></script>
+		<script src="#variables.basePath#assets/search.js" defer></script>
+	</bx:if>
+
+	<!--- Algolia search CSS --->
+	<bx:if variables.searchEnabled and variables.searchProviderName eq 'algolia'>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
+	</bx:if>
+
+	<!--- Pagefind search CSS --->
+	<bx:if variables.searchEnabled and variables.searchProviderName eq 'pagefind'>
+		<link rel="stylesheet" href="#variables.basePath#pagefind/pagefind-ui.css">
+	</bx:if>
+
+	<!--- Alpine JS --->
+	<script src="#variables.basePath#assets/vendor/alpine/cdn.min.js" defer></script>
+</head>
+<body
+	class="bxsites-home"
+	x-data="{ dark: document.documentElement.getAttribute( 'data-theme' ) === 'dark' }"
+	x-init="$watch( 'dark', v => { document.documentElement.setAttribute( 'data-theme', v ? 'dark' : 'light' ); localStorage.setItem( 'bxsites-theme', v ? 'dark' : 'light' ) } )">
+
+	<!--- SVG gradient defs used by the brand mark / ecosystem icons --->
+	<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+		<defs>
+			<linearGradient id="bxlMarkGrad" x1="15.624" y1="250" x2="484.376" y2="250" gradientUnits="userSpaceOnUse">
+				<stop stop-color="##00DBFF"/><stop offset="1" stop-color="##00FF75"/>
+			</linearGradient>
+		</defs>
+	</svg>
+
+
+	<!--- Header: horizontal marketing nav --->
+	<header class="bxh-nav">
+		<div class="bxh-wrap bxh-navrow">
+			<a class="bxh-brand" href="#variables.basePath#">#renderBrandMark()#</a>
+			<nav class="bxh-navlinks">
+				<a href="#variables.basePath#getting-started/">Docs</a>
+				<a href="#variables.basePath#testing/">Testing</a>
+				<a href="#variables.basePath#ai/">AI Agents</a>
+				<a href="#variables.basePath#cli/">CLI</a>
+			</nav>
+			<div class="bxh-navcta">
+				<div class="bxh-search">
+					<bx:if variables.searchEnabled>
+						<bx:include template="#variables.themeDir#/search.bxm">
+					</bx:if>
+				</div>
+				<div class="bxh-nav-utils">
+					<bx:if variables.versions.len() gt 1>
+						#renderVersionSwitcher( variables.versions, variables.currentVersion )#
+					</bx:if>
+					<bx:if variables.locales.len() gt 1>
+						#renderLocaleDropdown( variables.locales, variables.currentLocale )#
+					</bx:if>
+					<button type="button" class="bxh-theme-toggle" @click="dark = !dark" aria-label="#encodeForHTML( variables.strings.toggleDarkMode )#">
+						<span x-show="!dark">#bxsitesIcon( "moon" )#</span>
+						<span x-show="dark" x-cloak>#bxsitesIcon( "sun" )#</span>
+					</button>
+				</div>
+				<bx:if len( variables.repoUrl )>
+					<a class="bxh-btn bxh-btn-ghost bxh-btn-sm" href="#bxsitesUrlAttr( variables.repoUrl )#" target="_blank" rel="noopener noreferrer">#bxsitesIcon( "github" )# Star</a>
+				</bx:if>
+			</div>
+		</div>
+	</header>
+
+	<!--- Hero: eyebrow, headline, lead, CTAs, install chip, code preview --->
+	<main class="bxh-wrap bxh-hero">
+		<div class="bxh-hero-grid">
+			<div>
+				<span class="eyebrow">BoxLang module &middot; powered by Microsoft Playwright</span>
+				<h1>Real browsers.<br><span class="grad">Fluent BoxLang.</span></h1>
+				<p class="lead">
+					<strong>bx-playwright</strong> drives Chromium, Firefox and WebKit from BoxLang. Test your apps end to end, mock the network, test APIs, render HTML to PDFs and images, and give AI agents a browser. One fluent API, no Node.js project to maintain.
+				</p>
+				<div class="hero-actions">
+					<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#getting-started/">Get Started &rarr;</a>
+					<bx:if len( variables.repoUrl )>
+						<a class="bxh-btn bxh-btn-ghost" href="#bxsitesUrlAttr( variables.repoUrl )#" target="_blank" rel="noopener noreferrer">#bxsitesIcon( "github" )# Star on GitHub</a>
+					</bx:if>
+				</div>
+				<div class="install-chip">
+					<span>$</span><span>install-bx-module bx-playwright</span><span class="sep">|</span><span>bxPlaywright install</span>
+				</div>
+			</div>
+			<div class="preview">
+				<div class="float-badge badge-1">#homeIcon( "check-shield" )# login flow passed &middot; 1.2s</div>
+				<div class="preview-card">
+					<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">login.bxs</span></div>
+<pre class="pw-code"><span class="k">playwright</span>().browse( ( page ) =&gt; {
+    page.visit( <span class="s">"/login"</span> )
+        .fill( <span class="s">"Email"</span>, <span class="s">"luis@ortus.com"</span> )
+        .fill( <span class="s">"Password"</span>, <span class="s">"secret"</span> )
+        .click( <span class="s">"Sign in"</span> )
+        .assertPathIs( <span class="s">"/dashboard"</span> )
+        .assertSee( <span class="s">"Welcome back"</span> )
+        .screenshot( <span class="s">"dashboard.png"</span> )
+} )</pre>
+				</div>
+				<div class="float-badge badge-2">#bxsitesIcon( "globe" )# Chromium &middot; Firefox &middot; WebKit</div>
+			</div>
+		</div>
+	</main>
+
+	<!--- Section: the flow (install, browse, assert, ship) --->
+	<section>
+		<div class="bxh-wrap bxh-orbit-wrap">
+			<div class="section-head" style="text-align:center;margin-inline:auto">
+				<span class="eyebrow" style="justify-content:center">How it works</span>
+				<h2>Write it like a user. Run it like a browser.</h2>
+			</div>
+			<div class="flow-row">
+				<div class="flow-stage"><div class="flow-icon">#homeIcon( "cube" )#</div><span>Install</span></div>
+				<div class="flow-connector"><div class="line"></div><span class="flow-pulse" style="animation-delay:0s"></span></div>
+				<div class="flow-stage"><div class="flow-icon">#bxsitesIcon( "globe" )#</div><span>Browse</span></div>
+				<div class="flow-connector"><div class="line"></div><span class="flow-pulse" style="animation-delay:.7s"></span></div>
+				<div class="flow-stage"><div class="flow-icon">#homeIcon( "check-shield" )#</div><span>Assert</span></div>
+				<div class="flow-connector"><div class="line"></div><span class="flow-pulse" style="animation-delay:1.4s"></span></div>
+				<div class="flow-stage"><div class="flow-icon">#homeIcon( "deploy" )#</div><span>Ship</span></div>
+			</div>
+			<p class="orbit-caption">Selectors read like the page: <code>fill( "Email" )</code>, <code>click( "Sign in" )</code>. Assertions wait for the page, so tests do not need sleeps. When something fails you get a typed error that says how to fix it, plus the screenshot, trace and video.</p>
+		</div>
+	</section>
+
+	<!--- Section: feature grid --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="section-head">
+				<span class="eyebrow">Everything included</span>
+				<h2>The whole Playwright, the BoxLang way.</h2>
+				<p>Browser testing, automation and rendering in one module, with a CLI that installs everything it needs.</p>
+			</div>
+			<div class="bxh-grid">
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "function" )#</div>
+					<h3><a href="#variables.basePath#browsing/">A fluent DSL</a></h3>
+					<p>The <code>playwright()</code> BIF, smart selectors (CSS, <code>@testId</code> or the text a user sees) and chainable actions. <code>browse()</code> cleans up for you.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "check-shield" )#</div>
+					<h3><a href="#variables.basePath#assertions/">Web-first assertions</a></h3>
+					<p>Inline (<code>assertSee()</code>, <code>assertPathIs()</code>) or <code>expect()</code> style. Both retry until the page is ready, with soft assertions when you want every failure at once.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "versions" )#</div>
+					<h3><a href="#variables.basePath#profiles/">Profiles and devices</a></h3>
+					<p><code>playwright( [ "mobile", "dark" ] )</code>. Built-in browsers, screens, devices and modes, plus your own in <code>boxlang.json</code> and <code>BX_PLAYWRIGHT_*</code> overrides.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#bxsitesIcon( "print" )#</div>
+					<h3><a href="#variables.basePath#rendering/">PDFs and images</a></h3>
+					<p><code>bx:playwrightRender</code> and <code>render()</code> turn HTML into PDF, PNG, JPEG or WebP with a real browser: modern CSS, web fonts and JavaScript included.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "api" )#</div>
+					<h3><a href="#variables.basePath#network/">Network and APIs</a></h3>
+					<p>Mock, block and inspect requests with <code>intercept()</code>. Test HTTP APIs with <code>request()</code>. Save a login once and reuse it with <code>session()</code>.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "themes" )#</div>
+					<h3><a href="#variables.basePath#quality/">Visual regression</a></h3>
+					<p><code>assertScreenshotMatches()</code> keeps baselines and writes a diff image with every changed pixel in red when the page drifts.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "search" )#</div>
+					<h3><a href="#variables.basePath#quality/">Quality checks</a></h3>
+					<p>axe-core accessibility audits, console error checks and smoke tests, one method call each.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "blocks" )#</div>
+					<h3><a href="#variables.basePath#page-objects/">Page objects and macros</a></h3>
+					<p>Keep tests readable with page objects, reusable page components and your own macros on every page.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "list" )#</div>
+					<h3><a href="#variables.basePath#testing/">Any test framework</a></h3>
+					<p>Works in TestBox or any runner. Artifact policies keep screenshots, traces and videos of failed tests, and <code>show-trace</code> replays them.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "server" )#</div>
+					<h3><a href="#variables.basePath#cli/">The bxPlaywright CLI</a></h3>
+					<p><code>install</code>, <code>doctor</code>, <code>codegen</code>, <code>screenshot</code>, <code>pdf</code>, <code>show-trace</code> and <code>mcp</code>, with bash completions and <code>--json</code> output.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#bxsitesIcon( "sparkle" )#</div>
+					<h3><a href="#variables.basePath#cli/">Record BoxLang code</a></h3>
+					<p><code>bxPlaywright codegen</code> opens a browser, records your clicks and writes bx-playwright code for you.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "java" )#</div>
+					<h3><a href="#variables.basePath#configuration/">Pure JVM, no Node project</a></h3>
+					<p>Built on Playwright for Java. The driver is managed for you, and Node.js is found, downloaded or bundled: you never write a <code>package.json</code>.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: AI agents --->
+	<section class="comparison-section">
+		<div class="bxh-wrap">
+			<div class="section-head">
+				<span class="eyebrow">Built for AI agents</span>
+				<h2>Let your agent see the app it builds.</h2>
+				<p>An agent that writes code but never runs the app is guessing. With bx-playwright it builds a feature, uses it in a real browser, fixes what is broken, and leaves browser tests behind.</p>
+				<div class="stack-strip">
+					<span class="label">Works with</span>
+					<span title="Claude">#homeIcon( "claude" )#</span>
+					<span title="ChatGPT">#homeIcon( "chatgpt" )#</span>
+					<span title="Gemini">#homeIcon( "gemini" )#</span>
+					<span title="Cursor">#homeIcon( "cursor" )#</span>
+					<span title="Any MCP agent">#homeIcon( "robot" )#</span>
+				</div>
+			</div>
+			<div class="term-panel">
+				<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">page.snapshot( options = { mode : "ai" } )</span></div>
+				<div class="term-body">
+					<div class="term-line" style="animation-delay:0s">- heading "Sign in" [level=1] [ref=e2]</div>
+					<div class="term-line" style="animation-delay:.9s">- textbox "Email" [ref=e5]</div>
+					<div class="term-line" style="animation-delay:1.8s">- textbox "Password" [ref=e6]</div>
+					<div class="term-line" style="animation-delay:2.7s">- button "Sign in" [ref=e7]<span class="term-cursor"></span></div>
+				</div>
+			</div>
+			<div class="bxh-grid" style="margin-top:32px">
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "list" )#</div>
+					<h3><a href="#variables.basePath#ai/">Snapshots with refs</a></h3>
+					<p>A compact, token-efficient view of the page. Agents act on refs directly: <code>click( "ref=e7" )</code>.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "robot" )#</div>
+					<h3><a href="#variables.basePath#ai/">Browser tools for BoxLang AI</a></h3>
+					<p><code>aiTools()</code> gives any bx-ai agent ten browser tools: visit, snapshot, click, fill, select and more.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "server" )#</div>
+					<h3><a href="#variables.basePath#ai/">Playwright MCP</a></h3>
+					<p><code>bxPlaywright mcp</code> starts Playwright's MCP server for Claude, Cursor, VS Code and every MCP client.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#bxsitesIcon( "copy" )#</div>
+					<h3><a href="#variables.basePath#errors/">An API that explains itself</a></h3>
+					<p><code>help()</code> on every object, typed errors with the fix in <code>detail</code>, and these docs as <code>llms.txt</code>.</p>
+				</div>
+				<div class="bxh-card bxh-card-wide">
+					<div class="icon">#homeIcon( "check-shield" )#</div>
+					<div>
+						<h3><a href="https://github.com/ortus-boxlang/skills/tree/main/boxlang-modules/bx-playwright" target="_blank" rel="noopener noreferrer">Official Agent Skills</a></h3>
+						<p><code>npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright</code> teaches Claude Code, Cursor and other coding agents how to browse, assert, mock, render and test with bx-playwright.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: the two distributions --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="section-head">
+				<span class="eyebrow">Two distributions</span>
+				<h2>Small and nimble, or everything in the box.</h2>
+				<p>Same module, same API. Pick the one that fits how you deploy.</p>
+			</div>
+			<div class="pw-dist">
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "cube" )#</div>
+					<h3><a href="#variables.basePath#getting-started/">bx-playwright</a></h3>
+					<p>About 4 MB. Uses a Node.js 20+ already on the machine, or <code>bxPlaywright install</code> downloads and verifies one for your platform.</p>
+				</div>
+				<div class="bxh-card">
+					<div class="icon">#homeIcon( "offline" )#</div>
+					<h3><a href="#variables.basePath#getting-started/">bx-playwright-full</a></h3>
+					<p>Bundles Node.js for every platform. Nothing else to download except the browsers: ideal for locked-down and air-gapped servers.</p>
+				</div>
+			</div>
+			<div class="install-chip" style="margin-top:24px">
+				<span>$</span><span>install-bx-module bx-playwright</span><span class="sep">|</span><span>install-bx-module bx-playwright-full</span>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: BoxLang ecosystem --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="section-head" style="text-align:center;margin-inline:auto">
+				<span class="eyebrow" style="justify-content:center">Part of the BoxLang ecosystem</span>
+				<h2>Not a one&##8209;off tool. A whole platform.</h2>
+				<div class="eco-hero-mark">#homeIcon( "boxlang" )#</div>
+			</div>
+			<div class="eco-row">
+				<a class="eco-card" href="https://boxlang.io" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#homeIcon( "boxlang" )#</div><b>BoxLang</b><span>The dynamic JVM language bx-playwright is built for.</span>
+				</a>
+				<a class="eco-card" href="https://ai.boxlang.io" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#homeIcon( "robot" )#</div><b>BoxLang AI</b><span>Agents, tools and RAG. Give them a browser with <code>aiTools()</code>.</span>
+				</a>
+				<a class="eco-card" href="https://www.testbox.run" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#homeIcon( "testbox" )#</div><b>TestBox</b><span>The BDD/TDD framework to run your browser tests.</span>
+				</a>
+				<a class="eco-card" href="https://www.coldbox.org" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#homeIcon( "cube" )#</div><b>ColdBox</b><span>A conventions-based HMVC framework for the web apps you test.</span>
+				</a>
+				<a class="eco-card" href="https://commandbox.ortusbooks.com" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#homeIcon( "commandbox" )#</div><b>CommandBox</b><span>The package manager and CLI for the BoxLang ecosystem.</span>
+				</a>
+				<a class="eco-card" href="https://bxsites.io" target="_blank" rel="noopener noreferrer">
+					<div class="icon">#bxsitesIcon( "markdown" )#</div><b>bxSites</b><span>The static site generator that builds this site.</span>
+				</a>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: primary CTA --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="cta">
+				<span class="eyebrow">Free &amp; open source</span>
+				<h2>Your first browser test in a minute.</h2>
+				<p>Install the module, run <code>bxPlaywright install</code>, and drive a real browser from your next BoxLang script.</p>
+				<div class="hero-actions">
+					<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#getting-started/">Get Started &rarr;</a>
+					<a class="bxh-btn bxh-btn-ghost" href="#variables.basePath#browsing/">Read the docs</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: professional services CTA --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="cta">
+				<span class="eyebrow">Professional open source</span>
+				<h2>Free to use, backed by the team that builds it.</h2>
+				<p><a href="https://www.ortussolutions.com" target="_blank" rel="noopener noreferrer">Ortus Solutions</a> offers support, training and consulting for test automation, browser testing strategy, CI pipelines and BoxLang applications.</p>
+				<div class="hero-actions">
+					<a class="bxh-btn bxh-btn-primary" href="mailto:consulting@ortussolutions.com">Email consulting@ortussolutions.com</a>
+					<a class="bxh-btn bxh-btn-ghost" href="https://www.ortussolutions.com/services" target="_blank" rel="noopener noreferrer">Professional Services</a>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!--- Footer: brand, social, link columns, bottom bar --->
+	<footer class="bxh-footer">
+		<div class="bxh-wrap footer-top">
+			<div class="footer-brand">
+				<a class="bxh-brand" href="#variables.basePath#">#renderBrandMark()#</a>
+				<p>Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.</p>
+				<bx:if variables.socialLinks.len() gt 0>
+					<div class="social-row">#renderSocialLinks( variables.socialLinks )#</div>
+				</bx:if>
+				<div class="madeby"><span>Developed by</span> Ortus Solutions</div>
+			</div>
+			<div class="footer-col">
+				<h4>Learn</h4>
+				<a href="#variables.basePath#getting-started/">Getting Started</a>
+				<a href="#variables.basePath#browsing/">Browsing</a>
+				<a href="#variables.basePath#assertions/">Assertions</a>
+				<a href="#variables.basePath#testing/">Testing</a>
+			</div>
+			<div class="footer-col">
+				<h4>Reference</h4>
+				<a href="#variables.basePath#configuration/">Configuration</a>
+				<a href="#variables.basePath#profiles/">Profiles</a>
+				<a href="#variables.basePath#cli/">CLI</a>
+				<a href="#variables.basePath#errors/">Errors</a>
+			</div>
+			<div class="footer-col">
+				<h4>Get bx-playwright</h4>
+				<a href="https://forgebox.io/view/bx-playwright" target="_blank" rel="noopener noreferrer">ForgeBox</a>
+				<a href="https://forgebox.io/view/bx-playwright-full" target="_blank" rel="noopener noreferrer">ForgeBox (Full)</a>
+				<bx:if len( variables.repoUrl )>
+					<a href="#bxsitesUrlAttr( variables.repoUrl )#/releases" target="_blank" rel="noopener noreferrer">GitHub Releases</a>
+				</bx:if>
+				<a href="#variables.basePath#llms.txt">llms.txt</a>
+			</div>
+			<div class="footer-col">
+				<h4>Community</h4>
+				<a href="https://www.ortussolutions.com/community/slack" target="_blank" rel="noopener noreferrer">Slack</a>
+				<a href="https://community.ortussolutions.com" target="_blank" rel="noopener noreferrer">Forums</a>
+				<bx:if len( variables.repoUrl )>
+					<a href="#bxsitesUrlAttr( variables.repoUrl )#/issues" target="_blank" rel="noopener noreferrer">Bug Tracker</a>
+				</bx:if>
+				<a href="https://www.ortussolutions.com/services" target="_blank" rel="noopener noreferrer">Consulting</a>
+			</div>
+		</div>
+		<div class="bxh-wrap footer-bottom footrow">
+			<span>&copy; #year( now() )# Ortus Solutions, Corp</span>
+			<div class="footlinks">
+				<a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer">Apache 2.0 License</a>
+				<a class="poweredby" href="https://boxlang.io" target="_blank" rel="noopener noreferrer">Part of the <b>BoxLang</b> ecosystem</a>
+			</div>
+		</div>
+	</footer>
+
+	#renderExtraJs( variables.siteConfig.extraJs ?: [] )#
+</body>
+</html>
+</bx:output>
