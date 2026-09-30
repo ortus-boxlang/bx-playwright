@@ -256,8 +256,9 @@ class extends="Base" {
 			}
 		}
 
-		for ( var type in [ "screenshots", "videos" ] ) {
-			for ( var path in variables.artifacts[ type ] ) {
+		// Event types are singular, like the ones page.screenshot() and page.pdf() announce
+		for ( var type in [ "screenshot", "video" ] ) {
+			for ( var path in variables.artifacts[ type & "s" ] ) {
 				announceEvent( "onPlaywrightArtifact", { type : type, path : path } )
 			}
 		}

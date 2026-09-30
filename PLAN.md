@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: v10. Phases 0 to 3 are implemented and tested (see the checkboxes in section 9). Phases 4 to 7 are next.
+Status: v11. Phases 0 to 7 are implemented, tested and released. The TestBox and ColdBox track is next, building on the contract in `docs/integrations.md`.
 
 ## 1. Goal
 
@@ -552,7 +552,7 @@ docs/
 - [x] Build step that generates `completions/bxPlaywright.bash` from the verb registry.
 - [x] CLI specs calling `dispatch()` in-process.
 - [x] CI: browser tests on Linux with a cached playwright home.
-- [ ] Documented GitHub Action example for users (install with deps, cache browsers).
+- [x] Documented GitHub Action example for users (install with deps, cache browsers). See `docs/testing.md`.
 
 ### Phase 2: Core DSL
 - [x] `OptionsMapper` with tests for every options class used.
@@ -569,7 +569,7 @@ docs/
 - [x] `bx:playwrightRender` component and `playwright().render()` (6.8).
 - [x] Interceptor events (6.9).
 - [x] Artifact policies and `close( { failed } )` semantics, `artifacts()` paths (7).
-- [ ] Hand off to TestBox core: document the public API it builds on.
+- [x] Hand off to TestBox core: document the public API it builds on. See `docs/integrations.md`.
 
 ### Phase 4: Advanced
 - [x] Page objects, components, macros.
@@ -601,14 +601,20 @@ docs/
 
 ## 10. Risks and Unknowns
 
-- Codegen emits Java/JS/Python/.NET only. A BoxLang target needs translation of Java output or a custom recorder. Unverified effort.
-- Device descriptors are not a public Java API; extraction path from the driver bundle needs a spike.
-- Visual diff needs a pixel comparison implementation (Java has only `screenshot()`).
-- Thread confinement vs BoxLang web requests and async: needs design validation in the Phase 0 spike.
-- `bx-playwright-full` is ~208 MB. Confirm ForgeBox size limits.
-- Small module depends on the Node download site (or a mirror) being reachable at install time; Playwright's minimum Node version must be tracked per release.
-- TestBox builds on the public API from another repo with its own release cycle: the public API must follow semver strictly from 1.0.
-- TestBox retries and artifact attachment to results: confirm what TestBox 7 exposes.
+Resolved:
+
+- Codegen: `codegen --target boxlang` translates Playwright's Java output (Phase 5).
+- Device descriptors are read from the driver bundle.
+- Visual diff has its own pixel comparison (`ImageDiff`).
+- Thread confinement: one manager per thread, cleaned up by `browse()` and `close()`.
+- ForgeBox size: only `box.json` goes to ForgeBox; both zips are uploaded to S3.
+
+Open:
+
+- The small module depends on the Node.js download site (or a mirror) at install time, and Playwright's minimum Node.js version must be tracked per release.
+- TestBox builds on the public API from another repo with its own release cycle: the contract in `docs/integrations.md` follows semver strictly from 1.0.
+- TestBox 7.2 has no spec retries, no re-run of failed specs, and no way to attach artifacts to a spec result, and it counts only `TestBox.AssertionFailed` as a failure. The TestBox track adds these.
+- The BoxLang launcher (`bin/boxlang`) splits quoted arguments on spaces and expands wildcards, so CLI arguments with spaces break. The fix belongs in BoxLang.
 
 ## 11. Open Questions
 

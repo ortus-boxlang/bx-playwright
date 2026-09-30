@@ -352,6 +352,32 @@ public class DslE2ETest extends BaseIntegrationTest {
 	}
 
 	/**
+	 * onPlaywrightArtifact uses singular types for every artifact, the same as page.screenshot() and page.pdf().
+	 */
+	@DisplayName( "onPlaywrightArtifact announces singular artifact types" )
+	@Test
+	public void testArtifactEventTypes() {
+		String	dir		= Path.of( "build", "e2e-artifact-events" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			request.pwArtifactTypes = []
+			listener = ( data ) => request.pwArtifactTypes.append( data.type )
+			boxRegisterInterceptor( listener, "onPlaywrightArtifact" )
+			try {
+				context = pw.newContext( { artifacts : { directory : "%s", screenshot : "on", trace : "on", video : "on" } } )
+				page    = context.newPage()
+				page.setContent( "<h1>Artifacts</h1>" ).screenshot( "%s/page.png" )
+				context.close( true )
+			} finally {
+				boxUnregisterInterceptor( listener, "onPlaywrightArtifact" )
+			}
+			result = request.pwArtifactTypes.toList()
+		""".formatted( dir, dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "screenshot,screenshot,video,trace" );
+	}
+
+	/**
 	 * snapshot() returns a compact accessibility view that lists the heading and button with their names.
 	 */
 	@DisplayName( "The accessibility snapshot is a compact page view" )
