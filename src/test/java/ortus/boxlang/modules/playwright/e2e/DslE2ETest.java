@@ -379,4 +379,46 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "true|true|true|true" );
 	}
 
+	@DisplayName( "Quality checks: console errors, smoke test and accessibility" )
+	@Test
+	public void testQualityChecks() {
+		// @formatter:off
+		Object value = bx( """
+			results = []
+			page = serve( pw.newContext() ).newPage()
+			page.setContent( "<script>console.error( 'boom' ); console.error( 'favicon.ico missing' )</script><p>x</p>" )
+			results.append( page.consoleErrors().len() )
+			try {
+				page.assertNoConsoleErrors()
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( e.message contains "boom" )
+			}
+			try {
+				page.assertNoConsoleErrors( [ "boom", "favicon" ] )
+				results.append( "ignored" )
+			} catch ( any e ) {
+				results.append( "not ignored" )
+			}
+
+			try {
+				page.assertNoSmoke( [ "/login", "/nope" ] )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( ( e.message contains "/nope: HTTP 404" ) && !( e.message contains "/login:" ) )
+			}
+
+			page.setContent( "<html lang='en'><head><title>ok</title></head><body><main><h1>Title</h1><img src='a.png'><button></button></main></body></html>" )
+			violations = page.accessibility()
+			results.append( violations.map( ( v ) -> v.id ).sort( "text" ).toList() )
+			try {
+				page.assertNoAccessibilityIssues( { impact : "critical" } )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( e.message contains "image-alt" )
+			}
+			page.assertNoAccessibilityIssues( { exclude : [ "image-alt", "button-name" ] } )
+			result = results.toList( "|" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2|true|ignored|true|button-name,image-alt|true" );
+	}
+
 }

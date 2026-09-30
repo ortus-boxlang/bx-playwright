@@ -175,12 +175,37 @@ spotless {
 }
 
 /**
+ * axe-core (MPL-2.0) powers the accessibility checks. It is downloaded at build time and shipped
+ * as resources/axe.min.js inside the module.
+ */
+task downloadAxe( type: Download ) {
+	src "https://registry.npmjs.org/axe-core/-/axe-core-${axeVersion}.tgz"
+	dest file( "build/vendor/axe-core-${axeVersion}.tgz" )
+	overwrite false
+	onlyIfModified true
+}
+task extractAxe( type: Copy ) {
+	dependsOn downloadAxe
+	from( tarTree( resources.gzip( file( "build/vendor/axe-core-${axeVersion}.tgz" ) ) ) ) {
+		include "package/axe.min.js"
+		include "package/LICENSE"
+		eachFile { details -> details.path = details.name == "LICENSE" ? "axe-core-LICENSE" : details.name }
+		includeEmptyDirs = false
+	}
+	into file( "build/vendor/axe" )
+}
+
+/**
  * Custom task that creates a build/module folders
  * - Copies the build/libs/BoxLangModuleTemplate-1.0.0.jar to build/module/libs/BoxLangModuleTemplate-1.0.0.jar
  * - Copies the src/main/bx/** to build/module/ folder.
  */
 task createModuleStructure(type: Copy) {
 	mustRunAfter shadowJar, jar
+	dependsOn extractAxe
+    from( 'build/vendor/axe' ) {
+        into 'resources'
+    }
     from( 'build/libs' ) {
 		include "${project.name}-${version}.jar"
         into 'libs'

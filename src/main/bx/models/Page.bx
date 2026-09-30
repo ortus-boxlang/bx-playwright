@@ -1,3 +1,5 @@
+import java:ortus.boxlang.modules.playwright.engine.PlaywrightErrors@playwright;
+
 /**
  * A browser tab. Returned by playwright().visit(), newPage() and browse().
  *
@@ -458,6 +460,133 @@ class extends="Scope" {
 
 	/**
 	 * --------------------------------------------------------------------------
+	 * Quality checks
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The JavaScript errors of this page so far: console.error() messages and uncaught exceptions.
+	 *
+	 * @return An array of error messages
+	 */
+	array function consoleErrors() {
+		var messages = []
+		messages.append( variables.java.consoleMessages(), true )
+		var errors = messages
+			.filter( ( message ) -> message.type() == "error" )
+			.map( ( message ) -> message.text() )
+		errors.append( variables.java.pageErrors(), true )
+		return errors
+	}
+
+	/**
+	 * No console errors or uncaught exceptions happened on this page.
+	 *
+	 * @ignore Substrings of errors to ignore, e.g. [ "favicon.ico" ]
+	 */
+	function assertNoConsoleErrors( array ignore = [] ) {
+		var skip   = arguments.ignore
+		var errors = consoleErrors().filter( ( error ) => !skip.some( ( pattern ) => error contains pattern ) )
+		if ( errors.len() ) {
+			failAssertion(
+				"The page has #errors.len()# JavaScript error(s): #errors.toList( " | " )#",
+				"Fix the errors, or ignore known ones: assertNoConsoleErrors( [ ""favicon.ico"" ] )"
+			)
+		}
+		return this
+	}
+
+	/**
+	 * Smoke test: visit each URL and check it answers below 400 without JavaScript errors.
+	 * All URLs are checked before failing, and the failure lists every problem.
+	 *
+	 * <pre>
+	 * page.assertNoSmoke( [ "/", "/about", "/pricing" ] )
+	 * </pre>
+	 *
+	 * @urls    URLs or paths (relative to baseURL). Empty checks the current page
+	 * @options ignore (error substrings to ignore), waitUntil (load by default)
+	 */
+	function assertNoSmoke( array urls = [], struct options = {} ) {
+		var skip     = arguments.options.ignore ?: []
+		var problems = []
+		var targets  = arguments.urls.len() ? arguments.urls : [ url() ]
+		for ( var target in targets ) {
+			var before     = consoleErrors().len()
+			var navigation = buildOptions( "Page.NavigateOptions", { waitUntil : arguments.options.waitUntil ?: "load" } )
+			var response   = nullValue()
+			try {
+				response = variables.java.navigate( target, navigation )
+			} catch ( any e ) {
+				problems.append( "#target#: #tryMessage( e )#" )
+				continue
+			}
+			if ( !isNull( response ) && response.status() >= 400 ) {
+				problems.append( "#target#: HTTP #response.status()#" )
+			}
+			var errors = consoleErrors()
+			for ( var i = before + 1; i <= errors.len(); i++ ) {
+				var error = errors[ i ]
+				if ( !skip.some( ( pattern ) => error contains pattern ) ) {
+					problems.append( "#target#: #error#" )
+				}
+			}
+		}
+		if ( problems.len() ) {
+			failAssertion(
+				"Smoke test found #problems.len()# problem(s): #problems.toList( " | " )#",
+				"Checked: #targets.toList( ", " )#"
+			)
+		}
+		return this
+	}
+
+	/**
+	 * Run the axe-core accessibility audit on the page.
+	 *
+	 * @options tags (e.g. [ "wcag2a", "wcag2aa" ]), exclude (rule ids to skip), include (a CSS selector to audit)
+	 *
+	 * @return An array of violations: { id, impact, description, help, helpUrl, nodes : [ { target, html, summary } ] }
+	 */
+	array function accessibility( struct options = {} ) {
+		injectAxe()
+		var axeOptions = {}
+		if ( ( arguments.options.tags ?: [] ).len() ) {
+			axeOptions[ "runOnly" ] = { "type" : "tag", "values" : arguments.options.tags }
+		}
+		if ( ( arguments.options.exclude ?: [] ).len() ) {
+			axeOptions[ "rules" ] = {}
+			for ( var rule in arguments.options.exclude ) {
+				axeOptions.rules[ rule ] = { "enabled" : false }
+			}
+		}
+		var payload = jsonSerialize( { "context" : arguments.options.include ?: "", "options" : axeOptions } )
+		var script  = "( json ) => { const input = JSON.parse( json ); return axe.run( input.context || document, input.options ).then( result => result.violations.map( v => ( { id : v.id, impact : v.impact || '', description : v.description, help : v.help, helpUrl : v.helpUrl, nodes : v.nodes.map( n => ( { target : n.target.join( ' ' ), html : n.html, summary : n.failureSummary || '' } ) ) } ) ) ) }"
+		return tryAction( () => variables.java.evaluate( script, payload ), "accessibility()" )
+	}
+
+	/**
+	 * No accessibility violations at or above an impact level.
+	 *
+	 * @options tags, exclude, include (see accessibility()), impact: the minimum impact that fails
+	 *          (minor, moderate, serious, critical; default minor = everything)
+	 */
+	function assertNoAccessibilityIssues( struct options = {} ) {
+		var levels     = [ "minor", "moderate", "serious", "critical" ]
+		var minimum    = levels.findNoCase( arguments.options.impact ?: "minor" ) ?: 1
+		var violations = accessibility( arguments.options ).filter( ( violation ) => max( 1, levels.findNoCase( violation.impact ) ) >= minimum )
+		if ( violations.len() ) {
+			var lines = violations.map( ( violation ) => "#violation.id# (#violation.impact#): #violation.help# at #violation.nodes.map( ( node ) -> node.target ).toList( ", " )#" )
+			failAssertion(
+				"#violations.len()# accessibility issue(s): #lines.toList( " | " )#",
+				"See each rule at https://dequeuniversity.com/rules/axe. Skip rules with { exclude : [ ""rule-id"" ] } or raise { impact : ""serious"" }."
+			)
+		}
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
 	 * Lifecycle
 	 * --------------------------------------------------------------------------
 	 */
@@ -481,6 +610,18 @@ class extends="Scope" {
 	 */
 	boolean function isClosed() {
 		return variables.java.isClosed()
+	}
+
+	private function injectAxe() {
+		if ( variables.java.evaluate( "typeof window.axe !== 'undefined'" ) ) {
+			return
+		}
+		var source = fileRead( manager().getConfigService().modulePath() & "/resources/axe.min.js" )
+		variables.java.addScriptTag( buildOptions( "Page.AddScriptTagOptions", { content : source } ) )
+	}
+
+	private string function tryMessage( required any error ) {
+		return PlaywrightErrors.rootMessage( arguments.error ).listFirst( char( 10 ) )
 	}
 
 	/**

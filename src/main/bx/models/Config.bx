@@ -72,6 +72,13 @@ class {
 	}
 
 	/**
+	 * @return The physical path of the loaded playwright module
+	 */
+	string function modulePath() {
+		return BoxRuntime.getInstance().getModuleService().getModuleRecord( Key.of( "playwright" ) ).physicalPath.toString()
+	}
+
+	/**
 	 * @return The module settings used by this config
 	 */
 	struct function getSettings() {
