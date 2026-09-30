@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft v5 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
+Status: draft v6 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -151,7 +151,7 @@ Verbs:
 | `uninstall [--all]` | Remove browsers |
 | `doctor [--json]` | Versions, paths, platform, Node, installed browsers, fix hints |
 | `version` / `--version` | Module, Playwright and browser versions |
-| `codegen [url] [--device --viewport --load-storage --save-storage]` | Record actions (Java target for now; BoxLang target later, see 9) |
+| `codegen [url] [--device --viewport --load-storage --save-storage]` | Record actions (Java target for now; BoxLang target later, see 10) |
 | `open [url]` | Open a headed browser |
 | `screenshot <url> <file> [--full-page --device]` | One-shot screenshot |
 | `pdf <url> <file> [--format]` | One-shot PDF (Chromium) |
@@ -349,7 +349,7 @@ Every setting has a default in `ModuleConfig.configure()` and can be overridden 
 | `contextOptions` | `{}` | Raw passthrough to `Browser.NewContextOptions` |
 | `profiles` | `{}` | User profiles, merged over the built-in ones |
 
-Environment overrides for CI (read at module load, win over settings): `BX_PLAYWRIGHT_PROFILE`, `BX_PLAYWRIGHT_BROWSER`, `BX_PLAYWRIGHT_HEADLESS`, `BX_PLAYWRIGHT_BASEURL`.
+Environment overrides for CI (confirmed prefix `BX_PLAYWRIGHT_*`, read at module load, win over settings): `BX_PLAYWRIGHT_PROFILE`, `BX_PLAYWRIGHT_BROWSER`, `BX_PLAYWRIGHT_HEADLESS`, `BX_PLAYWRIGHT_BASEURL`.
 
 Resolution order, last wins: built-in defaults, module settings, environment overrides, profile(s), per-call options.
 
@@ -357,27 +357,60 @@ Resolution order, last wins: built-in defaults, module settings, environment ove
 
 A profile is a named set of the settings above. It can `extends` another profile. Users add or override profiles in `settings.profiles`; a user profile with a built-in name replaces that built-in.
 
-Built-in profiles:
+Built-in profiles, grouped:
+
+**Browsers**
 
 | Profile | Settings |
 |---|---|
 | `default` | chromium, headless, 1280x720 |
 | `chromium` / `firefox` / `webkit` | That browser, otherwise default |
-| `chrome` | chromium with `channel: "chrome"` |
+| `chrome` / `chrome-beta` | chromium with `channel: "chrome"` / `"chrome-beta"` |
 | `edge` | chromium with `channel: "msedge"` |
-| `desktop` | chromium, 1920x1080 |
-| `laptop` | chromium, 1366x768 |
-| `mobile` | webkit, device `iPhone 15` |
-| `android` | chromium, device `Pixel 7` |
-| `tablet` | webkit, device `iPad Pro 11` |
-| `dark` | `colorScheme: "dark"` (meant to be merged: `[ "mobile", "dark" ]`) |
+
+**Screens**
+
+| Profile | Settings |
+|---|---|
+| `hd` | 1280x720 |
+| `laptop` | 1366x768 |
+| `macbook` | 1440x900, `deviceScaleFactor: 2` |
+| `desktop` | 1920x1080 |
+| `4k` | 3840x2160 |
+
+**Devices** (Playwright device descriptors)
+
+| Profile | Settings |
+|---|---|
+| `mobile` / `iphone` | webkit, `iPhone 15` |
+| `iphone-se` | webkit, `iPhone SE` (small screen) |
+| `mobile-landscape` | webkit, `iPhone 15 landscape` |
+| `android` / `pixel` | chromium, `Pixel 7` |
+| `galaxy` | chromium, `Galaxy S9+` |
+| `tablet` / `ipad` | webkit, `iPad Pro 11` |
+| `android-tablet` | chromium, `Galaxy Tab S4` |
+
+**Appearance and accessibility** (meant to be merged, e.g. `[ "mobile", "dark" ]`)
+
+| Profile | Settings |
+|---|---|
+| `dark` / `light` | `colorScheme` |
+| `reduced-motion` | `reducedMotion: "reduce"` |
+| `high-contrast` | `forcedColors: "active"` |
+
+**Modes**
+
+| Profile | Settings |
+|---|---|
 | `headed` | `headless: false` |
 | `debug` | headed, `slowMo: 250`, all artifacts `on` |
+| `record` | video and trace `on` |
 | `ci` | headless, screenshot `only-on-failure`, trace and video `retain-on-failure` |
 | `offline` | context `offline: true` |
-| `print` | chromium, headless, `colorScheme: "light"`, for PDF/render work |
+| `print` | chromium, headless, light, for PDF and render work |
+| `screenshot` | chromium, `deviceScaleFactor: 2`, `reducedMotion: "reduce"`, `timezone: "UTC"`, `locale: "en-US"` (stable, repeatable images for visual diffs) |
 
-Device names must be validated against the bundled Playwright device registry during the Phase 0 spike.
+Device names must be validated against the bundled Playwright device registry during the Phase 0 spike. Network throttling (e.g. `slow-3g`) is Chromium-only via CDP; considered for later.
 
 Tooling: `bxPlaywright profiles` lists the resolved profiles; `doctor` shows the active settings after merge.
 
@@ -399,10 +432,51 @@ What TestBox core would build on top (TestBox's scope, listed here for alignment
 - `expect( page ).toHaveTitle()`, `expect( locator ).toBeVisible()` matchers delegating to `playwright().expect()`.
 - Linking artifacts from reporters, browser matrix via profiles, retries, optional webServer boot.
 
-## 8. Phased Roadmap and Tasks
+## 8. AI Consumability
+
+Goal: an AI agent (Claude, Copilot, Cursor, bx-ai agents) can discover, write and debug bx-playwright code correctly on the first try, and can drive a browser itself.
+
+### 8.1 Skills (ortus-boxlang/skills)
+
+New folder `boxlang-modules/bx-playwright/`, several focused skills (same layout as `bx-ai`):
+
+| Skill | Covers |
+|---|---|
+| `bx-playwright-setup` | Install, `bxPlaywright` CLI verbs, settings, profiles, env vars, CI |
+| `bx-playwright-browsing` | `playwright()`, `visit()`, actions, selectors, waits, frames, popups, downloads |
+| `bx-playwright-assertions` | Inline `assert*` and `expect()` styles, timeouts, soft assertions |
+| `bx-playwright-network` | `intercept()`, mocking, `request()` API testing, sessions and storage state |
+| `bx-playwright-rendering` | `bx:playwrightRender`, `render()`, screenshots, PDF |
+| `bx-playwright-testing` | Using it with TestBox, artifacts, debugging failures, page objects, components |
+| `bx-playwright-ai` | Driving a browser from bx-ai agents and MCP (8.3) |
+
+Repo updates in the same change: `boxlang-modules/README.md` table, root `README.md`, and the plugin manifests (`.claude-plugin/plugin.json` and `marketplace.json`, `.cursor-plugin/plugin.json` and `marketplace.json`, `.grok-plugin/plugin.json`): descriptions, keywords (`playwright`, `browser`, `e2e`, `testing`), version bump. The manifests already include `./boxlang-modules/` so the new folder is picked up automatically.
+
+Skills must match the shipped API. Every code sample in the skills is copied from a runnable example in this repo (`examples/`) that CI executes, so skills never drift from the code.
+
+### 8.2 In the module itself
+
+- **AGENTS.md** in the repo (architecture, conventions, how to add a verb/profile) and the skills pinned in `skills-lock.json`.
+- **llms.txt and llms-full.txt** published with the docs.
+- **Predictable API**: one name per concept, consistent verbs (`visit`, `click`, `fill`, `assert*`), every action chainable, every option also accepted as a struct.
+- **Docblocks with `@example`** on every public method, so DocBox output and IDE hovers teach the API.
+- **Self-description**: `playwright().help()` and `page.help()` return the available methods and options as a struct/JSON.
+- **CLI for machines**: `--json` on every verb, `help --json`, stable exit codes, non-interactive by default.
+- **Errors that explain themselves**: typed errors (`Playwright.Timeout`, `Playwright.ElementNotFound`, `Playwright.AssertionFailed`, `Playwright.NotInstalled`), each message includes the selector, what was found instead, closest matches from the page, and a fix hint (e.g. "run `bxPlaywright install firefox`").
+- **Page views for LLMs**: `page.snapshot()` returns the accessibility (aria) snapshot as compact YAML with element refs; `page.text()`, `page.links()`, `page.forms()` return structured data. Refs can be used in later calls (`page.click( ref: "e12" )`), which is how Playwright MCP lets models act reliably.
+- **Artifacts as data**: every screenshot, trace and video call returns its path, so an agent can read or attach it.
+
+### 8.3 Letting agents drive the browser
+
+- **bx-ai tools**: `playwright().aiTools()` returns ready-made bx-ai tools (visit, snapshot, click, fill, select, screenshot, extract, close) so a bx-ai agent can browse with one line.
+- **MCP**: `bxPlaywright mcp` starts Playwright's bundled MCP server for Claude, Cursor, etc. Evaluate exposing the same tools through bx-mcp.
+- **Codegen to BoxLang** (Phase 5): record in a browser, get bx-playwright code an agent can refine.
+
+## 9. Phased Roadmap and Tasks
 
 ### Phase 0: Foundations
 - [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
+- [ ] AGENTS.md for the module; typed error catalog.
 - [ ] Gradle: add `playwright`, `driver`, `driver-bundle` deps into `libs/`, stamp version into `box.json` and `ModuleConfig`. Check module zip size and ForgeBox limits.
 - [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
 - [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
@@ -410,7 +484,7 @@ What TestBox core would build on top (TestBox's scope, listed here for alignment
 ### Phase 1: Install and CLI
 - [ ] `PlaywrightService`: home resolution, one-time driver extraction from bundled jars (`install-driver`), env wiring, `PLAYWRIGHT_NODEJS_PATH` override.
 - [ ] `box.json` `boxlang.executable` (`bxPlaywright`) and `boxlang.completions`.
-- [ ] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`.
+- [ ] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`, `--json` on every verb.
 - [ ] Verbs: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `clean`, `run`.
 - [ ] Verbs: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
 - [ ] Build step that generates `completions/bxPlaywright.bash` from the verb registry.
@@ -440,12 +514,13 @@ What TestBox core would build on top (TestBox's scope, listed here for alignment
 - [ ] Visual regression (baseline + pixel diff + diff image).
 - [ ] Soft assertions, multi-user `browse()`.
 
-### Phase 5: Tooling and docs
+### Phase 5: Tooling, docs and AI
 - [ ] BoxLang codegen target (post-process Java codegen output, or custom recorder; needs a spike).
-- [ ] Docs book, examples repo, TestBox docs page.
-- [ ] Optional: BoxLang AI / MCP integration story.
+- [ ] Docs book, `examples/` recipes run in CI, llms.txt.
+- [ ] Skills in ortus-boxlang/skills (8.1) plus README and plugin manifest updates.
+- [ ] `page.snapshot()` with refs, `help()` introspection, `aiTools()` for bx-ai, MCP verb (8.2, 8.3).
 
-## 9. Risks and Unknowns
+## 10. Risks and Unknowns
 
 - Codegen emits Java/JS/Python/.NET only. A BoxLang target needs translation of Java output or a custom recorder. Unverified effort.
 - Device descriptors are not a public Java API; extraction path from the driver bundle needs a spike.
@@ -455,7 +530,6 @@ What TestBox core would build on top (TestBox's scope, listed here for alignment
 - TestBox builds on the public API from another repo with its own release cycle: the public API must follow semver strictly from 1.0.
 - TestBox retries and artifact attachment to results: confirm what TestBox 7 exposes.
 
-## 10. Open Questions
+## 11. Open Questions
 
-1. Built-in profile list (6.11): add or remove any?
-2. Environment override prefix `BX_PLAYWRIGHT_*`: OK?
+1. Skills timing: write them as drafts now against the planned API, or when each phase ships (recommended, see 8.1)?
