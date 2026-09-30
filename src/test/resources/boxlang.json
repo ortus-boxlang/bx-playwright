@@ -1,3 +1,9 @@
 {
-	"modules": {}
+	"modules": {
+		"playwright": {
+			"settings": {
+				"home": "build/playwright-home"
+			}
+		}
+	}
 }

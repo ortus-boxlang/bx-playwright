@@ -1,0 +1,633 @@
+import java:ortus.boxlang.modules.playwright.engine.SmartSelector@playwright;
+
+/**
+ * Selector based actions, finders and inline assertions shared by Page and Locator.
+ *
+ * Selectors are smart single strings:
+ * - `@name`: the test id (data-testid by default)
+ * - CSS, XPath and Playwright selectors: `#id`, `.class`, `input[name=email]`, `//div`, `role=button[name="Save"]`, `h1`
+ * - Anything else is visible text: labels and placeholders for fill(), buttons and links for click()
+ *
+ * Every action returns the object itself, so calls can be chained.
+ */
+abstract class extends="Base" {
+
+	/**
+	 * The Playwright locator that scopes this object. Page returns the document root.
+	 */
+	abstract function root();
+
+	/**
+	 * The Playwright locator acted on when no selector is given.
+	 * Page throws, Locator returns itself.
+	 */
+	abstract function self();
+
+	/**
+	 * The resolved configuration of the owning playwright() call.
+	 */
+	abstract function getConfig();
+
+	/**
+	 * The owning Page wrapper.
+	 */
+	abstract function page();
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Finders
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Find elements with a smart selector.
+	 *
+	 * @selector A smart selector: @testId, CSS, XPath or visible text
+	 */
+	function locator( required string selector ) {
+		return wrapLocator( resolve( arguments.selector, "any" ) )
+	}
+
+	/**
+	 * Find elements by ARIA role.
+	 *
+	 * @role    The role: button, link, heading, textbox, checkbox, ...
+	 * @options name, exact, checked, disabled, expanded, level, pressed, selected, includeHidden
+	 */
+	function byRole( required string role, struct options = {} ) {
+		return wrapLocator( root().getByRole( enumValue( "AriaRole", arguments.role ), buildOptions( "Locator.GetByRoleOptions", arguments.options ) ) )
+	}
+
+	/**
+	 * Find elements by visible text.
+	 *
+	 * @text  The text or a regex()
+	 * @exact Match the whole text, case sensitive
+	 */
+	function byText( required any text, boolean exact = false ) {
+		return wrapLocator( root().getByText( arguments.text, buildOptions( "Locator.GetByTextOptions", { exact : arguments.exact } ) ) )
+	}
+
+	/**
+	 * Find form controls by their label text.
+	 *
+	 * @text  The label text or a regex()
+	 * @exact Match the whole text, case sensitive
+	 */
+	function byLabel( required any text, boolean exact = false ) {
+		return wrapLocator( root().getByLabel( arguments.text, buildOptions( "Locator.GetByLabelOptions", { exact : arguments.exact } ) ) )
+	}
+
+	/**
+	 * Find inputs by placeholder.
+	 *
+	 * @text  The placeholder or a regex()
+	 * @exact Match the whole text, case sensitive
+	 */
+	function byPlaceholder( required any text, boolean exact = false ) {
+		return wrapLocator( root().getByPlaceholder( arguments.text, buildOptions( "Locator.GetByPlaceholderOptions", { exact : arguments.exact } ) ) )
+	}
+
+	/**
+	 * Find elements by test id (the testIdAttribute setting, data-testid by default).
+	 *
+	 * @testId The test id
+	 */
+	function byTestId( required string testId ) {
+		return wrapLocator( root().getByTestId( arguments.testId ) )
+	}
+
+	/**
+	 * Find images by alt text.
+	 *
+	 * @text  The alt text or a regex()
+	 * @exact Match the whole text, case sensitive
+	 */
+	function byAltText( required any text, boolean exact = false ) {
+		return wrapLocator( root().getByAltText( arguments.text, buildOptions( "Locator.GetByAltTextOptions", { exact : arguments.exact } ) ) )
+	}
+
+	/**
+	 * Find elements by title attribute.
+	 *
+	 * @text  The title or a regex()
+	 * @exact Match the whole text, case sensitive
+	 */
+	function byTitle( required any text, boolean exact = false ) {
+		return wrapLocator( root().getByTitle( arguments.text, buildOptions( "Locator.GetByTitleOptions", { exact : arguments.exact } ) ) )
+	}
+
+	/**
+	 * Work inside an iframe.
+	 *
+	 * @selector The iframe selector, e.g. #payment or iframe[name=checkout]
+	 *
+	 * @return A Locator scoped to the frame document
+	 */
+	function frame( required string selector ) {
+		return wrapLocator( root().frameLocator( arguments.selector ).locator( ":root" ) )
+	}
+
+	/**
+	 * Run a callback scoped to an element: every selector inside resolves within it.
+	 *
+	 * <pre>
+	 * page.within( "@cart", ( cart ) => cart.click( "Remove" ).assertSee( "Empty" ) )
+	 * </pre>
+	 *
+	 * @selector A smart selector for the scope
+	 * @callback Receives the scoped Locator
+	 */
+	function within( required string selector, required function callback ) {
+		arguments.callback( locator( arguments.selector ) )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Actions
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Click an element: a button or link by its text, or any smart selector.
+	 *
+	 * @selector Smart selector (empty on a Locator clicks the locator itself)
+	 * @options  button, clickCount, delay, force, modifiers, position, timeout, trial
+	 */
+	function click( string selector = "", struct options = {} ) {
+		var target = target( arguments.selector, "click" )
+		var opts   = buildOptions( "Locator.ClickOptions", arguments.options )
+		tryAction( () => target.click( opts ), "click( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Double click an element.
+	 *
+	 * @selector Smart selector
+	 * @options  button, delay, force, modifiers, position, timeout, trial
+	 */
+	function dblclick( string selector = "", struct options = {} ) {
+		var target = target( arguments.selector, "click" )
+		var opts   = buildOptions( "Locator.DblclickOptions", arguments.options )
+		tryAction( () => target.dblclick( opts ), "dblclick( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Fill an input, textarea or contenteditable: found by label, placeholder, name or any smart selector.
+	 *
+	 * @selector Smart selector
+	 * @value    The value
+	 * @options  force, timeout
+	 */
+	function fill( required string selector, required string value, struct options = {} ) {
+		var target = target( arguments.selector, "fill" )
+		var text   = arguments.value
+		var opts   = buildOptions( "Locator.FillOptions", arguments.options )
+		tryAction( () => target.fill( text, opts ), "fill( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Type text key by key, like a user (use fill() unless the page needs key events).
+	 *
+	 * @selector Smart selector
+	 * @text     The text
+	 * @delay    Milliseconds between key presses
+	 */
+	function type( required string selector, required string text, numeric delay = 0 ) {
+		var target = target( arguments.selector, "fill" )
+		var value  = arguments.text
+		var opts   = buildOptions( "Locator.PressSequentiallyOptions", { delay : arguments.delay } )
+		tryAction( () => target.pressSequentially( value, opts ), "type( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Clear an input.
+	 *
+	 * @selector Smart selector
+	 */
+	function clear( string selector = "" ) {
+		var target = target( arguments.selector, "fill" )
+		tryAction( () => target.clear(), "clear( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Press a key or a combination: Enter, Tab, ArrowDown, Control+A, ControlOrMeta+S.
+	 * With one argument the key goes to the focused element.
+	 *
+	 * @selectorOrKey The element selector, or the key when there is no second argument
+	 * @key           The key
+	 */
+	function press( required string selectorOrKey, string key = "" ) {
+		if ( !len( arguments.key ) ) {
+			var combo    = arguments.selectorOrKey
+			var keyboard = page().getJava().keyboard()
+			tryAction( () => keyboard.press( combo ), "press( #combo# )" )
+			return this
+		}
+		var target = target( arguments.selectorOrKey, "fill" )
+		var combo  = arguments.key
+		tryAction( () => target.press( combo ), "press( #arguments.selectorOrKey#, #combo# )" )
+		return this
+	}
+
+	/**
+	 * Check a checkbox or radio button, found by label or any smart selector.
+	 *
+	 * @selector Smart selector
+	 */
+	function check( string selector = "" ) {
+		var target = target( arguments.selector, "fill" )
+		tryAction( () => target.check(), "check( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Uncheck a checkbox.
+	 *
+	 * @selector Smart selector
+	 */
+	function uncheck( string selector = "" ) {
+		var target = target( arguments.selector, "fill" )
+		tryAction( () => target.uncheck(), "uncheck( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Select options in a select element, by value or label.
+	 *
+	 * @selector Smart selector
+	 * @values   One value or an array of values
+	 */
+	function select( required string selector, required any values ) {
+		var target  = target( arguments.selector, "fill" )
+		var choices = isArray( arguments.values ) ? arguments.values.map( ( choice ) -> toString( choice ) ) : [ toString( arguments.values ) ]
+		var values  = choices.len() == 1 ? choices[ 1 ] : choices
+		tryAction( () => target.selectOption( values ), "select( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Set the files of a file input.
+	 *
+	 * @selector Smart selector
+	 * @files    One path or an array of paths
+	 */
+	function upload( required string selector, required any files ) {
+		var target = target( arguments.selector, "fill" )
+		var list   = isArray( arguments.files ) ? arguments.files : [ arguments.files ]
+		var paths  = list.map( ( file ) => createObject( "java", "java.io.File" ).init( expandPath( file ) ).toPath() )
+		var files  = paths.len() == 1 ? paths[ 1 ] : paths
+		tryAction( () => target.setInputFiles( files ), "upload( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Hover an element.
+	 *
+	 * @selector Smart selector
+	 */
+	function hover( string selector = "" ) {
+		var target = target( arguments.selector, "click" )
+		tryAction( () => target.hover(), "hover( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Focus an element.
+	 *
+	 * @selector Smart selector
+	 */
+	function focus( string selector = "" ) {
+		var target = target( arguments.selector, "fill" )
+		tryAction( () => target.focus(), "focus( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Drag an element onto another.
+	 *
+	 * @from Smart selector of the dragged element
+	 * @to   Smart selector of the drop target
+	 */
+	function drag( required string from, required string to ) {
+		var source      = resolve( arguments.from, "click" )
+		var destination = resolve( arguments.to, "click" )
+		tryAction( () => source.dragTo( destination ), "drag( #arguments.from#, #arguments.to# )" )
+		return this
+	}
+
+	/**
+	 * Scroll an element into view.
+	 *
+	 * @selector Smart selector
+	 */
+	function scrollTo( string selector = "" ) {
+		var target = target( arguments.selector, "any" )
+		tryAction( () => target.scrollIntoViewIfNeeded(), "scrollTo( #arguments.selector# )" )
+		return this
+	}
+
+	/**
+	 * Wait for an element to reach a state.
+	 *
+	 * @selector Smart selector
+	 * @state    visible (default), hidden, attached or detached
+	 * @timeout  Milliseconds, 0 for the default action timeout
+	 */
+	function waitFor( string selector = "", string state = "visible", numeric timeout = 0 ) {
+		var target  = target( arguments.selector, "any" )
+		var options = { state : arguments.state }
+		if ( arguments.timeout > 0 ) {
+			options.timeout = arguments.timeout
+		}
+		var opts = buildOptions( "Locator.WaitForOptions", options )
+		tryAction( () => target.waitFor( opts ), "waitFor( #arguments.selector#, #arguments.state# )" )
+		return this
+	}
+
+	/**
+	 * Wait until some text is visible.
+	 *
+	 * @text    The text
+	 * @timeout Milliseconds, 0 for the default action timeout
+	 */
+	function waitForText( required string text, numeric timeout = 0 ) {
+		var target  = root().getByText( arguments.text ).first()
+		var options = { state : "visible" }
+		if ( arguments.timeout > 0 ) {
+			options.timeout = arguments.timeout
+		}
+		var opts = buildOptions( "Locator.WaitForOptions", options )
+		tryAction( () => target.waitFor( opts ), "waitForText( #arguments.text# )" )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Reading
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The visible text of an element (or of the whole scope).
+	 *
+	 * @selector Smart selector, empty for the scope itself
+	 */
+	string function text( string selector = "" ) {
+		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : scopeLocator()
+		return tryAction( () => target.innerText(), "text( #arguments.selector# )" )
+	}
+
+	/**
+	 * The value of an input.
+	 *
+	 * @selector Smart selector
+	 */
+	string function value( string selector = "" ) {
+		var target = target( arguments.selector, "fill" )
+		return tryAction( () => target.inputValue(), "value( #arguments.selector# )" )
+	}
+
+	/**
+	 * An attribute value, or an empty string.
+	 *
+	 * @selector Smart selector
+	 * @name     The attribute name
+	 */
+	string function attribute( required string selector, required string name ) {
+		var target = target( arguments.selector, "any" )
+		var attr   = arguments.name
+		var result = tryAction( () => target.getAttribute( attr ), "attribute( #arguments.selector#, #attr# )" )
+		return isNull( result ) ? "" : result
+	}
+
+	/**
+	 * The HTML inside an element (or the scope).
+	 *
+	 * @selector Smart selector, empty for the scope itself
+	 */
+	string function html( string selector = "" ) {
+		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : scopeLocator()
+		return tryAction( () => target.innerHTML(), "html( #arguments.selector# )" )
+	}
+
+	/**
+	 * The number of elements matching a selector, right now (no waiting).
+	 *
+	 * @selector Smart selector
+	 */
+	numeric function count( string selector = "" ) {
+		return target( arguments.selector, "any" ).count()
+	}
+
+	/**
+	 * Is an element visible right now (no waiting)?
+	 *
+	 * @selector Smart selector
+	 */
+	boolean function isVisible( string selector = "" ) {
+		return target( arguments.selector, "any" ).isVisible()
+	}
+
+	/**
+	 * The accessibility tree as compact YAML, a token-efficient page view for AI agents and for toMatchAriaSnapshot().
+	 *
+	 * @selector Smart selector, empty for the whole scope
+	 */
+	string function snapshot( string selector = "" ) {
+		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : scopeLocator()
+		return tryAction( () => target.ariaSnapshot(), "snapshot( #arguments.selector# )" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Assertions (web-first: they wait up to the assertion timeout)
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Start an expect-style assertion.
+	 *
+	 * @selector Smart selector, empty for this scope (or the page)
+	 */
+	function expect( string selector = "" ) {
+		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : expectTarget()
+		return new models.Expect@playwright( target, getConfig().timeouts.assertion ?: 5000 )
+	}
+
+	/**
+	 * The text is visible in this scope.
+	 *
+	 * @text The text or a regex()
+	 */
+	function assertSee( required any text ) {
+		new models.Expect@playwright( scopeLocator(), getConfig().timeouts.assertion ?: 5000 ).toContainText( arguments.text )
+		return this
+	}
+
+	/**
+	 * The text is not in this scope.
+	 *
+	 * @text The text or a regex()
+	 */
+	function assertDontSee( required any text ) {
+		new models.Expect@playwright( scopeLocator(), getConfig().timeouts.assertion ?: 5000 ).not().toContainText( arguments.text )
+		return this
+	}
+
+	/**
+	 * An element is visible.
+	 *
+	 * @selector Smart selector
+	 */
+	function assertVisible( required string selector ) {
+		expect( arguments.selector ).toBeVisible()
+		return this
+	}
+
+	/**
+	 * An element is hidden or not in the page.
+	 *
+	 * @selector Smart selector
+	 */
+	function assertMissing( required string selector ) {
+		expect( arguments.selector ).toBeHidden()
+		return this
+	}
+
+	/**
+	 * An element contains the text.
+	 *
+	 * @selector Smart selector
+	 * @text     The text or a regex()
+	 */
+	function assertText( required string selector, required any text ) {
+		expect( arguments.selector ).toContainText( arguments.text )
+		return this
+	}
+
+	/**
+	 * An input has the value.
+	 *
+	 * @selector Smart selector (a label works)
+	 * @value    The value or a regex()
+	 */
+	function assertValue( required string selector, required any value ) {
+		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).toHaveValue( arguments.value )
+		return this
+	}
+
+	/**
+	 * A checkbox or radio is checked.
+	 *
+	 * @selector Smart selector (a label works)
+	 */
+	function assertChecked( required string selector ) {
+		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).toBeChecked()
+		return this
+	}
+
+	/**
+	 * A checkbox or radio is not checked.
+	 *
+	 * @selector Smart selector (a label works)
+	 */
+	function assertNotChecked( required string selector ) {
+		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).not().toBeChecked()
+		return this
+	}
+
+	/**
+	 * An element is enabled.
+	 *
+	 * @selector Smart selector
+	 */
+	function assertEnabled( required string selector ) {
+		new models.Expect@playwright( resolve( arguments.selector, "click" ), getConfig().timeouts.assertion ?: 5000 ).toBeEnabled()
+		return this
+	}
+
+	/**
+	 * An element is disabled.
+	 *
+	 * @selector Smart selector
+	 */
+	function assertDisabled( required string selector ) {
+		new models.Expect@playwright( resolve( arguments.selector, "click" ), getConfig().timeouts.assertion ?: 5000 ).toBeDisabled()
+		return this
+	}
+
+	/**
+	 * The number of matching elements.
+	 *
+	 * @selector Smart selector (CSS or @testId for counts)
+	 * @count    The expected number
+	 */
+	function assertCount( required string selector, required numeric count ) {
+		var sel     = arguments.selector
+		var matches = sel.startsWith( "@" ) ? root().getByTestId( sel.mid( 2, sel.len() ) ) : (
+			SmartSelector.isSelector( sel ) ? root().locator( sel ) : root().getByText( sel )
+		)
+		new models.Expect@playwright( matches, getConfig().timeouts.assertion ?: 5000 ).toHaveCount( arguments.count )
+		return this
+	}
+
+	/**
+	 * An element has an attribute value.
+	 *
+	 * @selector Smart selector
+	 * @name     The attribute
+	 * @value    The value or a regex()
+	 */
+	function assertAttribute( required string selector, required string name, required any value ) {
+		expect( arguments.selector ).toHaveAttribute( arguments.name, arguments.value )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Helpers
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Resolve a smart selector inside this scope.
+	 *
+	 * @selector The smart selector
+	 * @intent   any, click or fill
+	 *
+	 * @return The Playwright locator
+	 */
+	function resolve( required string selector, string intent = "any" ) {
+		return SmartSelector.locate( root(), arguments.selector, arguments.intent )
+	}
+
+	/**
+	 * The locator used by scope-wide reads and assertions.
+	 */
+	function scopeLocator() {
+		return root()
+	}
+
+	/**
+	 * The target of expect() without a selector.
+	 */
+	function expectTarget() {
+		return scopeLocator()
+	}
+
+	private function target( required string selector, required string intent ) {
+		return len( arguments.selector ) ? resolve( arguments.selector, arguments.intent ) : self()
+	}
+
+	private function wrapLocator( required any javaLocator ) {
+		return new models.Locator@playwright( arguments.javaLocator, page() )
+	}
+
+}

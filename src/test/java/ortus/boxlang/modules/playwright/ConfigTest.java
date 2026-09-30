@@ -68,7 +68,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testHome() {
 		// @formatter:off
 		Object value = run( """
-			a      = new models.Config@playwright( environment = {} ).homePath()
+			a      = new models.Config@playwright( settings = { home : "", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).homePath()
 			b      = new models.Config@playwright( settings = { home : "/tmp/pw", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).home()
 			result = a & "|" & b.getBrowsersPath().toString()
 		""" );

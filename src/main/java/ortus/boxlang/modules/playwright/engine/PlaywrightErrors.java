@@ -28,6 +28,9 @@ public final class PlaywrightErrors {
 	public static final String	NODE_INSTALL_FAILED		= "Playwright.NodeInstallFailed";
 	public static final String	UNSUPPORTED_PLATFORM	= "Playwright.UnsupportedPlatform";
 	public static final String	INVALID_PROFILE			= "Playwright.InvalidProfile";
+	public static final String	ASSERTION_FAILED		= "Playwright.AssertionFailed";
+	public static final String	TIMEOUT					= "Playwright.Timeout";
+	public static final String	ACTION_FAILED			= "Playwright.ActionFailed";
 
 	private PlaywrightErrors() {
 	}
@@ -57,6 +60,41 @@ public final class PlaywrightErrors {
 	 */
 	public static BoxRuntimeException of( String type, String message, String hint ) {
 		return of( type, message, hint, null );
+	}
+
+	/**
+	 * The most specific message in a chain of causes. BoxLang wraps Java exceptions thrown by
+	 * reflective calls, so the Playwright message (with its call log) is usually the root cause.
+	 *
+	 * @param error The error
+	 *
+	 * @return The root message
+	 */
+	public static String rootMessage( Throwable error ) {
+		Throwable	current	= error;
+		String		message	= error == null ? "" : error.getMessage();
+		while ( current != null ) {
+			if ( current.getMessage() != null && !current.getMessage().isBlank() ) {
+				message = current.getMessage();
+			}
+			current = current.getCause() == current ? null : current.getCause();
+		}
+		return message == null ? "" : message.trim();
+	}
+
+	/**
+	 * The class name of the root cause, e.g. {@code com.microsoft.playwright.TimeoutError}.
+	 *
+	 * @param error The error
+	 *
+	 * @return The root cause class name
+	 */
+	public static String rootType( Throwable error ) {
+		Throwable current = error;
+		while ( current != null && current.getCause() != null && current.getCause() != current ) {
+			current = current.getCause();
+		}
+		return current == null ? "" : current.getClass().getName();
 	}
 
 }

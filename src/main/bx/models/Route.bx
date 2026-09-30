@@ -1,0 +1,81 @@
+/**
+ * Mock, modify or block network requests. Returned by page.intercept() and context.intercept().
+ *
+ * <pre>
+ * page.intercept( "**\/api/users" ).respondJson( { users : [] } )
+ * page.intercept( "**\/api/fail" ).respond( 500, "Boom" )
+ * page.intercept( "**\/*.{png,jpg}" ).abort()
+ * page.intercept( "**\/api/**" ).handle( ( route ) => route.fallback() )
+ * </pre>
+ */
+class extends="Base" {
+
+	/**
+	 * @target  The Playwright Page or BrowserContext
+	 * @pattern A glob, full URL or regex()
+	 * @owner   The wrapper returned by the terminal methods, for chaining
+	 */
+	function init( required any target, required any pattern, required any owner ) {
+		variables.target  = arguments.target
+		variables.pattern = arguments.pattern
+		variables.owner   = arguments.owner
+		return this
+	}
+
+	/**
+	 * Respond with JSON.
+	 *
+	 * @data    Any value, serialized as JSON
+	 * @status  HTTP status
+	 * @headers Extra headers
+	 */
+	function respondJson( required any data, numeric status = 200, struct headers = {} ) {
+		var responseHeaders = duplicate( arguments.headers )
+		responseHeaders[ "content-type" ] = "application/json"
+		return respond( arguments.status, jsonSerialize( arguments.data ), responseHeaders )
+	}
+
+	/**
+	 * Respond with a body.
+	 *
+	 * @status  HTTP status
+	 * @body    The body
+	 * @headers Response headers
+	 */
+	function respond( numeric status = 200, string body = "", struct headers = {} ) {
+		var opts = buildOptions( "Route.FulfillOptions", {
+			status  : arguments.status,
+			body    : arguments.body,
+			headers : arguments.headers
+		} )
+		return handle( ( route ) => route.fulfill( opts ) )
+	}
+
+	/**
+	 * Block the requests.
+	 */
+	function abort() {
+		return handle( ( route ) -> route.abort() )
+	}
+
+	/**
+	 * Let the requests through, optionally changing them.
+	 *
+	 * @overrides url, method, headers, postData
+	 */
+	function resume( struct overrides = {} ) {
+		var opts = buildOptions( "Route.ResumeOptions", arguments.overrides )
+		return handle( ( route ) => route.resume( opts ) )
+	}
+
+	/**
+	 * Handle the requests yourself.
+	 *
+	 * @handler Receives the Playwright Route: fulfill(), abort(), resume(), fallback(), request()
+	 */
+	function handle( required function handler ) {
+		variables.target.route( variables.pattern, arguments.handler )
+		return variables.owner
+	}
+
+}

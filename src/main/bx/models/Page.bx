@@ -1,0 +1,488 @@
+/**
+ * A browser tab. Returned by playwright().visit(), newPage() and browse().
+ *
+ * <pre>
+ * playwright().visit( "/login" )
+ *     .fill( "Email", "luis@ortus.com" )
+ *     .fill( "Password", "secret" )
+ *     .click( "Sign in" )
+ *     .assertPathIs( "/dashboard" )
+ *     .assertSee( "Welcome" )
+ *     .close()
+ * </pre>
+ *
+ * Selector based actions, finders and assertions come from Scope.
+ * Everything returns the page, so calls chain. getJava() returns the Playwright Page.
+ */
+class extends="Scope" {
+
+	/**
+	 * @java    The Playwright page
+	 * @context The owning BrowserContext wrapper
+	 */
+	function init( required any java, required any context ) {
+		variables.java    = arguments.java
+		variables.context = arguments.context
+		return this
+	}
+
+	/**
+	 * @return The Playwright Page, for anything not covered by the DSL
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	function root() {
+		return variables.java.locator( ":root" )
+	}
+
+	function self() {
+		throw(
+			type    = "Playwright.InvalidOption",
+			message = "This page action needs a selector.",
+			detail  = "Pass a smart selector: @testId, CSS (##id, .class) or visible text. Example: page.click( ""Save"" )"
+		)
+	}
+
+	function page() {
+		return this
+	}
+
+	function getConfig() {
+		return variables.context.getConfig()
+	}
+
+	function scopeLocator() {
+		return variables.java.locator( "body" )
+	}
+
+	function expectTarget() {
+		return variables.java
+	}
+
+	/**
+	 * @return The BrowserContext wrapper that owns this page
+	 */
+	function context() {
+		return variables.context
+	}
+
+	/**
+	 * @return The playwright() manager that owns this page
+	 */
+	function manager() {
+		return variables.context.manager()
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Navigation
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Go to a URL. Relative URLs resolve against the baseURL setting.
+	 *
+	 * @url     Absolute URL, or a path when baseURL is set
+	 * @options waitUntil (load, domcontentloaded, networkidle, commit), timeout, referer
+	 */
+	function visit( required string url, struct options = {} ) {
+		var target = arguments.url
+		var opts   = buildOptions( "Page.NavigateOptions", arguments.options )
+		tryAction( () => variables.java.navigate( target, opts ), "visit( #target# )" )
+		return this
+	}
+
+	/**
+	 * Go back in history.
+	 */
+	function back() {
+		tryAction( () => variables.java.goBack(), "back()" )
+		return this
+	}
+
+	/**
+	 * Go forward in history.
+	 */
+	function forward() {
+		tryAction( () => variables.java.goForward(), "forward()" )
+		return this
+	}
+
+	/**
+	 * Reload the page.
+	 */
+	function reload() {
+		tryAction( () => variables.java.reload(), "reload()" )
+		return this
+	}
+
+	/**
+	 * Replace the page HTML (great for rendering and testing components).
+	 *
+	 * @html    The HTML
+	 * @options waitUntil, timeout
+	 */
+	function setContent( required string html, struct options = {} ) {
+		var markup = arguments.html
+		var opts   = buildOptions( "Page.SetContentOptions", arguments.options )
+		tryAction( () => variables.java.setContent( markup, opts ), "setContent()" )
+		return this
+	}
+
+	/**
+	 * @return The current URL
+	 */
+	string function url() {
+		return variables.java.url()
+	}
+
+	/**
+	 * @return The page title
+	 */
+	string function title() {
+		return variables.java.title()
+	}
+
+	/**
+	 * @return The full HTML of the page, after JavaScript ran
+	 */
+	string function content() {
+		return variables.java.content()
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Waiting
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Pause for a number of milliseconds. Prefer assertions and waitFor(), which wait only as needed.
+	 *
+	 * @milliseconds How long to wait
+	 */
+	function wait( required numeric milliseconds ) {
+		variables.java.waitForTimeout( arguments.milliseconds )
+		return this
+	}
+
+	/**
+	 * Wait until the URL matches.
+	 *
+	 * @url     A full URL, a glob such as **\/dashboard, or a regex()
+	 * @timeout Milliseconds, 0 for the navigation timeout
+	 */
+	function waitForUrl( required any url, numeric timeout = 0 ) {
+		var target = arguments.url
+		var opts   = buildOptions( "Page.WaitForURLOptions", arguments.timeout > 0 ? { timeout : arguments.timeout } : {} )
+		tryAction( () => variables.java.waitForURL( target, opts ), "waitForUrl( #toString( target )# )" )
+		return this
+	}
+
+	/**
+	 * Wait for a load state.
+	 *
+	 * @state load (default), domcontentloaded or networkidle
+	 */
+	function waitForLoadState( string state = "load" ) {
+		var loadState = enumValue( "LoadState", arguments.state )
+		tryAction( () => variables.java.waitForLoadState( loadState ), "waitForLoadState( #arguments.state# )" )
+		return this
+	}
+
+	/**
+	 * Run a callback that opens a new tab or window, and return that new page.
+	 *
+	 * @callback Receives nothing; do the click that opens the popup
+	 *
+	 * @return The popup Page
+	 */
+	function waitForPopup( required function callback ) {
+		var trigger = arguments.callback
+		var popup   = tryAction( () => variables.java.waitForPopup( () => trigger() ), "waitForPopup()" )
+		return variables.context.wrapPage( popup )
+	}
+
+	/**
+	 * Run a callback that starts a download, and save it.
+	 *
+	 * @callback Receives nothing; do the click that starts the download
+	 * @path     Where to save the file, or empty to keep it in a temporary folder
+	 *
+	 * @return { path, suggestedFilename, url }
+	 */
+	struct function waitForDownload( required function callback, string path = "" ) {
+		var trigger  = arguments.callback
+		var download = tryAction( () => variables.java.waitForDownload( () => trigger() ), "waitForDownload()" )
+		var saved    = download.path().toString()
+		if ( len( arguments.path ) ) {
+			saved = expandPath( arguments.path )
+			download.saveAs( createObject( "java", "java.io.File" ).init( saved ).toPath() )
+		}
+		return {
+			path              : saved,
+			suggestedFilename : download.suggestedFilename(),
+			url               : download.url()
+		}
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * JavaScript
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Run JavaScript in the page and return the (serializable) result.
+	 *
+	 * @script An expression or a function, e.g. "document.title" or "( n ) => n * 2"
+	 * @arg    An optional argument passed to the function
+	 */
+	function evaluate( required string script, any arg ) {
+		var code = arguments.script
+		if ( isNull( arguments.arg ) ) {
+			return tryAction( () => variables.java.evaluate( code ), "evaluate()" )
+		}
+		var value = arguments.arg
+		return tryAction( () => variables.java.evaluate( code, value ), "evaluate()" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Output
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Take a screenshot.
+	 *
+	 * @path    The file path, or empty to return the image bytes
+	 * @options fullPage, type (png, jpeg, webp), quality, clip, omitBackground, animations, mask
+	 *
+	 * @return The path, or the bytes when no path is given
+	 */
+	function screenshot( string path = "", struct options = {} ) {
+		var values = duplicate( arguments.options )
+		if ( len( arguments.path ) ) {
+			values.path = expandPath( arguments.path )
+		}
+		var opts  = buildOptions( "Page.ScreenshotOptions", values )
+		var bytes = tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+		if ( len( arguments.path ) ) {
+			announceEvent( "onPlaywrightArtifact", { type : "screenshot", path : values.path, page : this } )
+			return values.path
+		}
+		return bytes
+	}
+
+	/**
+	 * Save the page as PDF (Chromium only).
+	 *
+	 * @path    The file path, or empty to return the PDF bytes
+	 * @options format (A4, Letter, ...), landscape, margin { top, right, bottom, left }, printBackground,
+	 *          headerTemplate, footerTemplate, displayHeaderFooter, scale, pageRanges, width, height
+	 *
+	 * @return The path, or the bytes when no path is given
+	 */
+	function pdf( string path = "", struct options = {} ) {
+		if ( getConfig().browser != "chromium" ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "PDF generation only works with Chromium (current browser: #getConfig().browser#).",
+				detail  = "Use playwright( ""print"" ) or the chromium browser."
+			)
+		}
+		var values = duplicate( arguments.options )
+		if ( len( arguments.path ) ) {
+			values.path = expandPath( arguments.path )
+		}
+		var opts  = buildOptions( "Page.PdfOptions", values )
+		var bytes = tryAction( () => variables.java.pdf( opts ), "pdf()" )
+		if ( len( arguments.path ) ) {
+			announceEvent( "onPlaywrightArtifact", { type : "pdf", path : values.path, page : this } )
+			return values.path
+		}
+		return bytes
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Events and network
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Listen to console messages.
+	 *
+	 * @callback Receives { type, text, location }
+	 */
+	function onConsole( required function callback ) {
+		var listener = arguments.callback
+		variables.java.onConsoleMessage( ( message ) => listener( {
+			type     : message.type(),
+			text     : message.text(),
+			location : message.location()
+		} ) )
+		return this
+	}
+
+	/**
+	 * Listen to uncaught JavaScript errors.
+	 *
+	 * @callback Receives { message, stack }
+	 */
+	function onPageError( required function callback ) {
+		var listener = arguments.callback
+		variables.java.onPageError( ( error ) => listener( { message : error, stack : "" } ) )
+		return this
+	}
+
+	/**
+	 * Listen to dialogs (alert, confirm, prompt). Without a listener Playwright dismisses them.
+	 *
+	 * @callback Receives the Playwright Dialog: call accept(), accept( text ) or dismiss()
+	 */
+	function onDialog( required function callback ) {
+		variables.java.onDialog( arguments.callback )
+		return this
+	}
+
+	/**
+	 * Listen to requests.
+	 *
+	 * @callback Receives { url, method, resourceType }
+	 */
+	function onRequest( required function callback ) {
+		var listener = arguments.callback
+		variables.java.onRequest( ( request ) => listener( {
+			url          : request.url(),
+			method       : request.method(),
+			resourceType : request.resourceType()
+		} ) )
+		return this
+	}
+
+	/**
+	 * Listen to responses.
+	 *
+	 * @callback Receives { url, status, ok }
+	 */
+	function onResponse( required function callback ) {
+		var listener = arguments.callback
+		variables.java.onResponse( ( response ) => listener( {
+			url    : response.url(),
+			status : response.status(),
+			ok     : response.ok()
+		} ) )
+		return this
+	}
+
+	/**
+	 * Intercept requests matching a URL pattern (glob, full URL or regex()) and mock or block them.
+	 *
+	 * <pre>
+	 * page.intercept( "**\/api/users" ).respondJson( { users : [] } )
+	 * page.intercept( "**\/*.png" ).abort()
+	 * </pre>
+	 *
+	 * @pattern The URL pattern
+	 *
+	 * @return A Route builder
+	 */
+	function intercept( required any pattern ) {
+		return new models.Route@playwright( variables.java, arguments.pattern, this )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Assertions
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The page title is exactly this (or matches a regex()).
+	 *
+	 * @title The title
+	 */
+	function assertTitle( required any title ) {
+		expect().toHaveTitle( arguments.title )
+		return this
+	}
+
+	/**
+	 * The page title contains the text.
+	 *
+	 * @text The text
+	 */
+	function assertTitleContains( required string text ) {
+		expect().toHaveTitle( regex( ".*" & quoteRegex( arguments.text ) & ".*", "s" ) )
+		return this
+	}
+
+	/**
+	 * The full URL is exactly this (or matches a regex()).
+	 *
+	 * @url The URL
+	 */
+	function assertUrlIs( required any url ) {
+		expect().toHaveURL( arguments.url )
+		return this
+	}
+
+	/**
+	 * The URL path is exactly this, ignoring the host, query string and hash.
+	 *
+	 * @path The path, e.g. /dashboard
+	 */
+	function assertPathIs( required string path ) {
+		expect().toHaveURL( regex( "^[a-z]+://[^/]+" & quoteRegex( arguments.path ) & "(\?.*)?(##.*)?$", "i" ) )
+		return this
+	}
+
+	/**
+	 * The URL contains the text.
+	 *
+	 * @text The text
+	 */
+	function assertUrlContains( required string text ) {
+		expect().toHaveURL( regex( ".*" & quoteRegex( arguments.text ) & ".*" ) )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Lifecycle
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Close the page and its browser context. The playwright() manager stays open.
+	 */
+	function close() {
+		variables.context.close()
+	}
+
+	/**
+	 * Close everything: the page, its context, the browser and the playwright() manager.
+	 */
+	function quit() {
+		variables.context.manager().close()
+	}
+
+	/**
+	 * @return True if the page is closed
+	 */
+	boolean function isClosed() {
+		return variables.java.isClosed()
+	}
+
+	/**
+	 * Escape regex special characters. Playwright runs regexes in the browser, so Java's \Q...\E quoting cannot be used.
+	 */
+	private string function quoteRegex( required string text ) {
+		return arguments.text.reReplace( "([.*+?^$\{\}()|\[\]\\/])", "\\\1", "all" )
+	}
+
+}
