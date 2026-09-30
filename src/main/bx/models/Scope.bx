@@ -519,7 +519,8 @@ abstract class extends="Base" {
 	 * @text The text or a regex()
 	 */
 	function assertSee( required any text ) {
-		newExpect( scopeLocator() ).toContainText( arguments.text )
+		// innerText: only rendered text counts, hidden elements are not "seen"
+		newExpect( scopeLocator() ).toContainText( arguments.text, { useInnerText : true } )
 		return this
 	}
 
@@ -529,7 +530,7 @@ abstract class extends="Base" {
 	 * @text The text or a regex()
 	 */
 	function assertDontSee( required any text ) {
-		newExpect( scopeLocator() ).not().toContainText( arguments.text )
+		newExpect( scopeLocator() ).not().toContainText( arguments.text, { useInnerText : true } )
 		return this
 	}
 

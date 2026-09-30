@@ -171,17 +171,27 @@ class extends="Base" {
 	 */
 
 	/**
-	 * @text The full text (whitespace normalized), or a regex from regex()
+	 * Assert that the element's full text equals the given text or matches the regex.
+	 *
+	 * @text    The full text (whitespace normalized), or a regex from regex()
+	 * @options Extra Playwright options, e.g. { useInnerText : true } to ignore hidden text, ignoreCase
+	 *
+	 * @return This Expect, for chaining
 	 */
-	function toHaveText( required any text ) {
-		return check( "toHaveText( #describe( arguments.text )# )", ( a, o ) => a.hasText( text, o ), "HasText" )
+	function toHaveText( required any text, struct options = {} ) {
+		return check( "toHaveText( #describe( arguments.text )# )", ( a, o ) => a.hasText( text, o ), "HasText", arguments.options )
 	}
 
 	/**
-	 * @text A substring, or a regex from regex()
+	 * Assert that the element's text contains the given text or matches the regex.
+	 *
+	 * @text    A substring, or a regex from regex()
+	 * @options Extra Playwright options, e.g. { useInnerText : true } to ignore hidden text, ignoreCase
+	 *
+	 * @return This Expect, for chaining
 	 */
-	function toContainText( required any text ) {
-		return check( "toContainText( #describe( arguments.text )# )", ( a, o ) => a.containsText( text, o ), "ContainsText" )
+	function toContainText( required any text, struct options = {} ) {
+		return check( "toContainText( #describe( arguments.text )# )", ( a, o ) => a.containsText( text, o ), "ContainsText", arguments.options )
 	}
 
 	/**
@@ -288,17 +298,18 @@ class extends="Base" {
 	 * @label       The assertion description used in failure messages, e.g. toBeVisible()
 	 * @assertion   A closure receiving the Playwright assertions object and the options
 	 * @optionsName The Playwright options class suffix, e.g. IsVisible, or empty for none
+	 * @options     Extra options merged over the assertion timeout
 	 *
 	 * @return This Expect, for chaining
 	 */
-	private function check( required string label, required function assertion, required string optionsName ) {
+	private function check( required string label, required function assertion, required string optionsName, struct options = {} ) {
 		var target = PlaywrightAssertions.assertThat( variables.java )
 		var label  = ( variables.negate ? "not()." : "" ) & arguments.label
 		if ( variables.negate ) {
 			target = target.not()
 		}
 		variables.negate = false
-		var options = len( arguments.optionsName ) ? buildOptions( "assertions.#variables.kind#.#arguments.optionsName#Options", { timeout : variables.timeout } ) : nullValue()
+		var options = len( arguments.optionsName ) ? buildOptions( "assertions.#variables.kind#.#arguments.optionsName#Options", { timeout : variables.timeout }.append( arguments.options ) ) : nullValue()
 		var run     = arguments.assertion
 		try {
 			tryAction( () => run( target, options ), label )

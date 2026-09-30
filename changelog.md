@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+* `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
+* `assertSee()` and `assertDontSee()` only count rendered text: text in hidden elements is not seen
+
 ### Added
 
 * `playwright()` BIF: fluent browser automation with smart selectors, chainable actions, web-first assertions (inline and `expect()` style), network mocking, events, popups, downloads, screenshots, PDF, rendered content and accessibility snapshots
