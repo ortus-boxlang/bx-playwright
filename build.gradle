@@ -153,11 +153,21 @@ jar {
     }
 }
 shadowJar {
+	// The META-INF/services files register the Java components (bx:playwrightRender) with BoxLang.
+	// Generate them first: a release build skips the test compile that used to trigger them.
+	dependsOn serviceLoaderBuild
 	archiveClassifier = ''
 	// Only this module's classes: third-party jars are copied as-is into the module libs folder
 	configurations = []
     mergeServiceFiles()
     destinationDirectory = file( "build/libs" )
+	// Fail the build instead of shipping a jar that BoxLang cannot find the components in
+	doLast {
+		def services = zipTree( archiveFile.get().asFile ).matching { include 'META-INF/services/ortus.boxlang.runtime.components.Component' }
+		if ( services.isEmpty() ) {
+			throw new GradleException( "The module jar has no META-INF/services entry for its components" )
+		}
+	}
 }
 
 /**
