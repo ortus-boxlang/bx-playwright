@@ -1,4 +1,5 @@
 import java:ortus.boxlang.modules.playwright.engine.SmartSelector@playwright;
+import java:ortus.boxlang.modules.playwright.engine.ImageDiff@playwright;
 
 /**
  * Selector based actions, finders and inline assertions shared by Page and Locator.
@@ -32,6 +33,13 @@ abstract class extends="Base" {
 	 * The owning Page wrapper.
 	 */
 	abstract function page();
+
+	/**
+	 * Take a screenshot of this scope and return the PNG bytes.
+	 *
+	 * @options Playwright screenshot options (animations, caret, mask, fullPage, ...)
+	 */
+	abstract function captureScreenshot( struct options );
 
 	/**
 	 * --------------------------------------------------------------------------
@@ -591,10 +599,110 @@ abstract class extends="Base" {
 	}
 
 	/**
+	 * Visual regression: compare a screenshot of this scope with its baseline image.
+	 * The first run (or update mode) writes the baseline. On failure the actual and diff images
+	 * are written next to the baseline.
+	 *
+	 * <pre>
+	 * page.assertScreenshotMatches( "home" )
+	 * page.locator( "@chart" ).assertScreenshotMatches( "sales-chart", { maxDiffPixelRatio : 0.01 } )
+	 * page.assertScreenshotMatches( "dashboard", { fullPage : true, mask : [ "@clock", ".avatar" ] } )
+	 * </pre>
+	 *
+	 * @name    The baseline name: letters, numbers, dashes and underscores (others become dashes)
+	 * @options threshold, maxDiffPixels, maxDiffPixelRatio, update, directory, plus screenshot options:
+	 *          fullPage, mask (selectors), maskColor, clip, omitBackground, animations, caret
+	 */
+	function assertScreenshotMatches( required string name, struct options = {} ) {
+		var settings = duplicate( getConfig().snapshots ?: {} )
+		var shot     = { animations : "disabled", caret : "hide" }
+		for ( var key in arguments.options ) {
+			if ( [ "threshold", "maxDiffPixels", "maxDiffPixelRatio", "update", "directory" ].findNoCase( key ) ) {
+				settings[ key ] = arguments.options[ key ]
+			} else if ( key == "mask" ) {
+				var selectors = isArray( arguments.options.mask ) ? arguments.options.mask : [ arguments.options.mask ]
+				shot.mask     = selectors.map( ( selector ) => resolve( selector, "any" ) )
+			} else {
+				shot[ key ] = arguments.options[ key ]
+			}
+		}
+
+		var directory = len( settings.directory ?: "" ) ? settings.directory : page().manager().getConfigService().snapshotsPath( getConfig() )
+		var baseName  = arguments.name.reReplace( "[^A-Za-z0-9_-]+", "-", "all" )
+		var baseline  = directory & "/" & baseName & ".png"
+		var actualPng = directory & "/" & baseName & "-actual.png"
+		var diffPng   = directory & "/" & baseName & "-diff.png"
+		directoryCreate( directory, true, true )
+
+		var actual = stableScreenshot( shot )
+		if ( ( settings.update ?: false ) || !fileExists( baseline ) ) {
+			fileWrite( baseline, actual )
+			announceEvent( "onPlaywrightArtifact", { type : "baseline", path : baseline } )
+			return this
+		}
+
+		var result = ImageDiff.compare( fileReadBinary( baseline ), actual, javacast( "double", settings.threshold ?: 0.2 ) ).toMap()
+		var maxPixels = val( settings.maxDiffPixels ?: 0 )
+		var maxRatio  = val( settings.maxDiffPixelRatio ?: 0 )
+		var passes    = result.sameSize && ( result.diffPixels <= maxPixels || ( maxRatio > 0 && result.diffRatio <= maxRatio ) )
+		if ( passes ) {
+			for ( var stale in [ actualPng, diffPng ] ) {
+				if ( fileExists( stale ) ) {
+					fileDelete( stale )
+				}
+			}
+			return this
+		}
+
+		fileWrite( actualPng, actual )
+		if ( !isNull( result.diffImage ) ) {
+			fileWrite( diffPng, result.diffImage )
+		}
+		var message = result.sameSize
+			? "Screenshot [#baseName#] differs from its baseline: #result.diffPixels# pixels (#numberFormat( result.diffRatio * 100, "0.00" )#%) are different."
+			: "Screenshot [#baseName#] has a different size than its baseline (actual #result.width#x#result.height#)."
+		failAssertion(
+			message,
+			"Baseline: #baseline#. Actual: #actualPng#.#result.sameSize ? " Diff: " & diffPng & "." : ""# If the change is expected, update the baseline with BX_PLAYWRIGHT_UPDATE_SNAPSHOTS=true or { update : true }."
+		)
+		return this
+	}
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Helpers
 	 * --------------------------------------------------------------------------
 	 */
+
+	/**
+	 * Take screenshots until two in a row are identical (animations and late renders settle), up to 5 tries.
+	 *
+	 * @options Screenshot options
+	 *
+	 * @return The PNG bytes
+	 */
+	function stableScreenshot( struct options = {} ) {
+		var previous = captureScreenshot( arguments.options )
+		for ( var i = 1; i <= 4; i++ ) {
+			var current = captureScreenshot( arguments.options )
+			if ( arrayLen( current ) == arrayLen( previous ) && toBase64( current ) == toBase64( previous ) ) {
+				return current
+			}
+			previous = current
+		}
+		return previous
+	}
+
+	/**
+	 * Throw a Playwright.AssertionFailed error.
+	 *
+	 * @message What failed
+	 * @detail  How to fix it
+	 */
+	function failAssertion( required string message, string detail = "" ) {
+		announceEvent( "onPlaywrightAssertionFailure", { message : arguments.message, action : "assertScreenshotMatches" } )
+		throw( type = "Playwright.AssertionFailed", message = arguments.message, detail = arguments.detail )
+	}
 
 	/**
 	 * Resolve a smart selector inside this scope.

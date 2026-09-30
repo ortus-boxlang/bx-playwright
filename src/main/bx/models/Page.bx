@@ -61,6 +61,11 @@ class extends="Scope" {
 		return variables.java
 	}
 
+	function captureScreenshot( struct options = {} ) {
+		var opts = buildOptions( "Page.ScreenshotOptions", arguments.options )
+		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+	}
+
 	/**
 	 * @return The BrowserContext wrapper that owns this page
 	 */

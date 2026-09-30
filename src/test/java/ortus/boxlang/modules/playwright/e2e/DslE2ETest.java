@@ -345,4 +345,38 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value.toString() ).contains( "page" );
 	}
 
+	@DisplayName( "Visual regression: baseline, match, mismatch with diff image, update" )
+	@Test
+	public void testScreenshotMatches() {
+		String	dir		= Path.of( "build", "e2e-snapshots-" + System.nanoTime() ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			dir  = "%s"
+			opts = { directory : dir }
+			page = pw.newPage()
+			page.setContent( "<h1 style='color:black'>Hello</h1><p id='clock'>12:00</p>" )
+			page.assertScreenshotMatches( "hello", opts )
+			created = fileExists( dir & "/hello.png" )
+			page.assertScreenshotMatches( "hello", opts )
+			page.locator( "h1" ).assertScreenshotMatches( "title", opts )
+			page.assertScreenshotMatches( "masked", { directory : dir, mask : [ "##clock" ] } )
+			page.setContent( "<h1 style='color:black'>Hello</h1><p id='clock'>12:01</p>" )
+			page.assertScreenshotMatches( "masked", { directory : dir, mask : [ "##clock" ] } )
+			page.setContent( "<h1 style='color:red'>Hello world</h1><p id='clock'>12:00</p>" )
+			failure = ""
+			try {
+				page.assertScreenshotMatches( "hello", opts )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			diffWritten = fileExists( dir & "/hello-diff.png" ) && fileExists( dir & "/hello-actual.png" )
+			page.assertScreenshotMatches( "hello", { directory : dir, update : true } )
+			page.assertScreenshotMatches( "hello", opts )
+			cleaned = !fileExists( dir & "/hello-diff.png" )
+			result = created & "|" & ( failure contains "differs from its baseline" ) & "|" & diffWritten & "|" & cleaned
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true|true" );
+	}
+
 }

@@ -72,6 +72,17 @@ class {
 				printBackground : true,
 				waitUntil       : "networkidle"
 			},
+			// Visual regression baselines. Directory empty = {current directory}/tests/snapshots
+			// threshold: per pixel color tolerance (0 to 1). A screenshot passes when at most maxDiffPixels
+			// pixels differ, or when maxDiffPixelRatio > 0 and at most that share of pixels differ.
+			// update: overwrite baselines (also BX_PLAYWRIGHT_UPDATE_SNAPSHOTS=true)
+			snapshots         : {
+				directory         : "",
+				threshold         : 0.2,
+				maxDiffPixels     : 0,
+				maxDiffPixelRatio : 0,
+				update            : false
+			},
 			// Raw passthrough to BrowserType.LaunchOptions and Browser.NewContextOptions
 			launchOptions     : {},
 			contextOptions    : {},

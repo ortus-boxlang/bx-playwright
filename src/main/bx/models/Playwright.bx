@@ -41,6 +41,13 @@ class extends="Base" {
 	}
 
 	/**
+	 * @return The models.Config that resolved this manager's configuration
+	 */
+	function getConfigService() {
+		return variables.configService
+	}
+
+	/**
 	 * @return True once the Playwright driver is running
 	 */
 	boolean function isStarted() {

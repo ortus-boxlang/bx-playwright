@@ -9,7 +9,7 @@ import java:ortus.boxlang.modules.playwright.engine.PlaywrightHome@playwright;
  * Resolution order, last wins:
  * 1. Module settings (defaults in ModuleConfig, overridden in boxlang.json)
  * 2. Profile(s): the requested ones, or the `defaultProfile` setting
- * 3. Environment overrides: BX_PLAYWRIGHT_BROWSER, BX_PLAYWRIGHT_HEADLESS, BX_PLAYWRIGHT_BASEURL
+ * 3. Environment overrides: BX_PLAYWRIGHT_BROWSER, BX_PLAYWRIGHT_HEADLESS, BX_PLAYWRIGHT_BASEURL, BX_PLAYWRIGHT_UPDATE_SNAPSHOTS
  * 4. Per-call options
  *
  * BX_PLAYWRIGHT_PROFILE replaces the default profile when no profile is requested explicitly.
@@ -123,6 +123,10 @@ class {
 		if ( len( baseURL ) ) {
 			overrides.baseURL = baseURL
 		}
+		var updateSnapshots = envValue( "UPDATE_SNAPSHOTS" )
+		if ( len( updateSnapshots ) && isBoolean( updateSnapshots ) && updateSnapshots ) {
+			overrides.snapshots = { update : true }
+		}
 		return overrides
 	}
 
@@ -169,6 +173,14 @@ class {
 	string function artifactsPath( struct config = {} ) {
 		var configured = arguments.config.artifacts.directory ?: ( variables.settings.artifacts.directory ?: "" )
 		return len( trim( configured ) ) ? configured : homePath() & "/artifacts"
+	}
+
+	/**
+	 * @return The snapshots directory: the `snapshots.directory` setting or {current directory}/tests/snapshots
+	 */
+	string function snapshotsPath( struct config = {} ) {
+		var configured = arguments.config.snapshots.directory ?: ( variables.settings.snapshots.directory ?: "" )
+		return len( trim( configured ) ) ? configured : System.getProperty( "user.dir" ) & "/tests/snapshots"
 	}
 
 	/**

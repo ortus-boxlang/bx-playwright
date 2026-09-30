@@ -45,6 +45,11 @@ class extends="Scope" {
 		return variables.owner.getConfig()
 	}
 
+	function captureScreenshot( struct options = {} ) {
+		var opts = buildOptions( "Locator.ScreenshotOptions", arguments.options )
+		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+	}
+
 	/**
 	 * --------------------------------------------------------------------------
 	 * Refining
