@@ -95,6 +95,7 @@
 		.pw-code{margin:0;padding:18px 20px;font:13.5px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:inherit;white-space:pre;overflow-x:auto;background:transparent}
 		.pw-code .k{color:##00c853}.pw-code .s{color:##0ea5e9}.pw-code .c{opacity:.55}
 		[data-theme=dark] .pw-code .k{color:##34d399}[data-theme=dark] .pw-code .s{color:##7dd3fc}
+		.eco-card .icon img{width:100%;height:100%;object-fit:contain;display:block}
 		.pw-dist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
 	</style>
 
@@ -448,10 +449,10 @@
 					<div class="icon">#homeIcon( "testbox" )#</div><b>TestBox</b><span>The BDD/TDD framework to run your browser tests.</span>
 				</a>
 				<a class="eco-card" href="https://www.coldbox.org" target="_blank" rel="noopener noreferrer">
-					<div class="icon">#homeIcon( "cube" )#</div><b>ColdBox</b><span>A conventions-based HMVC framework for the web apps you test.</span>
+					<div class="icon"><img src="#variables.basePath#assets/coldbox-icon.png" alt="ColdBox"></div><b>ColdBox</b><span>A conventions-based HMVC framework for the web apps you test.</span>
 				</a>
 				<a class="eco-card" href="https://commandbox.ortusbooks.com" target="_blank" rel="noopener noreferrer">
-					<div class="icon">#homeIcon( "commandbox" )#</div><b>CommandBox</b><span>The package manager and CLI for the BoxLang ecosystem.</span>
+					<div class="icon"><img src="#variables.basePath#assets/commandbox-icon.svg" alt="CommandBox"></div><b>CommandBox</b><span>The package manager and CLI for the BoxLang ecosystem.</span>
 				</a>
 				<a class="eco-card" href="https://bxsites.io" target="_blank" rel="noopener noreferrer">
 					<div class="icon">#bxsitesIcon( "markdown" )#</div><b>bxSites</b><span>The static site generator that builds this site.</span>
