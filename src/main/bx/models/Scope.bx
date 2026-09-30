@@ -1,5 +1,6 @@
 import java:ortus.boxlang.modules.playwright.engine.SmartSelector@playwright;
 import java:ortus.boxlang.modules.playwright.engine.ImageDiff@playwright;
+import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
 
 /**
  * Selector based actions, finders and inline assertions shared by Page and Locator.
@@ -137,18 +138,38 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * Run a callback scoped to an element: every selector inside resolves within it.
+	 * Run a callback scoped to an element or a page component: every selector inside resolves within it.
 	 *
 	 * <pre>
 	 * page.within( "@cart", ( cart ) => cart.click( "Remove" ).assertSee( "Empty" ) )
+	 * page.within( new DatePicker(), ( picker ) => picker.pick( 12 ) )
 	 * </pre>
 	 *
-	 * @selector A smart selector for the scope
-	 * @callback Receives the scoped Locator
+	 * @selector A smart selector, or a PageComponent instance
+	 * @callback Receives the scoped Locator or the bound component
 	 */
-	function within( required string selector, required function callback ) {
-		arguments.callback( locator( arguments.selector ) )
+	function within( required any selector, required function callback ) {
+		arguments.callback( isObject( arguments.selector ) ? component( arguments.selector ) : locator( arguments.selector ) )
 		return this
+	}
+
+	/**
+	 * Bind a page component (a class extending models.PageComponent@playwright) to its element in this scope.
+	 *
+	 * @component The component instance
+	 *
+	 * @return The bound component
+	 */
+	function component( required any component ) {
+		var selector = arguments.component.getSelector()
+		if ( !len( selector ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "The page component has no selector.",
+				detail  = "Set it in the component pseudo-constructor, e.g. selector = '.datepicker'"
+			)
+		}
+		return arguments.component.bind( page(), resolve( selector, "any" ) )
 	}
 
 	/**
@@ -466,7 +487,7 @@ abstract class extends="Base" {
 	 */
 	function expect( string selector = "" ) {
 		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : expectTarget()
-		return new models.Expect@playwright( target, getConfig().timeouts.assertion ?: 5000 )
+		return newExpect( target )
 	}
 
 	/**
@@ -475,7 +496,7 @@ abstract class extends="Base" {
 	 * @text The text or a regex()
 	 */
 	function assertSee( required any text ) {
-		new models.Expect@playwright( scopeLocator(), getConfig().timeouts.assertion ?: 5000 ).toContainText( arguments.text )
+		newExpect( scopeLocator() ).toContainText( arguments.text )
 		return this
 	}
 
@@ -485,7 +506,7 @@ abstract class extends="Base" {
 	 * @text The text or a regex()
 	 */
 	function assertDontSee( required any text ) {
-		new models.Expect@playwright( scopeLocator(), getConfig().timeouts.assertion ?: 5000 ).not().toContainText( arguments.text )
+		newExpect( scopeLocator() ).not().toContainText( arguments.text )
 		return this
 	}
 
@@ -527,7 +548,7 @@ abstract class extends="Base" {
 	 * @value    The value or a regex()
 	 */
 	function assertValue( required string selector, required any value ) {
-		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).toHaveValue( arguments.value )
+		newExpect( resolve( arguments.selector, "fill" ) ).toHaveValue( arguments.value )
 		return this
 	}
 
@@ -537,7 +558,7 @@ abstract class extends="Base" {
 	 * @selector Smart selector (a label works)
 	 */
 	function assertChecked( required string selector ) {
-		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).toBeChecked()
+		newExpect( resolve( arguments.selector, "fill" ) ).toBeChecked()
 		return this
 	}
 
@@ -547,7 +568,7 @@ abstract class extends="Base" {
 	 * @selector Smart selector (a label works)
 	 */
 	function assertNotChecked( required string selector ) {
-		new models.Expect@playwright( resolve( arguments.selector, "fill" ), getConfig().timeouts.assertion ?: 5000 ).not().toBeChecked()
+		newExpect( resolve( arguments.selector, "fill" ) ).not().toBeChecked()
 		return this
 	}
 
@@ -557,7 +578,7 @@ abstract class extends="Base" {
 	 * @selector Smart selector
 	 */
 	function assertEnabled( required string selector ) {
-		new models.Expect@playwright( resolve( arguments.selector, "click" ), getConfig().timeouts.assertion ?: 5000 ).toBeEnabled()
+		newExpect( resolve( arguments.selector, "click" ) ).toBeEnabled()
 		return this
 	}
 
@@ -567,7 +588,7 @@ abstract class extends="Base" {
 	 * @selector Smart selector
 	 */
 	function assertDisabled( required string selector ) {
-		new models.Expect@playwright( resolve( arguments.selector, "click" ), getConfig().timeouts.assertion ?: 5000 ).toBeDisabled()
+		newExpect( resolve( arguments.selector, "click" ) ).toBeDisabled()
 		return this
 	}
 
@@ -582,7 +603,7 @@ abstract class extends="Base" {
 		var matches = sel.startsWith( "@" ) ? root().getByTestId( sel.mid( 2, sel.len() ) ) : (
 			SmartSelector.isSelector( sel ) ? root().locator( sel ) : root().getByText( sel )
 		)
-		new models.Expect@playwright( matches, getConfig().timeouts.assertion ?: 5000 ).toHaveCount( arguments.count )
+		newExpect( matches ).toHaveCount( arguments.count )
 		return this
 	}
 
@@ -700,7 +721,12 @@ abstract class extends="Base" {
 	 * @detail  How to fix it
 	 */
 	function failAssertion( required string message, string detail = "" ) {
-		announceEvent( "onPlaywrightAssertionFailure", { message : arguments.message, action : "assertScreenshotMatches" } )
+		announceEvent( "onPlaywrightAssertionFailure", { message : arguments.message } )
+		var collector = page().softCollector()
+		if ( !isNull( collector ) ) {
+			collector.append( arguments.message )
+			return
+		}
 		throw( type = "Playwright.AssertionFailed", message = arguments.message, detail = arguments.detail )
 	}
 
@@ -713,7 +739,64 @@ abstract class extends="Base" {
 	 * @return The Playwright locator
 	 */
 	function resolve( required string selector, string intent = "any" ) {
-		return SmartSelector.locate( root(), arguments.selector, arguments.intent )
+		var target = arguments.selector
+		if ( target.startsWith( "@" ) ) {
+			var aliases = getAliases()
+			var name    = target.mid( 2, target.len() )
+			if ( aliases.keyExists( name ) ) {
+				target = aliases[ name ]
+			}
+		}
+		return SmartSelector.locate( root(), target, arguments.intent )
+	}
+
+	/**
+	 * Element aliases usable as @name selectors (from page objects and components).
+	 */
+	struct function getAliases() {
+		return page().getAliases()
+	}
+
+	/**
+	 * Which macros apply to this object: page or locator.
+	 */
+	string function macroTarget() {
+		return "locator"
+	}
+
+	/**
+	 * Create an Expect bound to the page's soft assertion collector.
+	 *
+	 * @target The Playwright object to assert on
+	 */
+	function newExpect( required any target ) {
+		return new models.Expect@playwright( arguments.target, getConfig().timeouts.assertion ?: 5000, page().softCollector() )
+	}
+
+	/**
+	 * Calls to unknown methods run the macros registered with playwright().macro().
+	 */
+	function onMissingMethod( string missingMethodName, struct missingMethodArguments ) {
+		var macro = Macros.get( macroTarget(), arguments.missingMethodName )
+		if ( isNull( macro ) ) {
+			var known = Macros.names( macroTarget() )
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "Unknown method [#arguments.missingMethodName#] on #macroTarget()#.",
+				detail  = "Check the method name, register a macro with playwright().macro(), or use getJava() for the raw Playwright object."
+				& ( known.len() ? " Registered #macroTarget()# macros: #known.toList( ", " )#." : "" )
+			)
+		}
+		var args = { "1" : this }
+		for ( var name in arguments.missingMethodArguments ) {
+			if ( isNumeric( name ) ) {
+				args[ name + 1 ] = arguments.missingMethodArguments[ name ]
+			} else {
+				args[ name ] = arguments.missingMethodArguments[ name ]
+			}
+		}
+		var result = macro( argumentCollection = args )
+		return isNull( result ) ? this : result
 	}
 
 	/**

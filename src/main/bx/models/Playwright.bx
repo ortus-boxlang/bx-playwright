@@ -1,4 +1,5 @@
 import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
+import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
 import java:java.util.UUID;
 
 /**
@@ -286,6 +287,69 @@ class extends="Base" {
 		}
 		var opts = buildOptions( "APIRequest.NewContextOptions", values )
 		return new models.Request@playwright( getJava().request().newContext( opts ), variables.config )
+	}
+
+	/**
+	 * Create (or reuse) a saved session: cookies and storage recorded after a setup, such as logging in.
+	 * Use it with newPage( { session : "admin" } ) or playwright( { session : "admin" } ).
+	 *
+	 * <pre>
+	 * pw.session( "admin", ( page ) => page.visit( "/login" ).fill( "Email", "admin@site.com" ).fill( "Password", "x" ).click( "Sign in" ) )
+	 * pw.newPage( { session : "admin" } ).visit( "/admin" ).assertSee( "Dashboard" )
+	 * </pre>
+	 *
+	 * @name    The session name
+	 * @setup   Receives a fresh page; do whatever creates the session
+	 * @options maxAge (minutes, 0 = never expires), refresh (force a new setup), context (context overrides)
+	 *
+	 * @return The session file path
+	 */
+	string function session( required string name, required function setup, struct options = {} ) {
+		var file   = variables.configService.sessionPath( arguments.name )
+		var maxAge = val( arguments.options.maxAge ?: 0 )
+		var fresh  = fileExists( file ) && ( maxAge <= 0 || dateDiff( "n", getFileInfo( file ).lastModified, now() ) < maxAge )
+		if ( fresh && !( arguments.options.refresh ?: false ) ) {
+			return file
+		}
+		directoryCreate( getDirectoryFromPath( file ), true, true )
+		var context = newContext( arguments.options.context ?: {} )
+		var failed  = true
+		try {
+			arguments.setup( context.newPage() )
+			context.saveStorageState( file )
+			failed = false
+		} finally {
+			context.close( failed )
+		}
+		return file
+	}
+
+	/**
+	 * Add a custom method to every page (or locator).
+	 *
+	 * <pre>
+	 * playwright().macro( "loginAs", ( page, email ) => page.visit( "/login" ).fill( "Email", email ).click( "Sign in" ) )
+	 * page.loginAs( "luis@ortus.com" ).assertSee( "Welcome" )
+	 * </pre>
+	 *
+	 * @name     The method name
+	 * @handler  Receives the page (or locator) first, then the call arguments. Return nothing to keep chaining
+	 * @target   page (default) or locator
+	 */
+	function macro( required string name, required function handler, string target = "page" ) {
+		Macros.register( arguments.target, arguments.name, arguments.handler )
+		return this
+	}
+
+	/**
+	 * Remove a macro, or every macro of a target when no name is given.
+	 *
+	 * @name   The macro name
+	 * @target page (default) or locator
+	 */
+	function removeMacro( string name = "", string target = "page" ) {
+		Macros.remove( arguments.target, arguments.name )
+		return this
 	}
 
 	/**

@@ -1,0 +1,17 @@
+/**
+ * Test page object for /dashboard
+ */
+class extends="models.PageObject@playwright" {
+
+	url      = "/dashboard"
+	elements = { welcome : "##welcome", todos : ".todos li" }
+
+	function at() {
+		page.assertPathIs( "/dashboard" )
+	}
+
+	numeric function todoCount() {
+		return page.count( "@todos" )
+	}
+
+}

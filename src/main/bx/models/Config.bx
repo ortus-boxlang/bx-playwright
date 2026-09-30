@@ -175,6 +175,16 @@ class {
 	}
 
 	/**
+	 * The file of a saved session (see playwright().session()). Sessions hold cookies, so they live in the
+	 * playwright home, outside your project.
+	 *
+	 * @name The session name
+	 */
+	string function sessionPath( required string name ) {
+		return homePath() & "/sessions/" & arguments.name.reReplace( "[^A-Za-z0-9_-]+", "-", "all" ) & ".json"
+	}
+
+	/**
 	 * @return The artifacts directory: the `artifacts.directory` setting or {home}/artifacts
 	 */
 	string function artifactsPath( struct config = {} ) {
@@ -247,6 +257,17 @@ class {
 			if ( !isSimpleValue( value ) || len( value ) ) {
 				options[ mapping[ optionName ] ] = value
 			}
+		}
+		if ( len( arguments.config.session ?: "" ) ) {
+			var sessionFile = sessionPath( arguments.config.session )
+			if ( !fileExists( sessionFile ) ) {
+				throw(
+					type    = "Playwright.InvalidOption",
+					message = "The session [#arguments.config.session#] does not exist yet.",
+					detail  = "Create it first with playwright().session( ""#arguments.config.session#"", ( page ) => ... )."
+				)
+			}
+			options.storageStatePath = sessionFile
 		}
 		options.append( arguments.config.contextOptions ?: {}, true )
 		return options

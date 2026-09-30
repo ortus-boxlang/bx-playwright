@@ -39,6 +39,7 @@ public class DslE2ETest extends BaseIntegrationTest {
 	@BeforeEach
 	public void prepare() {
 		E2E.home();
+		runtime.getConfiguration().registerMapping( "/fixtures", Path.of( "src/test/resources/fixtures" ).toAbsolutePath().toString() );
 		String site = Path.of( "src/test/resources/site" ).toAbsolutePath().toString().replace( "\\", "/" );
 		// @formatter:off
 		setup = """
@@ -419,6 +420,134 @@ public class DslE2ETest extends BaseIntegrationTest {
 		""" );
 		// @formatter:on
 		assertThat( value ).isEqualTo( "2|true|ignored|true|button-name,image-alt|true" );
+	}
+
+	@DisplayName( "Page objects: visit, at() checks, element aliases and chaining" )
+	@Test
+	public void testPageObjects() {
+		// @formatter:off
+		Object value = bx( """
+			page      = serve( pw.newContext() ).newPage()
+			dashboard = page.visit( new fixtures.LoginPage() )
+				.assertSee( "Sign in to BoxLang" )
+				.loginAs( "luis@ortus.com" )
+			dashboard.assertSee( "Welcome" ).assertVisible( "@welcome" )
+			wrongPage = ""
+			try {
+				page.on( new fixtures.LoginPage() )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				wrongPage = "not at login"
+			}
+			result = dashboard.todoCount() & "|" & dashboard.element( "welcome" ).text() & "|" & wrongPage & "|" & getMetadata( dashboard ).name
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).startsWith( "3|Welcome|not at login|" );
+		assertThat( value.toString() ).endsWith( "DashboardPage" );
+	}
+
+	@DisplayName( "Page components scope actions and aliases to their root" )
+	@Test
+	public void testComponents() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage().visit( "/dashboard" )
+			page.evaluate( "() => { document.querySelector( '[data-testid=cart] button' ).onclick = () => document.querySelector( '[data-testid=cart] span' ).textContent = 'Empty' }" )
+			page.within( new fixtures.CartComponent(), ( cart ) => cart.assertSee( "2 items" ).empty().assertSee( "Empty" ) )
+			cart = page.component( new fixtures.CartComponent() )
+			result = cart.text( "span" ) & "|" & cart.count( "button" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "Empty|1" );
+	}
+
+	@DisplayName( "Macros add methods to pages and locators" )
+	@Test
+	public void testMacros() {
+		// @formatter:off
+		Object value = bx( """
+			pw.macro( "fillLogin", ( page, email ) => page.fill( "Email", email ).fill( "Password", "secret" ) )
+			pw.macro( "shout", ( locator ) => uCase( locator.text() ), "locator" )
+			page = serve( pw.newContext() ).newPage().visit( "/login" )
+			page.fillLogin( "a@b.com" ).assertValue( "Email", "a@b.com" )
+			shouted = page.locator( "h1" ).shout()
+			unknown = ""
+			try {
+				page.flyAway()
+			} catch ( "Playwright.InvalidOption" e ) {
+				unknown = e.detail contains "fillLogin"
+			}
+			pw.removeMacro( "fillLogin" ).removeMacro( "shout", "locator" )
+			result = shouted & "|" & unknown
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "SIGN IN TO BOXLANG|true" );
+	}
+
+	@DisplayName( "Soft assertions collect every failure and fail once" )
+	@Test
+	public void testSoftAssertions() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 300 } } )
+			page.setContent( "<title>Home</title><h1>Hello</h1>" )
+			message = ""
+			try {
+				page.soft( ( p ) => {
+					p.assertSee( "Hello" )
+					p.assertSee( "Missing one" )
+					p.assertTitle( "Other" )
+					p.expect( "h1" ).toHaveText( "Nope" )
+				} )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				message = e.message
+			}
+			page.assertSee( "Hello" )
+			result = listFirst( message, ":" ) & "|" & ( message contains "Missing one" ) & "|" & ( message contains "Nope" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "3 soft assertion(s) failed|true|true" );
+	}
+
+	@DisplayName( "Saved sessions are created once and reused" )
+	@Test
+	public void testSessions() {
+		// @formatter:off
+		Object value = bx( """
+			runs = 0
+			setup = ( page ) => {
+				runs++
+				page.context().addCookies( [ { name : "auth", value : "admin-token", url : "http://app.test/" } ] )
+			}
+			file1 = pw.session( "admin-test", setup, { refresh : true } )
+			file2 = pw.session( "admin-test", setup )
+			page  = pw.newPage( { session : "admin-test" } )
+			token = page.context().cookies().filter( ( c ) -> c.name == "auth" )[ 1 ].value
+			missing = ""
+			try {
+				pw.newPage( { session : "nobody-yet" } )
+			} catch ( "Playwright.InvalidOption" e ) {
+				missing = "missing"
+			}
+			result = runs & "|" & ( file1 == file2 ) & "|" & token & "|" & missing
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "1|true|admin-token|missing" );
+	}
+
+	@DisplayName( "Emulation and time helpers" )
+	@Test
+	public void testEmulationAndTime() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.freezeTime( "2030-05-01T10:00:00" )
+			page.setContent( "<p>x</p>" )
+			year = page.evaluate( "new Date().getFullYear()" )
+			page.setViewport( 500, 400 ).emulate( { colorScheme : "dark", media : "print" } )
+			result = year & "|" & page.evaluate( "window.innerWidth + '|' + matchMedia( '(prefers-color-scheme: dark)' ).matches + '|' + matchMedia( 'print' ).matches" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2030|500|true|true" );
 	}
 
 }

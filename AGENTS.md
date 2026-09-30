@@ -49,7 +49,8 @@ UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completi
 - Java exceptions thrown by Playwright arrive wrapped; use `PlaywrightErrors.rootMessage()`/`rootType()`.
 - Playwright evaluates regexes in the browser: no Java-only syntax such as `\Q...\E`.
 - BoxLang closures are coerced to Java functional interfaces (Consumer, Runnable) when calling Playwright methods directly.
-- A "Method not found" right after editing a class can be a stale compiled class: `./gradlew clean` also clears `~/.boxlang/classes`.
+- A "Method not found" right after editing a class can be a stale compiled class. The Gradle `test` task now clears `~/.boxlang/classes` before running.
+- `page.evaluate( "a = () => b" )` calls the resulting function: Playwright invokes any evaluated value that is a function. Wrap statements in `() => { ... }`.
 - Java `List` results (e.g. `consoleMessages()`) should be copied into a BoxLang array before using member functions such as `filter()`.
 
 ## Skills

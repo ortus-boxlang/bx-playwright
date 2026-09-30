@@ -15,11 +15,13 @@ import java:com.microsoft.playwright.assertions.PlaywrightAssertions@playwright;
 class extends="Base" {
 
 	/**
-	 * @target  A Page, a Locator, a Response, or the Java object they wrap
-	 * @timeout The assertion timeout in milliseconds
+	 * @target    A Page, a Locator, a Response, or the Java object they wrap
+	 * @timeout   The assertion timeout in milliseconds
+	 * @collector An array that collects failures instead of throwing (soft assertions), or null
 	 */
-	function init( required any target, numeric timeout = 5000 ) {
-		variables.timeout = arguments.timeout
+	function init( required any target, numeric timeout = 5000, any collector ) {
+		variables.timeout   = arguments.timeout
+		variables.collector = arguments.collector ?: nullValue()
 		variables.negate  = false
 		variables.java    = isObject( arguments.target ) && structKeyExists( arguments.target, "getJava" ) ? arguments.target.getJava() : arguments.target
 		if ( isInstanceOf( variables.java, "com.microsoft.playwright.Page" ) ) {
@@ -238,7 +240,14 @@ class extends="Base" {
 		variables.negate = false
 		var options = len( arguments.optionsName ) ? buildOptions( "assertions.#variables.kind#.#arguments.optionsName#Options", { timeout : variables.timeout } ) : nullValue()
 		var run     = arguments.assertion
-		tryAction( () => run( target, options ), label )
+		try {
+			tryAction( () => run( target, options ), label )
+		} catch ( "Playwright.AssertionFailed" e ) {
+			if ( isNull( variables.collector ) ) {
+				rethrow;
+			}
+			variables.collector.append( e.message )
+		}
 		return this
 	}
 

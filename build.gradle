@@ -269,6 +269,10 @@ shadowJar.finalizedBy( createModuleStructure )
 test {
     useJUnitPlatform()
 	systemProperty 'bx.playwright.flavor', project.flavor
+	// BoxLang caches compiled classes in the user home: start every test run from the current sources
+	doFirst {
+		delete file( "${System.getProperty('user.home')}/.boxlang/classes" )
+	}
     testLogging {
 		showStandardStreams = true
 		events "passed", "skipped", "failed"

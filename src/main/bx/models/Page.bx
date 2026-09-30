@@ -23,8 +23,71 @@ class extends="Scope" {
 	 * @context The owning BrowserContext wrapper
 	 */
 	function init( required any java, required any context ) {
-		variables.java    = arguments.java
-		variables.context = arguments.context
+		variables.java        = arguments.java
+		variables.context     = arguments.context
+		variables.aliases     = {}
+		variables.softErrors  = nullValue()
+		return this
+	}
+
+	string function macroTarget() {
+		return "page"
+	}
+
+	/**
+	 * @return The element aliases usable as @name selectors
+	 */
+	struct function getAliases() {
+		return variables.aliases
+	}
+
+	/**
+	 * Register element aliases usable as @name selectors (page objects do this for you).
+	 *
+	 * @elements A struct of alias name to smart selector
+	 */
+	function useElements( required struct elements ) {
+		variables.aliases.append( arguments.elements, true )
+		return this
+	}
+
+	/**
+	 * @return The soft assertion collector while inside soft(), otherwise null
+	 */
+	function softCollector() {
+		return variables.softErrors ?: nullValue()
+	}
+
+	/**
+	 * Soft assertions: run the callback, collect every failed assertion, then fail once with all of them.
+	 *
+	 * <pre>
+	 * page.soft( ( page ) => {
+	 *     page.assertSee( "Welcome" ).assertVisible( "@menu" ).assertTitle( "Home" )
+	 * } )
+	 * </pre>
+	 *
+	 * @callback Receives the page
+	 */
+	function soft( required function callback ) {
+		variables.softErrors = []
+		try {
+			arguments.callback( this )
+		} finally {
+			var errors           = variables.softErrors
+			variables.softErrors = nullValue()
+		}
+		if ( errors.len() ) {
+			var numbered = []
+			for ( var i = 1; i <= errors.len(); i++ ) {
+				numbered.append( "#i#) #errors[ i ]#" )
+			}
+			throw(
+				type    = "Playwright.AssertionFailed",
+				message = "#errors.len()# soft assertion(s) failed: #numbered.toList( char( 10 ) )#",
+				detail  = "Every assertion inside soft() ran; these are all the failures."
+			)
+		}
 		return this
 	}
 
@@ -89,16 +152,42 @@ class extends="Scope" {
 	 */
 
 	/**
-	 * Go to a URL. Relative URLs resolve against the baseURL setting.
+	 * Go to a URL, or to a page object (its url is visited, it is bound to this page and its at() check runs).
+	 * Relative URLs resolve against the baseURL setting.
 	 *
-	 * @url     Absolute URL, or a path when baseURL is set
+	 * @url     Absolute URL, a path when baseURL is set, or a PageObject instance
 	 * @options waitUntil (load, domcontentloaded, networkidle, commit), timeout, referer
+	 *
+	 * @return The page, or the bound page object
 	 */
-	function visit( required string url, struct options = {} ) {
+	function visit( required any url, struct options = {} ) {
+		if ( isObject( arguments.url ) ) {
+			var pageObject = arguments.url
+			if ( !len( pageObject.getUrl() ) ) {
+				throw(
+					type    = "Playwright.InvalidOption",
+					message = "The page object has no url.",
+					detail  = "Set it in the page object pseudo-constructor, e.g. url = '/login', or use page.on( pageObject )."
+				)
+			}
+			visit( pageObject.getUrl(), arguments.options )
+			return on( pageObject )
+		}
 		var target = arguments.url
 		var opts   = buildOptions( "Page.NavigateOptions", arguments.options )
 		tryAction( () => variables.java.navigate( target, opts ), "visit( #target# )" )
 		return this
+	}
+
+	/**
+	 * Bind a page object to this page without navigating, and run its at() check.
+	 *
+	 * @pageObject A class extending models.PageObject@playwright
+	 *
+	 * @return The bound page object
+	 */
+	function on( required any pageObject ) {
+		return arguments.pageObject.bind( this ).checkAt()
 	}
 
 	/**
@@ -455,6 +544,53 @@ class extends="Scope" {
 	 */
 	function assertUrlContains( required string text ) {
 		expect().toHaveURL( regex( ".*" & quoteRegex( arguments.text ) & ".*" ) )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Emulation and time
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Resize the viewport.
+	 *
+	 * @width  Pixels
+	 * @height Pixels
+	 */
+	function setViewport( required numeric width, required numeric height ) {
+		variables.java.setViewportSize( javacast( "int", arguments.width ), javacast( "int", arguments.height ) )
+		return this
+	}
+
+	/**
+	 * Emulate media features.
+	 *
+	 * @options media (screen, print), colorScheme (light, dark, no-preference), reducedMotion (reduce, no-preference),
+	 *          forcedColors (active, none), contrast (more, no-preference)
+	 */
+	function emulate( required struct options ) {
+		variables.java.emulateMedia( buildOptions( "Page.EmulateMediaOptions", arguments.options ) )
+		return this
+	}
+
+	/**
+	 * @return The Playwright Clock, to control Date, timers and animations
+	 */
+	function clock() {
+		return variables.java.clock()
+	}
+
+	/**
+	 * Freeze the page time: Date.now() always returns this moment (timers keep running).
+	 *
+	 * @dateTime An ISO string such as 2026-01-01T09:00:00, or a date
+	 */
+	function freezeTime( required any dateTime ) {
+		// Playwright parses ISO strings itself; BoxLang dates are passed as java.util.Date
+		var moment = isSimpleValue( arguments.dateTime ) ? toString( arguments.dateTime ) : javacast( "java.util.Date", arguments.dateTime )
+		variables.java.clock().setFixedTime( moment )
 		return this
 	}
 

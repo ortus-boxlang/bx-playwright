@@ -1,0 +1,18 @@
+/**
+ * Test page object for /login
+ */
+class extends="models.PageObject@playwright" {
+
+	url      = "/login"
+	elements = { email : "##email", password : "input[name=password]", submit : "button[type=submit]" }
+
+	function at() {
+		page.assertTitle( "Login" )
+	}
+
+	function loginAs( required string email, string password = "secret" ) {
+		page.fill( "@email", email ).fill( "@password", password ).click( "@submit" )
+		return page.on( new fixtures.DashboardPage() )
+	}
+
+}

@@ -1,0 +1,13 @@
+/**
+ * Test page component for the cart widget
+ */
+class extends="models.PageComponent@playwright" {
+
+	selector = "@cart"
+	elements = { remove : "button" }
+
+	function empty() {
+		return click( "@remove" )
+	}
+
+}
