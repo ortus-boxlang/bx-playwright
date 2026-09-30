@@ -1,0 +1,19 @@
+/**
+ * The AI browser: every action returns the URL, title and an accessibility snapshot where each
+ * element has a ref (e12) that the next action can use. With bx-ai installed, give the tools to an agent:
+ *
+ *     agent = aiAgent( name : "Browser", instructions : "Use the browser tools", tools : playwright().aiTools() )
+ */
+pw = playwright()
+try {
+	tools   = pw.aiToolDefinitions()
+	println( "Tools: " & tools.map( ( tool ) -> tool.name ).toList( ", " ) )
+
+	browser = new models.AiBrowser@playwright( pw )
+	browser.currentPage().setContent( "<title>Search</title><label>Query <input></label><button>Search</button>" )
+	println( browser.snapshot() )
+	println( browser.fill( "Query", "boxlang" ) )
+	browser.close()
+} finally {
+	pw.close()
+}

@@ -1,0 +1,19 @@
+/**
+ * Quality checks: console errors, accessibility (axe-core), visual regression and soft assertions.
+ */
+snapshots = getTempDirectory() & "/bx-playwright-examples/snapshots"
+
+playwright().browse( ( page ) => {
+	page.setContent( "<html lang=en><title>Store</title><main><h1>Store</h1><img src=logo.png alt=Logo><button>Buy</button></main></html>" )
+
+	page.assertNoConsoleErrors()
+		.assertNoAccessibilityIssues( { impact : "serious" } )
+		.assertScreenshotMatches( "store-home", { directory : snapshots } )
+
+	// Every failure is collected, then reported once
+	page.soft( ( p ) => {
+		p.assertTitle( "Store" ).assertSee( "Buy" ).assertVisible( "h1" )
+	} )
+
+	println( "Accessibility issues found: " & page.accessibility().len() )
+} )

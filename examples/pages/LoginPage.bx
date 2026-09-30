@@ -1,0 +1,18 @@
+/**
+ * Page object for the login page of the example app.
+ */
+class extends="models.PageObject@playwright" {
+
+	url      = "/login"
+	elements = { email : "##email", password : "input[type=password]", submit : "button" }
+
+	function at() {
+		page.assertTitle( "Login" )
+	}
+
+	function loginAs( required string email, string password = "secret" ) {
+		page.fill( "@email", email ).fill( "@password", password ).click( "@submit" )
+		return page.on( new pages.DashboardPage() )
+	}
+
+}

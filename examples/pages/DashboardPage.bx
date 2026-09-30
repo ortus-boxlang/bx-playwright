@@ -1,0 +1,17 @@
+/**
+ * Page object for the dashboard of the example app.
+ */
+class extends="models.PageObject@playwright" {
+
+	url      = "/dashboard"
+	elements = { heading : "h1" }
+
+	function at() {
+		page.assertPathIs( "/dashboard" )
+	}
+
+	function userMenu() {
+		return page.component( new pages.UserMenu() )
+	}
+
+}

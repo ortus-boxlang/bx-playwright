@@ -1,0 +1,13 @@
+/**
+ * Page component for the user menu of the example app.
+ */
+class extends="models.PageComponent@playwright" {
+
+	selector = "nav.user"
+	elements = { logout : "a.logout" }
+
+	function name() {
+		return text( "span" )
+	}
+
+}

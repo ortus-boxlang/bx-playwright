@@ -1,0 +1,20 @@
+/**
+ * Page objects and components keep selectors and flows in one place.
+ * Classes live in pages/ (run from this folder so the `pages` package resolves).
+ */
+login     = "<title>Login</title><form onsubmit=""event.preventDefault(); location.href='/dashboard'""><input id=email><input type=password><button>Go</button></form>"
+dashboard = "<title>Dashboard</title><nav class=user><span>Luis</span><a class=logout href=/login>Logout</a></nav><h1>Dashboard</h1>"
+
+pw = playwright( { baseURL : "http://app.test" } )
+try {
+	page = pw.newPage()
+	page.intercept( "**/login" ).respond( 200, login, { "content-type" : "text/html" } )
+	page.intercept( "**/dashboard" ).respond( 200, dashboard, { "content-type" : "text/html" } )
+
+	home = page.visit( new pages.LoginPage() ).loginAs( "luis@ortus.com" )
+	home.assertSee( "Dashboard" ).assertVisible( "@heading" )
+
+	println( "Logged in as " & home.userMenu().name() )
+} finally {
+	pw.close()
+}

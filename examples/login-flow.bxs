@@ -1,0 +1,32 @@
+/**
+ * A login flow with smart selectors, chained actions, inline assertions and a mocked API.
+ * The fake app is served through request interception, so no server is needed.
+ */
+app = {
+	"/login"     : "<title>Login</title><form onsubmit=""event.preventDefault(); location.href='/dashboard'"">"
+		& "<label for=email>Email</label><input id=email><input type=password placeholder=Password>"
+		& "<button>Sign in</button></form>",
+	"/dashboard" : "<title>Dashboard</title><h1>Welcome</h1><ul id=users></ul>"
+		& "<script>fetch('/api/users').then(r => r.json()).then(d => users.innerHTML = d.map(u => '<li>' + u + '</li>').join(''))</script>"
+}
+
+pw = playwright( { baseURL : "http://app.test" } )
+try {
+	page = pw.newPage()
+	page.intercept( "**/login" ).respond( 200, app[ "/login" ], { "content-type" : "text/html" } )
+	page.intercept( "**/dashboard" ).respond( 200, app[ "/dashboard" ], { "content-type" : "text/html" } )
+	page.intercept( "**/api/users" ).respondJson( [ "Luis", "Brad", "Jon" ] )
+
+	page.visit( "/login" )
+		.fill( "Email", "luis@ortus.com" )      // by label
+		.fill( "Password", "secret" )           // by placeholder
+		.click( "Sign in" )                     // by button text
+		.assertPathIs( "/dashboard" )
+		.assertTitle( "Dashboard" )
+		.assertSee( "Welcome" )
+		.assertCount( "##users li", 3 )
+
+	println( "Users: " & page.locator( "##users li" ).texts().toList( ", " ) )
+} finally {
+	pw.close()
+}
