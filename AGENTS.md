@@ -31,7 +31,8 @@ UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completi
 
 ## Conventions
 
-- Ortus coding standards (see the `ortus-coding-standards` skill): tabs, spaces inside parentheses, aligned assignments, no semicolons in BoxLang, docblocks on every public method.
+- Ortus coding standards (see the `ortus-coding-standards` skill): tabs, spaces inside parentheses, aligned assignments, no semicolons in BoxLang.
+- Every method in every class (BoxLang or Java, public or private, source, tests and fixtures) has a docblock: a description, every argument (`@name` in BoxLang, `@param` in Java) and `@return` when it returns something. `help()` builds its output from the BoxLang docblocks.
 - Lambdas (`->`) only when the function uses nothing but its own arguments; closures (`=>`) otherwise.
 - Every public DSL action returns the object for chaining. Every error is typed (`Playwright.*`) with a `detail` that explains the fix.
 - Options are always a struct mapped by `OptionsMapper`: never hard-code empty Playwright options objects.
