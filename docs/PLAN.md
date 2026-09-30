@@ -80,13 +80,14 @@ Confirmed:
 6. **Targets BoxLang 1.17.x on JRE 21.**
 7. **Own CLI, no CommandBox.** A `bxPlaywright` executable plus bash completions, using the module descriptor `boxlang.executable` / `boxlang.completions` fields (same pattern as bx-sites and bx-agents). See 5.
 8. **Both assertion styles**: fluent inline (`page.assertSee()`) and expect style (`expect( locator ).toBeVisible()`).
-9. **Components only where a body is needed.** None in v1 (see 6.8).
+9. **Components only where a body is needed.** One component: `bx:playwrightRender` (see 6.8).
+10. **Executable is `bxPlaywright`**, matching `bxSites` and `bxAgents`.
 
 Proposed (not yet confirmed):
 
-10. **Single version source**: the Playwright version comes from the bundled jars at build time (Gradle). Driver and Node always match it.
-11. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/` (extracted once from the bundled jars via `CLI install-driver`) and `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch and browsers install only via the CLI.
-12. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
+11. **Single version source**: the Playwright version comes from the bundled jars at build time (Gradle). Driver and Node always match it.
+12. **Persistent home** `~/.boxlang/playwright/` (overridable): `driver/` (extracted once from the bundled jars via `CLI install-driver`) and `browsers/`. The module sets `PLAYWRIGHT_DRIVER_DIR`, `PLAYWRIGHT_BROWSERS_PATH`, `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` so nothing is extracted per launch and browsers install only via the CLI.
+13. **Thread confinement built in**: the DSL never shares a Java `Playwright` across threads. A per-thread manager (and an optional pool for web/scheduler use).
 
 ## 4. Architecture
 
@@ -282,17 +283,22 @@ Other entry ideas to decide on:
 
 ### 6.8 Components
 
-Rule: only when wrapping a body. Closures (`browse()`) already give scoping and cleanup in script and templates, so v1 ships **no components**.
+Rule: only when wrapping a body. Closures (`browse()`) already give scoping and cleanup, so the only component is one that needs a body.
 
-The one real body use case, for later: render body content with Chromium, e.g. HTML to PDF or image in templates:
+**`bx:playwrightRender`**: renders the body content with Chromium (modern CSS, JS, web fonts) to PDF or image.
 
 ```html
-<bx:playwrightRender type="pdf" path="invoice.pdf" format="A4">
-    <h1>Invoice #bx:output#...</h1>
+<bx:playwrightRender type="pdf" path="invoice.pdf" format="A4" landscape="false">
+    <h1>Invoice #invoice.id#</h1>
+    ...
+</bx:playwrightRender>
+
+<bx:playwrightRender type="png" variable="imageBytes" viewport="1200x630" fullPage="true">
+    ...social card HTML...
 </bx:playwrightRender>
 ```
 
-This overlaps with bx-pdf, so it is only worth it if Chromium rendering (modern CSS, JS) is a real need. Decide after v1.
+Proposed attributes: `type` (pdf, png, jpeg, webp), `path` or `variable` (bytes), `baseURL` (resolves relative assets), `waitFor` (selector or `networkidle`), PDF options (`format`, `landscape`, `margin`, `headerTemplate`, `footerTemplate`, `printBackground`), image options (`viewport`, `fullPage`, `device`, `omitBackground`). Same capability is available in script as `playwright().render( html, options )`.
 
 ### 6.9 Interceptors (extension points)
 
@@ -348,6 +354,7 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 
 ### Phase 3: BIF, interceptors, testing SPI
 - [ ] `playwright()` BIF, profiles, one-shot helpers (6.7).
+- [ ] `bx:playwrightRender` component and `playwright().render()` (6.8).
 - [ ] Interceptor events (6.9).
 - [ ] Testing SPI: lifecycle scopes, artifact API and policies, device registry, webServer helper.
 - [ ] Support the TestBox team building the adapter in TestBox core (tracked in the TestBox repo).
@@ -357,7 +364,6 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 - [ ] Devices and emulation modifiers.
 - [ ] Quality checks: console/smoke, axe accessibility, aria snapshots.
 - [ ] Visual regression (baseline + pixel diff + diff image).
-- [ ] Evaluate `bx:playwrightRender` body component (6.8).
 - [ ] Soft assertions, multi-user `browse()`.
 
 ### Phase 5: Tooling and docs
@@ -377,7 +383,5 @@ Interface contract between the two repos must be agreed early (phase 0) since th
 
 ## 10. Open Questions
 
-1. Executable casing: `bxPlaywright` (matches `bxSites`, `bxAgents`) or all lowercase `bxplaywright`?
-2. Entry ideas in 6.7: named profiles, `visit()` shortcut, `connect()`. Keep all?
-3. Is `bx:playwrightRender` (Chromium HTML to PDF/image) worth doing after v1, given bx-pdf?
-4. Who on the TestBox side owns the adapter and the SPI contract?
+1. Entry ideas in 6.7: named profiles, `visit()` shortcut, `connect()`. Keep all?
+2. Who on the TestBox side owns the adapter and the SPI contract?
