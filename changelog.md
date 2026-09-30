@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* `render()` with `baseURL` no longer needs the bx-esapi module
 * A relative `artifacts.directory` resolves against the current directory instead of the module folder
 * `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
 * `assertSee()` and `assertDontSee()` only count rendered text: text in hidden elements is not seen

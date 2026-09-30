@@ -52,6 +52,8 @@ UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completi
 - BoxLang closures are coerced to Java functional interfaces (Consumer, Runnable) when calling Playwright methods directly.
 - A "Method not found" right after editing a class can be a stale compiled class. The Gradle `test` task now clears `~/.boxlang/classes` before running.
 - `page.evaluate( "a = () => b" )` calls the resulting function: Playwright invokes any evaluated value that is a function. Wrap statements in `() => { ... }`.
+- Only core BIFs are available to the module: `encodeForHTMLAttribute()`, `imageRead()` and friends come from optional modules (bx-esapi, bx-image) that users may not have. Local runs load every module in `~/.boxlang/modules`, so reproduce CI with a clean home: `GRADLE_USER_HOME=~/.gradle JAVA_TOOL_OPTIONS="-Duser.home=/tmp/cleanhome" ./gradlew test`.
+- The tests fail if an installed copy of bx-playwright in `~/.boxlang/modules` shadows `build/module`: remove it before running them.
 - Java `List` results (e.g. `consoleMessages()`) should be copied into a BoxLang array before using member functions such as `filter()`.
 
 ## Skills
