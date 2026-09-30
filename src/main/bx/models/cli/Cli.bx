@@ -88,11 +88,10 @@ class {
 			words       : "@profiles"
 		},
 		"codegen"      : {
-			class       : "Passthrough",
-			command     : "codegen",
-			description : "Record browser actions and generate code",
-			usage       : "codegen [url] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
-			flags       : [ "--device", "--viewport-size", "--load-storage", "--save-storage", "--target" ],
+			class       : "Codegen",
+			description : "Record browser actions and generate BoxLang code (or --target=java, javascript, python)",
+			usage       : "codegen [url] [--output=file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
+			flags       : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
 			words       : []
 		},
 		"open"         : {

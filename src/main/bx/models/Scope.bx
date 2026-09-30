@@ -206,14 +206,20 @@ abstract class extends="Base" {
 
 	/**
 	 * Fill an input, textarea or contenteditable: found by label, placeholder, name or any smart selector.
+	 * On a locator, fill( value ) fills the locator itself.
 	 *
-	 * @selector Smart selector
+	 * @selector Smart selector (or the value, on a locator)
 	 * @value    The value
 	 * @options  force, timeout
 	 */
-	function fill( required string selector, required string value, struct options = {} ) {
+	function fill( required string selector, any value, struct options = {} ) {
+		// On a locator, fill( "text" ) fills the locator itself
+		if ( isNull( arguments.value ) ) {
+			arguments.value    = arguments.selector
+			arguments.selector = ""
+		}
 		var target = target( arguments.selector, "fill" )
-		var text   = arguments.value
+		var text   = toString( arguments.value )
 		var opts   = buildOptions( "Locator.FillOptions", arguments.options )
 		tryAction( () => target.fill( text, opts ), "fill( #arguments.selector# )" )
 		return this
@@ -226,7 +232,11 @@ abstract class extends="Base" {
 	 * @text     The text
 	 * @delay    Milliseconds between key presses
 	 */
-	function type( required string selector, required string text, numeric delay = 0 ) {
+	function type( required string selector, any text, numeric delay = 0 ) {
+		if ( isNull( arguments.text ) ) {
+			arguments.text     = arguments.selector
+			arguments.selector = ""
+		}
 		var target = target( arguments.selector, "fill" )
 		var value  = arguments.text
 		var opts   = buildOptions( "Locator.PressSequentiallyOptions", { delay : arguments.delay } )
@@ -247,16 +257,21 @@ abstract class extends="Base" {
 
 	/**
 	 * Press a key or a combination: Enter, Tab, ArrowDown, Control+A, ControlOrMeta+S.
-	 * With one argument the key goes to the focused element.
+	 * With one argument the key goes to the focused element (on a page) or to the locator itself.
 	 *
 	 * @selectorOrKey The element selector, or the key when there is no second argument
 	 * @key           The key
 	 */
 	function press( required string selectorOrKey, string key = "" ) {
 		if ( !len( arguments.key ) ) {
-			var combo    = arguments.selectorOrKey
-			var keyboard = page().getJava().keyboard()
-			tryAction( () => keyboard.press( combo ), "press( #combo# )" )
+			var combo = arguments.selectorOrKey
+			if ( macroTarget() == "page" ) {
+				var keyboard = page().getJava().keyboard()
+				tryAction( () => keyboard.press( combo ), "press( #combo# )" )
+			} else {
+				var element = self()
+				tryAction( () => element.press( combo ), "press( #combo# )" )
+			}
 			return this
 		}
 		var target = target( arguments.selectorOrKey, "fill" )
@@ -293,7 +308,12 @@ abstract class extends="Base" {
 	 * @selector Smart selector
 	 * @values   One value or an array of values
 	 */
-	function select( required string selector, required any values ) {
+	function select( required any selector, any values ) {
+		// On a locator, select( value ) selects on the locator itself
+		if ( isNull( arguments.values ) ) {
+			arguments.values   = arguments.selector
+			arguments.selector = ""
+		}
 		var target  = target( arguments.selector, "fill" )
 		var choices = isArray( arguments.values ) ? arguments.values.map( ( choice ) -> toString( choice ) ) : [ toString( arguments.values ) ]
 		var values  = choices.len() == 1 ? choices[ 1 ] : choices
@@ -465,13 +485,16 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * The accessibility tree as compact YAML, a token-efficient page view for AI agents and for toMatchAriaSnapshot().
+	 * The accessibility tree as compact YAML: a token-efficient page view for AI agents and for toMatchAriaSnapshot().
+	 * In ai mode every element gets a ref ([ref=e12]) usable as a selector: page.click( "ref=e12" ).
 	 *
 	 * @selector Smart selector, empty for the whole scope
+	 * @options  mode (default or ai), depth
 	 */
-	string function snapshot( string selector = "" ) {
+	string function snapshot( string selector = "", struct options = {} ) {
 		var target = len( arguments.selector ) ? resolve( arguments.selector, "any" ) : scopeLocator()
-		return tryAction( () => target.ariaSnapshot(), "snapshot( #arguments.selector# )" )
+		var opts   = buildOptions( "Locator.AriaSnapshotOptions", arguments.options )
+		return tryAction( () => target.ariaSnapshot( opts ), "snapshot( #arguments.selector# )" )
 	}
 
 	/**

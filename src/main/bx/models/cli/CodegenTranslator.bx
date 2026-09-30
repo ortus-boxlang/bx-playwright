@@ -1,0 +1,242 @@
+/**
+ * Translates the Java code recorded by `playwright codegen --target java` into the bx-playwright DSL.
+ *
+ * <pre>
+ * page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Save")).click();
+ *   becomes
+ * page.byRole( "button", { name : "Save" } ).click()
+ * </pre>
+ *
+ * Boilerplate (imports, class, Playwright/browser/context setup) is dropped. Statements that cannot be
+ * translated are kept as comments so nothing recorded is lost.
+ */
+class {
+
+	variables.FINDERS = {
+		"getByRole"        : "byRole",
+		"getByText"        : "byText",
+		"getByLabel"       : "byLabel",
+		"getByPlaceholder" : "byPlaceholder",
+		"getByTestId"      : "byTestId",
+		"getByAltText"     : "byAltText",
+		"getByTitle"       : "byTitle",
+		"navigate"         : "visit",
+		"selectOption"     : "select",
+		"pressSequentially": "type",
+		"setInputFiles"    : "upload",
+		"frameLocator"     : "frame"
+	}
+
+	/**
+	 * Translate a recorded Java file into a BoxLang script.
+	 *
+	 * @java The Java source recorded by codegen
+	 *
+	 * @return BoxLang source
+	 */
+	string function translate( required string java ) {
+		var nl    = char( 10 )
+		var lines = [ "playwright().browse( ( page ) => {" ]
+		for ( var statement in statements( arguments.java ) ) {
+			if ( isBoilerplate( statement ) ) {
+				continue
+			}
+			var converted = translateStatement( statement )
+			lines.append( "	" & converted )
+		}
+		lines.append( "} )" )
+		return lines.toList( nl ) & nl
+	}
+
+	/**
+	 * Translate one Java statement (without the trailing semicolon).
+	 *
+	 * @statement The Java statement
+	 *
+	 * @return The BoxLang statement, or a comment when it cannot be translated
+	 */
+	string function translateStatement( required string statement ) {
+		var code = trim( arguments.statement )
+		if ( !code.startsWith( "page." ) && !code.startsWith( "assertThat(" ) ) {
+			return "// TODO translate: " & code
+		}
+		// assertThat( x ).hasText( y )  ->  x.expect().toHaveText( y )
+		var assertion = reFind( "^assertThat\((.*?)\)\.(not\(\)\.)?(is|has|contains|matches)([A-Za-z]+)\((.*)\)$", code, 1, true )
+		if ( assertion.pos[ 1 ] ) {
+			var subject  = translateExpression( assertion.match[ 2 ] )
+			var negation = len( assertion.match[ 3 ] ) ? ".not()" : ""
+			var verb     = assertion.match[ 4 ]
+			var name     = assertion.match[ 5 ]
+			var method   = verb == "is" ? "toBe" & name : ( verb == "has" ? "toHave" & name : ( verb == "contains" ? "toContain" & name : "toMatch" & name ) )
+			var args     = translateArguments( assertion.match[ 6 ] )
+			return "#subject#.expect()#negation#.#method#(#len( args ) ? " #args# " : ""#)"
+		}
+		return translateExpression( code )
+	}
+
+	/**
+	 * Translate a Java expression chain.
+	 */
+	string function translateExpression( required string expression ) {
+		var calls  = splitCalls( arguments.expression )
+		var result = calls[ 1 ].name
+		for ( var i = 2; i <= calls.len(); i++ ) {
+			var call = calls[ i ]
+			var name = variables.FINDERS[ call.name ] ?: call.name
+			var args = translateArguments( call.args )
+			if ( call.name == "nth" && isNumeric( args ) ) {
+				args = args + 1
+			}
+			if ( call.isField ) {
+				result &= "." & name
+			} else {
+				result &= ".#name#(#len( args ) ? " #args# " : ""#)"
+			}
+		}
+		return result
+	}
+
+	/**
+	 * Translate a Java argument list.
+	 */
+	string function translateArguments( required string args ) {
+		var parts  = splitTopLevel( arguments.args, "," )
+		var result = []
+		for ( var part in parts ) {
+			part = trim( part )
+			if ( !len( part ) ) {
+				continue
+			}
+			if ( part.startsWith( "AriaRole." ) ) {
+				result.append( """#lCase( part.listLast( "." ) ).replace( "_", "" )#""" )
+			} else if ( part.startsWith( "new " ) && part.find( "Options()" ) ) {
+				result.append( optionsToStruct( part ) )
+			} else if ( part.startsWith( "Pattern.compile(" ) ) {
+				result.append( "page.regex(" & part.mid( 17, part.len() - 17 ) & ")" )
+			} else if ( part.startsWith( "Paths.get(" ) ) {
+				result.append( part.mid( 11, part.len() - 11 ) )
+			} else if ( part.startsWith( "page." ) ) {
+				result.append( translateExpression( part ) )
+			} else {
+				result.append( part )
+			}
+		}
+		return result.toList( ", " )
+	}
+
+	/**
+	 * new Page.GetByRoleOptions().setName("Save").setExact(true)  ->  { name : "Save", exact : true }
+	 */
+	string function optionsToStruct( required string options ) {
+		var pairs = []
+		var calls = splitCalls( arguments.options )
+		for ( var i = 2; i <= calls.len(); i++ ) {
+			var call = calls[ i ]
+			if ( call.name.startsWith( "set" ) ) {
+				var key = lCase( call.name.mid( 4, 1 ) ) & call.name.mid( 5, call.name.len() )
+				pairs.append( "#key# : #translateArguments( call.args )#" )
+			}
+		}
+		return pairs.len() ? "{ #pairs.toList( ", " )# }" : "{}"
+	}
+
+	/**
+	 * Split Java source into statements, joining multi-line ones.
+	 */
+	array function statements( required string source ) {
+		var result  = []
+		var current = ""
+		for ( var line in listToArray( arguments.source, char( 10 ) ) ) {
+			var text = trim( line )
+			if ( !len( text ) || text.startsWith( "//" ) || text.startsWith( "import " ) ) {
+				continue
+			}
+			current &= ( len( current ) ? " " : "" ) & text
+			if ( current.endsWith( ";" ) ) {
+				result.append( current.left( current.len() - 1 ).reReplace( "\(\s+", "(", "all" ).reReplace( "\s+\.", ".", "all" ) )
+				current = ""
+			} else if ( current.endsWith( "{" ) || current.endsWith( "}" ) ) {
+				current = ""
+			}
+		}
+		return result
+	}
+
+	private boolean function isBoilerplate( required string statement ) {
+		return reFindNoCase( "^(Browser|BrowserContext|Page|Playwright)\s+\w+\s*=", arguments.statement ) > 0
+			|| arguments.statement.startsWith( "try (" )
+	}
+
+	/**
+	 * Split "page.getByRole(a, b).click()" into [ { name : "page" }, { name : "getByRole", args : "a, b" }, { name : "click", args : "" } ].
+	 */
+	private array function splitCalls( required string expression ) {
+		var calls = []
+		var text  = trim( arguments.expression )
+		var depth = 0
+		var quote = false
+		var start = 1
+		var name  = ""
+		var i     = 1
+		while ( i <= text.len() ) {
+			var c = text.mid( i, 1 )
+			if ( c == """" && ( i == 1 || text.mid( i - 1, 1 ) != "\" ) ) {
+				quote = !quote
+			} else if ( !quote ) {
+				if ( c == "(" ) {
+					if ( depth == 0 ) {
+						name  = trim( text.mid( start, i - start ) )
+						start = i + 1
+					}
+					depth++
+				} else if ( c == ")" ) {
+					depth--
+					if ( depth == 0 ) {
+						calls.append( { name : name, args : text.mid( start, i - start ), isField : false } )
+						start = i + 2
+						i++
+					}
+				} else if ( c == "." && depth == 0 && i >= start ) {
+					var segment = trim( text.mid( start, i - start ) )
+					if ( len( segment ) ) {
+						calls.append( { name : segment, args : "", isField : calls.len() > 0 } )
+					}
+					start = i + 1
+				}
+			}
+			i++
+		}
+		var tail = trim( text.mid( start, text.len() - start + 1 ) )
+		if ( len( tail ) ) {
+			calls.append( { name : tail, args : "", isField : calls.len() > 0 } )
+		}
+		return calls
+	}
+
+	private array function splitTopLevel( required string text, required string separator ) {
+		var parts   = []
+		var depth   = 0
+		var quote   = false
+		var current = ""
+		for ( var i = 1; i <= arguments.text.len(); i++ ) {
+			var c = arguments.text.mid( i, 1 )
+			if ( c == """" && ( i == 1 || arguments.text.mid( i - 1, 1 ) != "\" ) ) {
+				quote = !quote
+			}
+			if ( !quote && ( c == "(" || c == "{" ) ) {
+				depth++
+			} else if ( !quote && ( c == ")" || c == "}" ) ) {
+				depth--
+			}
+			if ( !quote && depth == 0 && c == arguments.separator ) {
+				parts.append( current )
+				current = ""
+			} else {
+				current &= c
+			}
+		}
+		parts.append( current )
+		return parts
+	}
+
+}

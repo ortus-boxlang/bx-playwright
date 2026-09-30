@@ -325,6 +325,97 @@ class extends="Base" {
 	}
 
 	/**
+	 * Browser tools for AI agents, in a neutral format: [ { name, description, arguments : { name : description }, handler } ].
+	 * They share one page. Use aiTools() for bx-ai, or map them to any other agent framework.
+	 */
+	array function aiToolDefinitions() {
+		var browser = new models.AiBrowser@playwright( this )
+		return [
+			{
+				name        : "browser_visit",
+				description : "Open a URL in the browser. Returns the URL, title and an accessibility snapshot where elements have refs like e12.",
+				arguments   : { url : "Absolute URL, or a path relative to the base URL" },
+				handler     : ( url ) => browser.visit( url )
+			},
+			{
+				name        : "browser_snapshot",
+				description : "Return the current URL, title and accessibility snapshot with element refs.",
+				arguments   : {},
+				handler     : () => browser.snapshot()
+			},
+			{
+				name        : "browser_click",
+				description : "Click an element. Returns the new page snapshot.",
+				arguments   : { target : "An element ref from the snapshot (e.g. e12), or the visible text of a button or link" },
+				handler     : ( target ) => browser.click( target )
+			},
+			{
+				name        : "browser_fill",
+				description : "Type text into an input. Returns the new page snapshot.",
+				arguments   : { target : "An element ref (e.g. e7), or the input label or placeholder", value : "The text to type" },
+				handler     : ( target, value ) => browser.fill( target, value )
+			},
+			{
+				name        : "browser_select",
+				description : "Choose an option in a select element. Returns the new page snapshot.",
+				arguments   : { target : "An element ref, or the select label", value : "The option value or label" },
+				handler     : ( target, value ) => browser.select( target, value )
+			},
+			{
+				name        : "browser_press",
+				description : "Press a key such as Enter, Tab or Escape. Returns the new page snapshot.",
+				arguments   : { key : "The key or combination, e.g. Enter or Control+A" },
+				handler     : ( key ) => browser.press( key )
+			},
+			{
+				name        : "browser_back",
+				description : "Go back to the previous page. Returns the new page snapshot.",
+				arguments   : {},
+				handler     : () => browser.back()
+			},
+			{
+				name        : "browser_text",
+				description : "Read the visible text of the page or of one element.",
+				arguments   : { target : "An element ref or selector, or empty for the whole page" },
+				handler     : ( target = "" ) => browser.text( target )
+			},
+			{
+				name        : "browser_screenshot",
+				description : "Save a screenshot of the page and return the file path.",
+				arguments   : { path : "The file path, e.g. page.png" },
+				handler     : ( path ) => browser.screenshot( path )
+			},
+			{
+				name        : "browser_close",
+				description : "Close the browser page when the task is done.",
+				arguments   : {},
+				handler     : () => browser.close()
+			}
+		]
+	}
+
+	/**
+	 * Browser tools for bx-ai agents: aiAgent( tools : playwright().aiTools() ).
+	 * Requires the bx-ai module.
+	 */
+	array function aiTools() {
+		if ( !getFunctionList().keyExists( "aiTool" ) ) {
+			throw(
+				type    = "Playwright.NotInstalled",
+				message = "aiTools() needs the bx-ai module.",
+				detail  = "Install it with: install-bx-module bx-ai. Or use aiToolDefinitions() with another agent framework."
+			)
+		}
+		return aiToolDefinitions().map( ( definition ) => {
+			var tool = aiTool( definition.name, definition.description, definition.handler )
+			for ( var argument in definition.arguments ) {
+				invoke( tool, "describe" & argument, [ definition.arguments[ argument ] ] )
+			}
+			return tool
+		} )
+	}
+
+	/**
 	 * Add a custom method to every page (or locator).
 	 *
 	 * <pre>

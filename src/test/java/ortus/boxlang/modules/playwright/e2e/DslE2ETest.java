@@ -550,4 +550,41 @@ public class DslE2ETest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "2030|500|true|true" );
 	}
 
+	@DisplayName( "AI browser: snapshots with refs, acting by ref or text, errors as text" )
+	@Test
+	public void testAiBrowser() {
+		// @formatter:off
+		Object value = bx( """
+			ctx     = serve( pw.newContext() )
+			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			state   = browser.visit( "http://app.test/login" )
+			found    = reFind( "textbox ""Email"" \\[ref=(e[0-9]+)\\]", state, 1, true )
+			emailRef = found.pos[ 1 ] ? found.match[ 2 ] : ""
+			browser.fill( emailRef, "ai@ortus.com" )
+			browser.fill( "Password", "secret" )
+			after   = browser.click( "Sign in" )
+			failure = browser.click( "Does not exist here" )
+			result  = len( emailRef ) & "|" & ( state contains "Title: Login" ) & "|" & ( after contains "/dashboard?user=ai%40ortus.com" )
+				& "|" & ( failure contains "Error [Playwright." ) & "|" & browser.close()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "[23]\\|true\\|true\\|true\\|Closed\\." );
+	}
+
+	@DisplayName( "Locator shortcuts: fill, type, select and press act on the locator itself" )
+	@Test
+	public void testLocatorShortcuts() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage().visit( "/login" )
+			page.byLabel( "Email" ).fill( "a@b.com" )
+			page.byPlaceholder( "Password" ).type( "xyz" )
+			page.byTestId( "role" ).select( "editor" )
+			page.byLabel( "Email" ).press( "End" )
+			result = page.value( "Email" ) & "|" & page.value( "Password" ) & "|" & page.value( "@role" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "a@b.com|xyz|editor" );
+	}
+
 }

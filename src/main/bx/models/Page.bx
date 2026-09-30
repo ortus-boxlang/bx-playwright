@@ -548,6 +548,21 @@ class extends="Scope" {
 	}
 
 	/**
+	 * The accessibility tree of the page (or of an element) as compact YAML.
+	 * In ai mode every element gets a ref ([ref=e12]) usable as a selector: page.click( "ref=e12" ).
+	 *
+	 * @selector Smart selector, empty for the whole page
+	 * @options  mode (default or ai), depth
+	 */
+	string function snapshot( string selector = "", struct options = {} ) {
+		if ( len( arguments.selector ) ) {
+			return super.snapshot( arguments.selector, arguments.options )
+		}
+		var opts = buildOptions( "Page.AriaSnapshotOptions", arguments.options )
+		return tryAction( () => variables.java.ariaSnapshot( opts ), "snapshot()" )
+	}
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Emulation and time
 	 * --------------------------------------------------------------------------

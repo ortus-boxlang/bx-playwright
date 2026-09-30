@@ -1,0 +1,157 @@
+/**
+ * A browser for AI agents: every action returns the new page state (URL, title and the ai mode
+ * accessibility snapshot with element refs), and errors come back as text so the agent can recover.
+ * Used by playwright().aiTools() and playwright().aiToolDefinitions().
+ *
+ * <pre>
+ * browser = new models.AiBrowser@playwright( playwright( { baseURL : "http://localhost:8080" } ) )
+ * state   = browser.visit( "/login" )           // URL, title and snapshot with refs like e5
+ * state   = browser.fill( "e5", "luis@ortus.com" )
+ * state   = browser.click( "Sign in" )           // refs or smart selectors
+ * browser.close()
+ * </pre>
+ */
+class extends="Base" {
+
+	/**
+	 * @manager The playwright() manager to open the page with
+	 */
+	function init( required any manager ) {
+		variables.manager = arguments.manager
+		return this
+	}
+
+	/**
+	 * Open a URL and return the page state.
+	 *
+	 * @url Absolute URL, or a path relative to the base URL
+	 */
+	string function visit( required string url ) {
+		var target = arguments.url
+		return run( () => currentPage().visit( target ) )
+	}
+
+	/**
+	 * Return the page state: URL, title and the accessibility snapshot with element refs.
+	 */
+	string function snapshot() {
+		return run( () => nullValue() )
+	}
+
+	/**
+	 * Click an element and return the page state.
+	 *
+	 * @target An element ref from the snapshot (e.g. e12) or a smart selector (button text, CSS, @testId)
+	 */
+	string function click( required string target ) {
+		var selector = toSelector( arguments.target )
+		return run( () => currentPage().click( selector ) )
+	}
+
+	/**
+	 * Fill an input and return the page state.
+	 *
+	 * @target An element ref (e.g. e7), a label, a placeholder or a selector
+	 * @value  The text to type
+	 */
+	string function fill( required string target, required string value ) {
+		var selector = toSelector( arguments.target )
+		var text     = arguments.value
+		return run( () => currentPage().fill( selector, text ) )
+	}
+
+	/**
+	 * Choose an option in a select element and return the page state.
+	 *
+	 * @target An element ref, a label or a selector
+	 * @value  The option value or label
+	 */
+	string function select( required string target, required string value ) {
+		var selector = toSelector( arguments.target )
+		var choice   = arguments.value
+		return run( () => currentPage().select( selector, choice ) )
+	}
+
+	/**
+	 * Press a key (Enter, Tab, Escape, ArrowDown, ...) and return the page state.
+	 *
+	 * @key The key or combination
+	 */
+	string function press( required string key ) {
+		var combo = arguments.key
+		return run( () => currentPage().press( combo ) )
+	}
+
+	/**
+	 * Go back in history and return the page state.
+	 */
+	string function back() {
+		return run( () => currentPage().back() )
+	}
+
+	/**
+	 * The visible text of the page or of an element.
+	 *
+	 * @target An element ref or a selector, empty for the whole page
+	 */
+	string function text( string target = "" ) {
+		try {
+			return currentPage().text( len( arguments.target ) ? toSelector( arguments.target ) : "" )
+		} catch ( any e ) {
+			return errorText( e )
+		}
+	}
+
+	/**
+	 * Save a screenshot and return its path.
+	 *
+	 * @path The file path
+	 */
+	string function screenshot( required string path ) {
+		try {
+			return currentPage().screenshot( arguments.path )
+		} catch ( any e ) {
+			return errorText( e )
+		}
+	}
+
+	/**
+	 * Close the browser page.
+	 */
+	string function close() {
+		if ( !isNull( variables.page ) ) {
+			variables.page.close()
+			variables.page = nullValue()
+		}
+		return "Closed."
+	}
+
+	/**
+	 * @return The current Page, opened on first use
+	 */
+	function currentPage() {
+		if ( isNull( variables.page ) || variables.page.isClosed() ) {
+			variables.page = variables.manager.newPage()
+		}
+		return variables.page
+	}
+
+	private string function run( required function action ) {
+		try {
+			arguments.action()
+			var page = currentPage()
+			return "URL: #page.url()##char( 10 )#Title: #page.title()##char( 10 )##char( 10 )##page.snapshot( options = { mode : "ai" } )#"
+		} catch ( any e ) {
+			return errorText( e )
+		}
+	}
+
+	private string function toSelector( required string target ) {
+		return reFind( "^e[0-9]+$", arguments.target ) ? "ref=" & arguments.target : arguments.target
+	}
+
+	private string function errorText( required any error ) {
+		return "Error [#arguments.error.type ?: "Error"#]: #arguments.error.message#" & ( len( arguments.error.detail ?: "" ) ? " Fix: #arguments.error.detail#" : "" )
+	}
+
+}

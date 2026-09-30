@@ -26,6 +26,7 @@ import com.microsoft.playwright.options.AriaRole;
  *
  * <ul>
  * <li>{@code @name}: the test id ({@code data-testid} by default, see the {@code testIdAttribute} setting)</li>
+ * <li>{@code ref=e12}: an element ref from an ai mode snapshot</li>
  * <li>CSS, XPath and Playwright engine selectors pass through: {@code #id}, {@code .class}, {@code input[name=email]},
  * lowercase tag names,
  * {@code //div}, {@code css=...}, {@code text=...}, {@code role=button[name="Save"]}, {@code h1}</li>
@@ -80,6 +81,10 @@ public final class SmartSelector {
 		}
 		if ( value.startsWith( "@" ) && value.length() > 1 ) {
 			return root.getByTestId( value.substring( 1 ) );
+		}
+		if ( value.startsWith( "ref=" ) ) {
+			// Element refs from ai mode snapshots, e.g. ref=e12
+			return root.page().locator( "aria-ref=" + value.substring( 4 ) );
 		}
 		if ( isSelector( value ) ) {
 			return root.locator( value );

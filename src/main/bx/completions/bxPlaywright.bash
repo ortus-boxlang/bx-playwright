@@ -10,7 +10,7 @@ _bxplaywright_complete() {
 	fi
 	case "$verb" in
 		clean) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;
-		codegen) COMPREPLY=( $(compgen -W "--device --viewport-size --load-storage --save-storage --target" -- "$cur") ) ;;
+		codegen) COMPREPLY=( $(compgen -W "--output --target --device --viewport-size --load-storage --save-storage" -- "$cur") ) ;;
 		completions) COMPREPLY=( $(compgen -W "" -- "$cur") ) ;;
 		devices) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;
 		doctor) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;

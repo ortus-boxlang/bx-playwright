@@ -106,4 +106,62 @@ abstract class {
 		return isInstanceOf( arguments.value, "java.util.regex.Pattern" )
 	}
 
+	/**
+	 * Describe the public API of this object: every method with its description, arguments and return value.
+	 * Built from the docblocks, so it is always in sync with the code. Handy for AI agents and the REPL.
+	 *
+	 * <pre>
+	 * page.help()             // every method
+	 * page.help( "fill" )     // one method
+	 * </pre>
+	 *
+	 * @method A method name, or empty for all methods
+	 *
+	 * @return A struct of method name to { description, arguments, returns }
+	 */
+	struct function help( string method = "" ) {
+		var internal = [
+			"init", "onMissingMethod", "root", "self", "captureScreenshot", "macroTarget", "newExpect", "scopeLocator",
+			"expectTarget", "softCollector", "bind", "checkAt", "forget", "wrapPage", "tryAction", "buildOptions", "enumValue",
+			"announceEvent", "failAssertion", "stableScreenshot", "resolve", "getAliases"
+		]
+		var methods = [:]
+		var meta    = getMetadata( this )
+		while ( !isNull( meta ) && isStruct( meta ) && !meta.isEmpty() ) {
+			for ( var fn in meta.functions ?: [] ) {
+				if ( fn.access != "public" || internal.findNoCase( fn.name ) || methods.keyExists( fn.name ) ) {
+					continue
+				}
+				methods[ fn.name ] = {
+					"description" : fn.documentation.hint ?: "",
+					"returns"     : fn.documentation.return ?: fn.returnType,
+					"arguments"   : fn.parameters.map( ( param ) -> {
+						return {
+							"name"        : param.name,
+							"type"        : param.type,
+							"required"    : param.required,
+							"description" : param.documentation.hint ?: ""
+						}
+					} )
+				}
+			}
+			meta = meta.extends ?: {}
+		}
+		var sorted = [:]
+		for ( var name in methods.keyArray().sort( "textnocase" ) ) {
+			sorted[ name ] = methods[ name ]
+		}
+		if ( !len( arguments.method ) ) {
+			return sorted
+		}
+		if ( !sorted.keyExists( arguments.method ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "No method [#arguments.method#].",
+				detail  = "Available methods: #sorted.keyArray().toList( ", " )#"
+			)
+		}
+		return { "#arguments.method#" : sorted[ arguments.method ] }
+	}
+
 }
