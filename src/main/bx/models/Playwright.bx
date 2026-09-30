@@ -267,6 +267,21 @@ class extends="Base" {
 	}
 
 	/**
+	 * An HTTP client for API testing, without a browser.
+	 *
+	 * @options baseURL (defaults to the configured baseURL), extraHTTPHeaders, httpCredentials,
+	 *          ignoreHTTPSErrors, timeout, storageStatePath, userAgent
+	 */
+	function request( struct options = {} ) {
+		var values = duplicate( arguments.options )
+		if ( !values.keyExists( "baseURL" ) && len( variables.config.baseURL ?: "" ) ) {
+			values.baseURL = variables.config.baseURL
+		}
+		var opts = buildOptions( "APIRequest.NewContextOptions", values )
+		return new models.Request@playwright( getJava().request().newContext( opts ), variables.config )
+	}
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Utilities
 	 * --------------------------------------------------------------------------

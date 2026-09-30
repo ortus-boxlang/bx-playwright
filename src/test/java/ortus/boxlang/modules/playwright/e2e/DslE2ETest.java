@@ -16,11 +16,16 @@ package ortus.boxlang.modules.playwright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.sun.net.httpserver.HttpServer;
 
 import ortus.boxlang.modules.playwright.BaseIntegrationTest;
 
@@ -252,6 +257,92 @@ public class DslE2ETest extends BaseIntegrationTest {
 		// @formatter:on
 		assertThat( value.toString() ).contains( "heading \"Hello\"" );
 		assertThat( value.toString() ).contains( "button \"Save\"" );
+	}
+
+	@DisplayName( "bx:playwrightRender renders its body to a PDF file or image bytes" )
+	@Test
+	public void testRenderComponent() {
+		String	dir		= Path.of( "build", "e2e-output" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = run( """
+			dir = "%s"
+			directoryCreate( dir, true, true )
+			invoice = 42
+			bx:playwrightRender type="pdf" path="#dir#/component.pdf" format="A4" margin="1cm" {
+				writeOutput( "<h1>Invoice #invoice#</h1>" )
+			}
+			bx:playwrightRender type="png" variable="card" viewport="600x315" {
+				writeOutput( "<h1>Card</h1>" )
+			}
+			errors = []
+			try {
+				bx:playwrightRender type="pdf" {
+					writeOutput( "<h1>No target</h1>" )
+				}
+			} catch ( "Playwright.InvalidOption" e ) {
+				errors.append( "missing target" )
+			}
+			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & errors.toList()
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|missing target" );
+	}
+
+	@DisplayName( "API testing with request(): verbs, JSON, headers and status" )
+	@Test
+	public void testRequest() throws IOException {
+		HttpServer server = HttpServer.create( new InetSocketAddress( "127.0.0.1", 0 ), 0 );
+		server.createContext( "/api/echo", exchange -> {
+			byte[]	body	= exchange.getRequestBody().readAllBytes();
+			String	json	= "{\"method\":\"" + exchange.getRequestMethod() + "\",\"query\":\"" + exchange.getRequestURI().getQuery()
+			    + "\",\"token\":\"" + exchange.getRequestHeaders().getFirst( "X-Token" ) + "\",\"body\":"
+			    + ( body.length == 0 ? "null" : new String( body, StandardCharsets.UTF_8 ) ) + "}";
+			byte[]	out		= json.getBytes( StandardCharsets.UTF_8 );
+			exchange.getResponseHeaders().add( "Content-Type", "application/json" );
+			exchange.sendResponseHeaders( 200, out.length );
+			exchange.getResponseBody().write( out );
+			exchange.close();
+		} );
+		server.createContext( "/api/missing", exchange -> {
+			exchange.sendResponseHeaders( 404, -1 );
+			exchange.close();
+		} );
+		server.start();
+		try {
+			// @formatter:off
+			Object value = run( """
+				api  = playwright().request( { baseURL : "http://127.0.0.1:%d" } )
+				try {
+					a = api.post( "/api/echo", { json : { name : "Luis" }, headers : { "X-Token" : "abc" }, params : { page : 2 } } )
+					api.expect( a ).toBeOK()
+					data = a.json()
+					b = api.get( "/api/missing" )
+					result = a.status() & "|" & data.method & "|" & data.body.name & "|" & data.token & "|" & data.query & "|" & b.status() & "|" & b.ok()
+				} finally {
+					api.close()
+				}
+			""".formatted( server.getAddress().getPort() ) );
+			// @formatter:on
+			assertThat( value ).isEqualTo( "200|POST|Luis|abc|page=2|404|false" );
+		} finally {
+			server.stop( 0 );
+		}
+	}
+
+	@DisplayName( "Interception points are announced" )
+	@Test
+	public void testInterceptors() {
+		// @formatter:off
+		Object value = run( """
+			events = []
+			BoxRegisterInterceptor( ( data ) => events.append( "page" ), "onPageCreate" )
+			BoxRegisterInterceptor( ( data ) => events.append( "context" ), "onContextCreate" )
+			playwright().browse( ( page ) => page.setContent( "<p>x</p>" ) )
+			result = events.toList()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).contains( "context" );
+		assertThat( value.toString() ).contains( "page" );
 	}
 
 }

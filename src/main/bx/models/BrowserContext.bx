@@ -164,6 +164,13 @@ class extends="Base" {
 	}
 
 	/**
+	 * An HTTP client that shares this context's cookies (log in through the API, then browse).
+	 */
+	function request() {
+		return new models.Request@playwright( variables.java.request(), variables.config, false )
+	}
+
+	/**
 	 * --------------------------------------------------------------------------
 	 * Artifacts
 	 * --------------------------------------------------------------------------
