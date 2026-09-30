@@ -99,6 +99,15 @@ class extends="Base" {
 		}
 	}
 
+	/**
+	 * Build the request options and send the request through the Playwright request context.
+	 *
+	 * @method  The HTTP method
+	 * @url     The URL, relative to the baseURL if one is set
+	 * @options Request options: json, form, data, headers, params, timeout, failOnStatusCode, maxRedirects
+	 *
+	 * @return A Response wrapper
+	 */
 	private function send( required string method, required string url, struct options = {} ) {
 		var values  = duplicate( arguments.options )
 		var requestOptions = createObject( "java", "com.microsoft.playwright.options.RequestOptions" ).create().setMethod( arguments.method )

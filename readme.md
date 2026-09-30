@@ -16,6 +16,8 @@
 
 Fluent browser automation and testing for BoxLang, powered by [Microsoft Playwright](https://playwright.dev). Drive Chromium, Firefox and WebKit, test web apps, mock the network, test APIs, and render HTML to PDF or images.
 
+**Documentation:** [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) (also as [llms.txt](https://bxplaywright.boxlang.io/llms.txt) for AI agents)
+
 ## Install
 
 Two distributions, same module (`playwright`), same API:

@@ -1,0 +1,58 @@
+# Builds the bxSites documentation in docs/ and publishes it to the gh-pages branch,
+# served by GitHub Pages at https://bxplaywright.boxlang.io
+name: Docs
+
+on:
+  push:
+    branches:
+      - development
+      - main
+    paths:
+      - "docs/**"
+      - "bxsites.yaml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+# Only one publish at a time; a newer push replaces a queued one
+concurrency:
+  group: docs
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Build & Publish Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup BoxLang and bxSites
+        uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-sites bx-markdown bx-esapi bx-yaml bx-image
+
+      # Same gates as the tests workflow: lint issues, broken links or missing alt text fail the publish
+      - name: Build and Check Docs
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          bxSites lint
+          bxSites build
+          bxSites audit
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./site
+          cname: bxplaywright.boxlang.io
+          commit_message: "Docs: ${{ github.event.head_commit.message || 'manual publish' }}"

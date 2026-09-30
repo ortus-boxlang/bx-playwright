@@ -4,7 +4,7 @@
 	"location": "https://downloads.ortussolutions.com/ortussolutions/boxlang-modules/bx-playwright/@build.version@/bx-playwright-@build.version@.zip",
 	"author": "Ortus Solutions",
 	"homepage": "https://github.com/ortus-boxlang/bx-playwright",
-	"documentation": "https://github.com/ortus-boxlang/bx-playwright",
+	"documentation": "https://bxplaywright.boxlang.io",
 	"repository": {
 		"type": "git",
 		"URL": "https://github.com/ortus-boxlang/bx-playwright"

@@ -115,6 +115,48 @@
       "skillPath": "boxlang-developer/testing/SKILL.md",
       "computedHash": "5062447bfb00f97d62536e8f83e78f5e0e05ea9b01f1ab542b9d29c6a4a7224c"
     },
+    "bx-playwright-ai": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-ai/SKILL.md",
+      "computedHash": "22817c9dd6e21a29d7296df6b40ed448f2400097a344045d71f03280ca56547b"
+    },
+    "bx-playwright-assertions": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-assertions/SKILL.md",
+      "computedHash": "db02b8fe91a5dbb353bff86c446f8888e65298687d40989ee64719dd8ff28ce4"
+    },
+    "bx-playwright-browsing": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-browsing/SKILL.md",
+      "computedHash": "7f5ed3a054e625f274fff9bd02005cb512c8bb79fd49418610abbcf4ab7ea03e"
+    },
+    "bx-playwright-network": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-network/SKILL.md",
+      "computedHash": "a01188ed2ae69c4d74552445f7ba3d2ff25a36a93ae79e36e98062d82ba1cf4a"
+    },
+    "bx-playwright-rendering": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-rendering/SKILL.md",
+      "computedHash": "72d3e7f23506d53369dc338c5e049bdd3111152729ac8da2ee35f2ce3ee4e21f"
+    },
+    "bx-playwright-setup": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-setup/SKILL.md",
+      "computedHash": "7b9c44655b06fe2d2d3606ebce662a7cf7156795b74c9818199a2210b41bf2b7"
+    },
+    "bx-playwright-testing": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "skillPath": "boxlang-modules/bx-playwright/bx-playwright-testing/SKILL.md",
+      "computedHash": "3a1fca06d620dbe4d357a47917e2af8ab18a65445f656bd5ea313235c2133cf7"
+    },
     "code-documenter": {
       "source": "ortus-solutions/skills",
       "sourceType": "github",

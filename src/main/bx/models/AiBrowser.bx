@@ -136,6 +136,13 @@ class extends="Base" {
 		return variables.page
 	}
 
+	/**
+	 * Run a browser action and describe the resulting page state, or the error if it failed.
+	 *
+	 * @action A closure performing the browser action
+	 *
+	 * @return The page URL, title and AI snapshot, or an error text
+	 */
 	private string function run( required function action ) {
 		try {
 			arguments.action()
@@ -146,10 +153,24 @@ class extends="Base" {
 		}
 	}
 
+	/**
+	 * Turn a snapshot ref such as e12 into a ref= selector; any other target is returned as is.
+	 *
+	 * @target A snapshot ref or a selector
+	 *
+	 * @return A selector Playwright understands
+	 */
 	private string function toSelector( required string target ) {
 		return reFind( "^e[0-9]+$", arguments.target ) ? "ref=" & arguments.target : arguments.target
 	}
 
+	/**
+	 * Format an exception as a short error message, including its detail as a fix hint when present.
+	 *
+	 * @error The caught exception
+	 *
+	 * @return The error text
+	 */
 	private string function errorText( required any error ) {
 		return "Error [#arguments.error.type ?: "Error"#]: #arguments.error.message#" & ( len( arguments.error.detail ?: "" ) ? " Fix: #arguments.error.detail#" : "" )
 	}

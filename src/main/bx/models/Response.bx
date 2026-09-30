@@ -18,22 +18,37 @@ class {
 		return variables.java
 	}
 
+	/**
+	 * @return The HTTP status code
+	 */
 	numeric function status() {
 		return variables.java.status()
 	}
 
+	/**
+	 * @return True if the status code is in the 200-299 range
+	 */
 	boolean function ok() {
 		return variables.java.ok()
 	}
 
+	/**
+	 * @return The URL of the response
+	 */
 	string function url() {
 		return variables.java.url()
 	}
 
+	/**
+	 * @return The response headers, with lowercased names
+	 */
 	struct function headers() {
 		return variables.java.headers()
 	}
 
+	/**
+	 * @return The response body as text
+	 */
 	string function text() {
 		return variables.java.text()
 	}

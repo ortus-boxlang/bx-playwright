@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Documentation site published from `docs/` to GitHub Pages at [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) by the `docs.yml` workflow
+
+### Fixed
+
+* `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
+* `assertSee()` and `assertDontSee()` only count rendered text: text in hidden elements is not seen
+* Release builds ship the `META-INF/services` registration, so `bx:playwrightRender` is found in installed modules (the build now fails if it is missing)
+
+### Added
+
 * `playwright()` BIF: fluent browser automation with smart selectors, chainable actions, web-first assertions (inline and `expect()` style), network mocking, events, popups, downloads, screenshots, PDF, rendered content and accessibility snapshots
 * `browse()` with automatic cleanup and multi-user pages, one-shot `screenshot()`, `pdf()`, `content()` and `render()`
 * `request()` for API testing

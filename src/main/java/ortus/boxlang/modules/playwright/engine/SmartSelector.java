@@ -97,10 +97,15 @@ public final class SmartSelector {
 			    .or( root.getByPlaceholder( value ) )
 			    .or( root.locator( "[name=\"" + value.replace( "\"", "\\\"" ) + "\"]" ) )
 			    .first();
-			case CLICK -> root.getByRole( AriaRole.BUTTON, new Locator.GetByRoleOptions().setName( value ) )
-			    .or( root.getByRole( AriaRole.LINK, new Locator.GetByRoleOptions().setName( value ) ) )
-			    .or( root.getByText( value, new Locator.GetByTextOptions().setExact( true ) ) )
-			    .first();
+			case CLICK -> {
+				// A button or link wins over any other element with the same text (e.g. a "Sign in" heading
+				// above a "Sign in" button). Text is only the fallback when no button or link matches yet.
+				Locator control = root.getByRole( AriaRole.BUTTON, new Locator.GetByRoleOptions().setName( value ) )
+				    .or( root.getByRole( AriaRole.LINK, new Locator.GetByRoleOptions().setName( value ) ) );
+				yield control.count() > 0
+				    ? control.first()
+				    : control.or( root.getByText( value, new Locator.GetByTextOptions().setExact( true ) ) ).first();
+			}
 			default -> root.getByText( value ).first();
 		};
 	}

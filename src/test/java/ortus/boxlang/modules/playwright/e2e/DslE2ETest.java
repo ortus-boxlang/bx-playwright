@@ -76,6 +76,31 @@ public class DslE2ETest extends BaseIntegrationTest {
 	}
 
 	/**
+	 * click( "Sign in" ) clicks the button even when a heading with the same text comes first in the page, and
+	 * assertSee() only counts rendered text: text inside a hidden element fails assertSee() and passes assertDontSee().
+	 */
+	@DisplayName( "click() prefers buttons over same text, assertSee() ignores hidden text" )
+	@Test
+	public void testClickIntentAndHiddenText() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<form onsubmit=""event.preventDefault();this.hidden=true;document.getElementById('dash').hidden=false""><h2>Sign in</h2><button>Sign in</button></form><section id=dash hidden><h1>Welcome back</h1></section>" )
+			page.assertDontSee( "Welcome back" )
+			hiddenFailed = false
+			try {
+				page.assertSee( "Welcome back" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				hiddenFailed = true
+			}
+			page.click( "Sign in" ).assertSee( "Welcome back" ).assertDontSee( "Sign in" )
+			result = hiddenFailed
+			""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( true );
+	}
+
+	/**
 	 * A login form is filled with smart selectors, submitted and asserted through the fluent page API, ending on the dashboard URL.
 	 */
 	@DisplayName( "Fill a form with smart selectors, submit and assert" )

@@ -597,7 +597,7 @@ docs/
 ### Phase 7: Skills (last)
 - [x] Write the 7 skills in ortus-boxlang/skills `boxlang-modules/bx-playwright/` from the shipped API and `examples/` (8.1).
 - [x] Update `boxlang-modules/README.md`, root README, and all plugin manifests (Claude, Cursor, Grok).
-- [ ] Pin the skills in this repo's `skills-lock.json`. Blocked until the skills branch merges to main (`npx skills add` cannot read slashed branch names). Then run `npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright -y`.
+- [x] Pin the skills in this repo's `skills-lock.json`.
 
 ## 10. Risks and Unknowns
 
