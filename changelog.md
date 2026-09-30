@@ -20,3 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `bxPlaywright` CLI with bash completions and `--json` output: install, install-node, install-deps, uninstall, doctor, version, devices, profiles, clean, codegen, open, screenshot, pdf, show-trace, mcp, run, completions, help
 * Two distributions: `bx-playwright` (downloads Node.js) and `bx-playwright-full` (bundles Node.js)
 * Interception points: onPlaywrightCreate, onBrowserLaunch, onContextCreate, onPageCreate, onPageClose, onPlaywrightAssertionFailure, onPlaywrightArtifact
+* Visual regression: `assertScreenshotMatches()` with baselines, pixel diff and diff images (`snapshots` setting, `BX_PLAYWRIGHT_UPDATE_SNAPSHOTS`)
+* Quality checks: `assertNoConsoleErrors()`, `assertNoSmoke()`, axe-core `accessibility()` and `assertNoAccessibilityIssues()`
+* Page objects, page components and `macro()` extensions
+* Soft assertions with `soft()`
+* Emulation with `emulate()`, `device()`, `clock()` and `freezeTime()`
+* `session( name, setup )` caches logged in storage state
+* `codegen` translates recorded actions into the bx-playwright DSL
+* AI support: `snapshot()` with element refs, `help()` introspection, `aiTools()` for bx-ai
+* Runnable `examples/` executed in CI, bxSites documentation in `docs/`
