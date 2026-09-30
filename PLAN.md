@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: v10, phases 0 to 3 implemented (see checkboxes) (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
+Status: v10. Phases 0 to 3 are implemented and tested (see the checkboxes in section 9). Phases 4 to 7 are next.
 
 ## 1. Goal
 
