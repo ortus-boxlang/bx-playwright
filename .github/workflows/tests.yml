@@ -63,11 +63,27 @@ jobs:
       #    printf "DB_BUNDLEVERSION=8.0.19\n" >> .env
       #    printf "DB_BUNDLENAME=com.mysql.cj\n" >> .env
 
+      # Node.js and browsers downloaded by the end-to-end tests
+      - name: Cache Playwright Home
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: build/playwright-home
+          key: playwright-home-${{ runner.os }}-${{ hashFiles( 'gradle.properties' ) }}
+
       - name: Test Module
+        env:
+          # End-to-end tests drive a real browser, only on Linux
+          PLAYWRIGHT_E2E: ${{ runner.os == 'Linux' }}
         run: |
           ./gradlew downloadBoxLang
           # this is done in order to build the module structure before testing
           ./gradlew shadowJar test --stacktrace --console=plain
+
+      - name: Test Full Distribution
+        if: runner.os == 'Linux'
+        run: |
+          ./gradlew shadowJar test -Pflavor=full --tests '*PlaywrightHomeTest' --stacktrace --console=plain
 
       - name: Publish Test Reports
         uses: mikepenz/action-junit-report@v6.5.0
@@ -103,3 +119,32 @@ jobs:
           SLACK_USERNAME: CI
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           MSG_MINIMAL: true
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup BoxLang and bxSites
+        uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-sites bx-markdown bx-esapi bx-yaml bx-image
+
+      # Build the site, then fail on lint issues, broken links or missing alt text
+      - name: Build and Check Docs
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          bxSites lint
+          bxSites build
+          bxSites audit

@@ -1,0 +1,20 @@
+/**
+ * Render HTML with Chromium to a PDF and an image, and take a screenshot of a page.
+ */
+output = getTempDirectory() & "/bx-playwright-examples"
+directoryCreate( output, true, true )
+
+invoice = "<h1>Invoice 42</h1><table><tr><td>BoxLang Pro</td><td>$99</td></tr></table>"
+
+// One-shot rendering: the browser starts and stops for you
+pdfPath = playwright().render( invoice, { type : "pdf", path : output & "/invoice.pdf", format : "A4", margin : { top : "1cm", bottom : "1cm" } } )
+card    = playwright().render( "<h1 style='font-size:64px'>BoxLang</h1>", { type : "png", viewport : { width : 1200, height : 630 } } )
+
+// A page you drive yourself
+playwright().browse( ( page ) => {
+	page.setContent( invoice )
+		.assertSee( "Invoice 42" )
+		.screenshot( output & "/invoice.png", { fullPage : true } )
+} )
+
+println( "PDF: #pdfPath#, card: #arrayLen( card )# bytes" )

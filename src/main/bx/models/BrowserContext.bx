@@ -1,0 +1,274 @@
+/**
+ * An isolated browser session (cookies, storage, cache), like an incognito window.
+ * Every page lives in a context. Returned by playwright().newContext().
+ *
+ * Artifacts follow the `artifacts` setting (screenshot, trace and video: off, on, only-on-failure,
+ * retain-on-failure). Call close( failed = true ) when the work failed, so failure policies keep them,
+ * then read what was kept with artifacts().
+ */
+class extends="Base" {
+
+	/**
+	 * @java    The Playwright BrowserContext
+	 * @manager The playwright() manager
+	 * @config  The resolved configuration
+	 * @artifactsDir The folder for this context's artifacts, or empty when no artifacts are recorded
+	 */
+	function init( required any java, required any manager, required struct config, string artifactsDir = "" ) {
+		variables.java         = arguments.java
+		variables.manager      = arguments.manager
+		variables.config       = arguments.config
+		variables.artifactsDir = arguments.artifactsDir
+		variables.pages        = []
+		variables.tracing      = false
+		variables.closed       = false
+		variables.artifacts    = { screenshots : [], trace : "", videos : [], directory : arguments.artifactsDir }
+
+		variables.java.setDefaultTimeout( javacast( "double", variables.config.timeouts.action ?: 30000 ) )
+		variables.java.setDefaultNavigationTimeout( javacast( "double", variables.config.timeouts.navigation ?: 30000 ) )
+
+		if ( policy( "trace" ) != "off" ) {
+			variables.java.tracing().start( buildOptions( "Tracing.StartOptions", { screenshots : true, snapshots : true, sources : false } ) )
+			variables.tracing = true
+		}
+		return this
+	}
+
+	/**
+	 * @return The Playwright BrowserContext
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	/**
+	 * @return The resolved configuration
+	 */
+	struct function getConfig() {
+		return variables.config
+	}
+
+	/**
+	 * @return The playwright() manager
+	 */
+	function manager() {
+		return variables.manager
+	}
+
+	/**
+	 * Open a new page (tab) in this context.
+	 */
+	function newPage() {
+		return wrapPage( variables.java.newPage() )
+	}
+
+	/**
+	 * @return The open pages of this context
+	 */
+	array function pages() {
+		return variables.pages
+	}
+
+	/**
+	 * Wrap a Playwright page opened in this context (popups, new tabs).
+	 *
+	 * @javaPage The Playwright Page
+	 */
+	function wrapPage( required any javaPage ) {
+		var page = new models.Page@playwright( arguments.javaPage, this )
+		variables.pages.append( page )
+		announceEvent( "onPageCreate", { page : page } )
+		return page
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * State
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Save cookies and local storage to a file, to reuse a logged-in session with the storageState option.
+	 *
+	 * @path The JSON file
+	 */
+	string function saveStorageState( required string path ) {
+		var file = expandPath( arguments.path )
+		variables.java.storageState( buildOptions( "BrowserContext.StorageStateOptions", { path : file } ) )
+		return file
+	}
+
+	/**
+	 * @return The cookies as an array of structs
+	 */
+	array function cookies() {
+		return variables.java.cookies().map( ( cookie ) -> {
+			return {
+				name     : cookie.name,
+				value    : cookie.value,
+				domain   : cookie.domain,
+				path     : cookie.path,
+				expires  : cookie.expires,
+				httpOnly : cookie.httpOnly,
+				secure   : cookie.secure
+			}
+		} )
+	}
+
+	/**
+	 * Add cookies.
+	 *
+	 * @cookies An array of { name, value, url } or { name, value, domain, path }
+	 */
+	function addCookies( required array cookies ) {
+		var list = arguments.cookies.map( ( cookie ) => buildOptions( "options.Cookie", cookie ) )
+		variables.java.addCookies( list )
+		return this
+	}
+
+	/**
+	 * Remove all cookies.
+	 */
+	function clearCookies() {
+		variables.java.clearCookies()
+		return this
+	}
+
+	/**
+	 * Grant browser permissions: geolocation, notifications, clipboard-read, camera, ...
+	 *
+	 * @permissions An array of permission names
+	 */
+	function grantPermissions( required array permissions ) {
+		variables.java.grantPermissions( arguments.permissions )
+		return this
+	}
+
+	/**
+	 * Go offline or back online.
+	 *
+	 * @offline True to go offline
+	 */
+	function setOffline( boolean offline = true ) {
+		variables.java.setOffline( arguments.offline )
+		return this
+	}
+
+	/**
+	 * Intercept requests of every page in this context.
+	 *
+	 * @pattern A glob, full URL or regex()
+	 */
+	function intercept( required any pattern ) {
+		return new models.Route@playwright( variables.java, arguments.pattern, this )
+	}
+
+	/**
+	 * An HTTP client that shares this context's cookies (log in through the API, then browse).
+	 */
+	function request() {
+		return new models.Request@playwright( variables.java.request(), variables.config, false )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Artifacts
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * @return The artifacts kept after close(): { screenshots, trace, videos, directory }
+	 */
+	struct function artifacts() {
+		return variables.artifacts
+	}
+
+	/**
+	 * Close the context and its pages, applying the artifact policies.
+	 *
+	 * @failed True if the work done in this context failed (keeps *-on-failure artifacts)
+	 *
+	 * @return The kept artifacts: { screenshots, trace, videos, directory }
+	 */
+	struct function close( boolean failed = false ) {
+		if ( variables.closed ) {
+			return variables.artifacts
+		}
+		variables.closed = true
+
+		if ( keep( "screenshot", arguments.failed ) ) {
+			var index = 0
+			for ( var page in variables.pages ) {
+				index++
+				if ( !page.isClosed() ) {
+					var file = variables.artifactsDir & "/screenshot-#index#.png"
+					page.getJava().screenshot( buildOptions( "Page.ScreenshotOptions", { path : file, fullPage : true } ) )
+					variables.artifacts.screenshots.append( file )
+				}
+			}
+		}
+
+		if ( variables.tracing ) {
+			if ( keep( "trace", arguments.failed ) ) {
+				variables.artifacts.trace = variables.artifactsDir & "/trace.zip"
+				variables.java.tracing().stop( buildOptions( "Tracing.StopOptions", { path : variables.artifacts.trace } ) )
+			} else {
+				variables.java.tracing().stop()
+			}
+		}
+
+		var videos = []
+		if ( policy( "video" ) != "off" ) {
+			for ( var page in variables.pages ) {
+				videos.append( page.getJava().video() )
+			}
+		}
+
+		variables.java.close()
+		for ( var page in variables.pages ) {
+			announceEvent( "onPageClose", { page : page } )
+		}
+
+		for ( var video in videos ) {
+			var path = video.path().toString()
+			if ( keep( "video", arguments.failed ) ) {
+				variables.artifacts.videos.append( path )
+			} else {
+				fileDelete( path )
+			}
+		}
+
+		for ( var type in [ "screenshots", "videos" ] ) {
+			for ( var path in variables.artifacts[ type ] ) {
+				announceEvent( "onPlaywrightArtifact", { type : type, path : path } )
+			}
+		}
+		if ( len( variables.artifacts.trace ) ) {
+			announceEvent( "onPlaywrightArtifact", { type : "trace", path : variables.artifacts.trace } )
+		}
+		variables.manager.forget( this )
+		return variables.artifacts
+	}
+
+	/**
+	 * @return True once close() ran
+	 */
+	boolean function isClosed() {
+		return variables.closed
+	}
+
+	/**
+	 * The policy of an artifact type: off, on, only-on-failure or retain-on-failure.
+	 *
+	 * @type screenshot, trace or video
+	 */
+	string function policy( required string type ) {
+		return variables.config.artifacts[ arguments.type ] ?: "off"
+	}
+
+	private boolean function keep( required string type, required boolean failed ) {
+		var value = policy( arguments.type )
+		return value == "on" || ( arguments.failed && ( value == "only-on-failure" || value == "retain-on-failure" ) )
+	}
+
+}

@@ -1,32 +1,59 @@
-# Project Guidelines
+# bx-playwright: Agent Guidelines
 
-## Purpose
+## What This Is
 
-This repository is the Gradle-based template for BoxLang modules that can include both Java and BoxLang code.
-Treat it as a template first: preserve placeholders, setup flow, packaging conventions, and generated module structure unless the task explicitly asks to change the template contract.
+A BoxLang module (registered as `playwright`) wrapping Microsoft Playwright Java: a fluent DSL (`playwright()` BIF), a component (`bx:playwrightRender`) and a CLI (`bxPlaywright`). Published as two ForgeBox modules from one source tree: `bx-playwright` (small, downloads Node.js) and `bx-playwright-full` (bundles Node.js). See `PLAN.md` for the design and roadmap.
 
-## Architecture
+## Layout
 
-- Module metadata and runtime lifecycle live in `src/main/bx/ModuleConfig.bx`.
-- BoxLang source belongs under `src/main/bx`; Java source belongs under `src/main/java`; tests belong under `src/test`.
-- Keep in mind that each BoxLang module is loaded in its own class loader. Avoid changes that assume shared static state, direct classpath leakage, or IDE-only resource loading behavior.
-- Custom runtime integrations should follow the existing module folders and registration patterns: `bifs`, `interceptors`, `components` or `tags`, `libs`, and service-loader backed Java types.
+- `src/main/bx/ModuleConfig.bx`: settings (every setting documented inline), interception points, CLI `main()`/`dispatch()`
+- `src/main/bx/bifs/Playwright.bx`: the `playwright()` BIF
+- `src/main/bx/models/`: the DSL
+  - `Config.bx` (settings + profiles + env resolution), `Profiles.bx` (built-in profiles, extends, deep merge)
+  - `Playwright.bx` (manager), `BrowserContext.bx` (artifacts), `Page.bx`, `Locator.bx`, `Scope.bx` (shared actions/assertions), `Expect.bx`, `Route.bx`, `Request.bx`, `Response.bx`, `Base.bx` (helpers, typed errors)
+  - `cli/`: `Cli.bx` (verb registry, parsing, help, completions) and one class per verb with `run( options, config, verb )` returning `{ exitCode, message, data }`
+- `src/main/bx/completions/bxPlaywright.bash`: generated from the verb registry, never edit by hand
+- `src/main/java/ortus/boxlang/modules/playwright/`
+  - `engine/`: `PlaywrightHome` (driver extraction, Node.js resolution, env), `NodeInstaller`, `Platform`, `OptionsMapper` (structs to Playwright options), `SmartSelector`, `Devices`, `PlaywrightErrors`
+  - `components/PlaywrightRender.java`
+- `src/test/java/`: JUnit tests. `e2e/` tests drive real browsers and only run with `PLAYWRIGHT_E2E=true`
 
-## Build And Packaging
+## Commands
 
-- Use the Gradle wrapper from the repo root for build tasks.
-- Prefer narrow validation first: `./gradlew test`, `./gradlew spotlessCheck`, or a targeted Gradle task related to the touched area.
-- Preserve the packaging pipeline in `build.gradle`: shadow jar output, service loader generation, `build/module` assembly, and zip distribution artifacts.
-- Do not reintroduce `src/main/resources` onto the IDE test classpath unless the task explicitly requires it; this template excludes it to avoid BoxLang class loading conflicts during module development.
+```bash
+./gradlew downloadBoxLang                                  # once
+./gradlew shadowJar test                                   # fast suite
+PLAYWRIGHT_E2E=true ./gradlew shadowJar test               # with browsers (Node.js and Chromium land in build/playwright-home)
+UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completions after changing verbs
+./gradlew shadowJar -Pflavor=full                          # full distribution
+./gradlew spotlessApply                                    # format Java
+```
 
 ## Conventions
 
-- Follow `.editorconfig` indentation and line-ending rules. This repo uses tabs by default, with spaces for YAML.
-- Follow the Ortus Java formatter in `.ortus-java-style.xml` for Java changes.
-- Keep BoxLang module metadata, `box.json`, `settings.gradle`, and Gradle properties aligned when changing names, versions, or packaging identifiers.
-- Prefer small template-safe edits. If a change would affect generated modules, update both the implementation and any setup or template placeholders that keep the template consistent.
+- Ortus coding standards (see the `ortus-coding-standards` skill): tabs, spaces inside parentheses, aligned assignments, no semicolons in BoxLang.
+- Every method in every class (BoxLang or Java, public or private, source, tests and fixtures) has a docblock: a description, every argument (`@name` in BoxLang, `@param` in Java) and `@return` when it returns something. `help()` builds its output from the BoxLang docblocks.
+- Lambdas (`->`) only when the function uses nothing but its own arguments; closures (`=>`) otherwise.
+- Every public DSL action returns the object for chaining. Every error is typed (`Playwright.*`) with a `detail` that explains the fix.
+- Options are always a struct mapped by `OptionsMapper`: never hard-code empty Playwright options objects.
+- Tests for every feature. Browser behavior goes in `e2e/` using the fake site in `src/test/resources/site` (served through request interception) or a local `HttpServer`.
+
+## BoxLang Gotchas Found While Building This
+
+- Built-in functions win over your own methods for unqualified calls: a method named `attempt` or `wrap` calls the BIF. Check names against `getFunctionList()`.
+- Imports and variables are case insensitive: `import ...Key` clashes with `var key`, `import ...Devices` clashes with `var devices`.
+- `var request` (and other scope names) resolve to the scope. Pick other variable names.
+- `#` in strings starts interpolation: write `##id` for a literal `#id`.
+- `property` declarations must come before any other statement in a class body.
+- Relative `new models.X()` only resolves from `ModuleConfig.bx`; elsewhere use `new models.X@playwright()`.
+- `duplicate()` deep copies and fails on Java objects: copy arrays of wrappers with `append( other, true )`.
+- Java exceptions thrown by Playwright arrive wrapped; use `PlaywrightErrors.rootMessage()`/`rootType()`.
+- Playwright evaluates regexes in the browser: no Java-only syntax such as `\Q...\E`.
+- BoxLang closures are coerced to Java functional interfaces (Consumer, Runnable) when calling Playwright methods directly.
+- A "Method not found" right after editing a class can be a stale compiled class. The Gradle `test` task now clears `~/.boxlang/classes` before running.
+- `page.evaluate( "a = () => b" )` calls the resulting function: Playwright invokes any evaluated value that is a function. Wrap statements in `() => { ... }`.
+- Java `List` results (e.g. `consoleMessages()`) should be copied into a BoxLang array before using member functions such as `filter()`.
 
 ## Skills
 
-- Relevant BoxLang development skills live under `.agents/skills`. Use them when the task involves module development, BIFs, components, interceptors, logging, async tasks, or runtime architecture.
-- When a task is specifically about custom instructions, prompts, agents, or skills, prefer the agent-customization workflow and keep AGENTS.md focused on workspace-wide rules only.
+Restore the pinned skills with `npx skills experimental_install` (see `skills-lock.json`). They install into `.claude/skills` (ignored by git).

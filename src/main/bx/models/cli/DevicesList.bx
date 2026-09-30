@@ -1,0 +1,32 @@
+import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
+
+/**
+ * `bxPlaywright devices`: list the device descriptors shipped with Playwright.
+ */
+class {
+
+	/**
+	 * List the device descriptors shipped with Playwright, with their viewport and default browser.
+	 *
+	 * @options CLI options
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var playwright = arguments.config.home().createPlaywright()
+		try {
+			var deviceList = Devices.list( playwright )
+		} finally {
+			playwright.close()
+		}
+		var lines = []
+		for ( var device in deviceList ) {
+			var viewport = device.descriptor.viewport ?: {}
+			lines.append( "#device.name.lJustify( 36 )# #viewport.width ?: ""#x#viewport.height ?: ""# #device.descriptor.defaultBrowserType ?: ""#" )
+		}
+		return { exitCode : 0, message : lines.toList( char( 10 ) ), data : deviceList }
+	}
+
+}

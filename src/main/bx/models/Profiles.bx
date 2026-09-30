@@ -1,0 +1,177 @@
+/**
+ * Built-in and user profiles.
+ *
+ * A profile is a named set of settings (browser, device, viewport, colorScheme, artifacts, ...).
+ * Profiles can extend another profile with the `extends` key and can be merged left to right:
+ *
+ * <pre>
+ * playwright( "mobile" )
+ * playwright( [ "mobile", "dark" ] )
+ * </pre>
+ *
+ * User profiles come from the `profiles` module setting. A user profile with a built-in name replaces the built-in.
+ */
+class {
+
+	/**
+	 * The profiles that ship with the module.
+	 *
+	 * @return A struct of profile name to settings
+	 */
+	struct function builtIn() {
+		return {
+			// Browsers
+			"default"          : { browser : "chromium", headless : true, viewport : { width : 1280, height : 720 } },
+			"chromium"         : { browser : "chromium" },
+			"firefox"          : { browser : "firefox" },
+			"webkit"           : { browser : "webkit" },
+			"chrome"           : { browser : "chromium", channel : "chrome" },
+			"chrome-beta"      : { browser : "chromium", channel : "chrome-beta" },
+			"edge"             : { browser : "chromium", channel : "msedge" },
+			// Screens
+			"hd"               : { viewport : { width : 1280, height : 720 } },
+			"laptop"           : { viewport : { width : 1366, height : 768 } },
+			"macbook"          : { viewport : { width : 1440, height : 900 }, deviceScaleFactor : 2 },
+			"desktop"          : { viewport : { width : 1920, height : 1080 } },
+			"4k"               : { viewport : { width : 3840, height : 2160 } },
+			// Devices (Playwright device descriptors)
+			"mobile"           : { browser : "webkit", device : "iPhone 15" },
+			"iphone"           : { extends : "mobile" },
+			"iphone-se"        : { browser : "webkit", device : "iPhone SE" },
+			"mobile-landscape" : { browser : "webkit", device : "iPhone 15 landscape" },
+			"android"          : { browser : "chromium", device : "Pixel 7" },
+			"pixel"            : { extends : "android" },
+			"galaxy"           : { browser : "chromium", device : "Galaxy S24" },
+			"tablet"           : { browser : "webkit", device : "iPad Pro 11" },
+			"ipad"             : { extends : "tablet" },
+			"android-tablet"   : { browser : "chromium", device : "Galaxy Tab S9" },
+			// Appearance and accessibility
+			"dark"             : { colorScheme : "dark" },
+			"light"            : { colorScheme : "light" },
+			"reduced-motion"   : { reducedMotion : "reduce" },
+			"high-contrast"    : { forcedColors : "active" },
+			// Modes
+			"headed"           : { headless : false },
+			"debug"            : {
+				headless  : false,
+				slowMo    : 250,
+				artifacts : { screenshot : "on", trace : "on", video : "on" }
+			},
+			"record"           : { artifacts : { trace : "on", video : "on" } },
+			"ci"               : {
+				headless  : true,
+				artifacts : {
+					screenshot : "only-on-failure",
+					trace      : "retain-on-failure",
+					video      : "retain-on-failure"
+				}
+			},
+			"offline"          : { offline : true },
+			"print"            : { browser : "chromium", headless : true, colorScheme : "light" },
+			"screenshot"       : {
+				browser           : "chromium",
+				deviceScaleFactor : 2,
+				reducedMotion     : "reduce",
+				timezone          : "UTC",
+				locale            : "en-US"
+			}
+		}
+	}
+
+	/**
+	 * All profiles: built-in ones plus the user ones (user profiles win).
+	 *
+	 * @userProfiles The `profiles` module setting
+	 *
+	 * @return A struct of profile name to settings
+	 */
+	struct function all( struct userProfiles = {} ) {
+		var profiles = builtIn()
+		profiles.append( arguments.userProfiles, true )
+		return profiles
+	}
+
+	/**
+	 * Resolve one or more profiles into a single settings struct.
+	 * `extends` chains are followed, then profiles are merged left to right.
+	 *
+	 * @names        A profile name, a comma-separated list, or an array of names
+	 * @userProfiles The `profiles` module setting
+	 *
+	 * @return The merged settings, without the `extends` key
+	 *
+	 * @throws Playwright.InvalidProfile if a profile does not exist or an `extends` chain loops
+	 */
+	struct function resolve( required any names, struct userProfiles = {} ) {
+		var profiles = all( arguments.userProfiles )
+		var result   = {}
+		var list     = isArray( arguments.names ) ? arguments.names : listToArray( arguments.names )
+		for ( var name in list ) {
+			deepMerge( result, resolveOne( trim( name ), profiles, [] ) )
+		}
+		return result
+	}
+
+	/**
+	 * Deep merge a struct into another: nested structs are merged, everything else is replaced.
+	 * The `viewport` key is always replaced as a whole.
+	 *
+	 * @target The struct to merge into (modified)
+	 * @source The struct to merge from
+	 *
+	 * @return The target struct
+	 */
+	struct function deepMerge( required struct target, required struct source ) {
+		for ( var key in arguments.source ) {
+			var value = arguments.source[ key ]
+			if (
+				isStruct( value )
+				&& !isObject( value )
+				&& key != "viewport"
+				&& arguments.target.keyExists( key )
+				&& isStruct( arguments.target[ key ] )
+			) {
+				deepMerge( arguments.target[ key ], value )
+			} else {
+				arguments.target[ key ] = isStruct( value ) && !isObject( value ) ? duplicate( value ) : value
+			}
+		}
+		return arguments.target
+	}
+
+	private struct function resolveOne( required string name, required struct profiles, required array seen ) {
+		if ( !arguments.profiles.keyExists( arguments.name ) ) {
+			throw(
+				type    = "Playwright.InvalidProfile",
+				message = "Unknown profile [#arguments.name#].",
+				detail  = "Available profiles: #arguments.profiles.keyArray().sort( "textnocase" ).toList( ", " )#. Add your own with the 'profiles' module setting."
+			)
+		}
+		if ( arguments.seen.findNoCase( arguments.name ) ) {
+			throw(
+				type    = "Playwright.InvalidProfile",
+				message = "Profile [#arguments.name#] extends itself through [#arguments.seen.toList( " > " )#].",
+				detail  = "Remove the loop in the 'extends' keys of your profiles."
+			)
+		}
+		var profile = duplicate( arguments.profiles[ arguments.name ] )
+		var result  = {}
+		if ( profile.keyExists( "extends" ) ) {
+			var chain = duplicate( arguments.seen )
+			chain.append( arguments.name )
+			result = resolveChain( profile.extends, arguments.profiles, chain )
+			profile.delete( "extends" )
+		}
+		return deepMerge( result, profile )
+	}
+
+	private struct function resolveChain( required any names, required struct profiles, required array seen ) {
+		var result = {}
+		var list   = isArray( arguments.names ) ? arguments.names : listToArray( arguments.names )
+		for ( var name in list ) {
+			deepMerge( result, resolveOne( trim( name ), arguments.profiles, arguments.seen ) )
+		}
+		return result
+	}
+
+}

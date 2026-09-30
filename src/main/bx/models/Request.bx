@@ -1,0 +1,136 @@
+/**
+ * HTTP API testing that shares Playwright's networking (and, from a context, its cookies).
+ * Returned by playwright().request() and context.request().
+ *
+ * <pre>
+ * api = playwright().request( { baseURL : "http://localhost:8080" } )
+ * res = api.post( "/api/login", { json : { user : "luis" } } )
+ * api.expect( res.getJava() ).toBeOK()
+ * users = api.get( "/api/users" ).json()
+ * api.close()
+ * </pre>
+ */
+class extends="Base" {
+
+	/**
+	 * @java    The Playwright APIRequestContext
+	 * @config  The resolved configuration
+	 * @owned   True if close() should dispose the request context
+	 */
+	function init( required any java, required struct config, boolean owned = true ) {
+		variables.java   = arguments.java
+		variables.config = arguments.config
+		variables.owned  = arguments.owned
+		return this
+	}
+
+	/**
+	 * @return The Playwright APIRequestContext
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	/**
+	 * GET a URL.
+	 *
+	 * @url     Absolute, or relative to the baseURL option
+	 * @options params, headers, timeout, failOnStatusCode, maxRedirects
+	 */
+	function get( required string url, struct options = {} ) {
+		return send( "GET", arguments.url, arguments.options )
+	}
+
+	/**
+	 * POST to a URL.
+	 *
+	 * @url     Absolute, or relative to the baseURL option
+	 * @options json (struct/array, sent as JSON), form (struct), data (string), params, headers, timeout
+	 */
+	function post( required string url, struct options = {} ) {
+		return send( "POST", arguments.url, arguments.options )
+	}
+
+	/**
+	 * PUT to a URL.
+	 *
+	 * @url     Absolute, or relative to the baseURL option
+	 * @options json, form, data, params, headers, timeout
+	 */
+	function put( required string url, struct options = {} ) {
+		return send( "PUT", arguments.url, arguments.options )
+	}
+
+	/**
+	 * PATCH a URL.
+	 *
+	 * @url     Absolute, or relative to the baseURL option
+	 * @options json, form, data, params, headers, timeout
+	 */
+	function patch( required string url, struct options = {} ) {
+		return send( "PATCH", arguments.url, arguments.options )
+	}
+
+	/**
+	 * DELETE a URL.
+	 *
+	 * @url     Absolute, or relative to the baseURL option
+	 * @options params, headers, timeout
+	 */
+	function delete( required string url, struct options = {} ) {
+		return send( "DELETE", arguments.url, arguments.options )
+	}
+
+	/**
+	 * Start an expect-style assertion, e.g. api.expect( response ).toBeOK()
+	 *
+	 * @target A Response wrapper or Playwright APIResponse
+	 */
+	function expect( required any target ) {
+		return new models.Expect@playwright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
+	}
+
+	/**
+	 * Dispose the request context.
+	 */
+	function close() {
+		if ( variables.owned ) {
+			variables.java.dispose()
+		}
+	}
+
+	private function send( required string method, required string url, struct options = {} ) {
+		var values  = duplicate( arguments.options )
+		var requestOptions = createObject( "java", "com.microsoft.playwright.options.RequestOptions" ).create().setMethod( arguments.method )
+		if ( values.keyExists( "json" ) ) {
+			requestOptions.setHeader( "content-type", "application/json" )
+			requestOptions.setData( jsonSerialize( values.json ) )
+		} else if ( values.keyExists( "form" ) ) {
+			var form = createObject( "java", "com.microsoft.playwright.options.FormData" ).create()
+			for ( var field in values.form ) {
+				form.set( field, toString( values.form[ field ] ) )
+			}
+			requestOptions.setForm( form )
+		} else if ( values.keyExists( "data" ) ) {
+			requestOptions.setData( toString( values.data ) )
+		}
+		for ( var header in values.headers ?: {} ) {
+			requestOptions.setHeader( header, toString( values.headers[ header ] ) )
+		}
+		for ( var param in values.params ?: {} ) {
+			requestOptions.setQueryParam( param, toString( values.params[ param ] ) )
+		}
+		if ( values.keyExists( "timeout" ) ) {
+			requestOptions.setTimeout( javacast( "double", values.timeout ) )
+		}
+		if ( values.keyExists( "failOnStatusCode" ) ) {
+			requestOptions.setFailOnStatusCode( values.failOnStatusCode )
+		}
+		if ( values.keyExists( "maxRedirects" ) ) {
+			requestOptions.setMaxRedirects( javacast( "int", values.maxRedirects ) )
+		}
+		var target = arguments.url
+		return new models.Response@playwright( tryAction( () => variables.java.fetch( target, requestOptions ), "#arguments.method# #target#" ) )
+	}
+
+}

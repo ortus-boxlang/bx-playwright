@@ -1,0 +1,109 @@
+/**
+ * Base class for page objects: a class per page with its URL, element aliases and actions.
+ *
+ * <pre>
+ * // LoginPage.bx
+ * class extends="models.PageObject@playwright" {
+ *     url      = "/login"
+ *     elements = { email : "input[name=email]", password : "#password", submit : "button[type=submit]" }
+ *
+ *     function at() {
+ *         page.assertTitle( "Login" )
+ *     }
+ *
+ *     function loginAs( required string email, required string password ) {
+ *         page.fill( "@email", email ).fill( "@password", password ).click( "@submit" )
+ *         return page.on( new DashboardPage() )
+ *     }
+ * }
+ *
+ * playwright().newPage().visit( new LoginPage() ).loginAs( "luis@ortus.com", "secret" ).assertSee( "Welcome" )
+ * </pre>
+ *
+ * Inside the class, `page` is the bound Page. Page methods can also be called on the page object itself:
+ * `loginPage.assertSee( "Sign in" )` returns the page object so chains keep going.
+ */
+class {
+
+	variables.url      = ""
+	variables.elements = {}
+
+	/**
+	 * Bind the page object to a page and register its element aliases.
+	 *
+	 * @page The Page
+	 */
+	function bind( required any page ) {
+		variables.page = arguments.page
+		variables.page.useElements( getElements() )
+		return this
+	}
+
+	/**
+	 * Override to check that the browser is on this page, e.g. page.assertTitle( "Login" ).
+	 */
+	function at() {
+	}
+
+	/**
+	 * Run at() and return the page object.
+	 */
+	function checkAt() {
+		at()
+		return this
+	}
+
+	/**
+	 * @return The page URL (absolute, or relative to baseURL)
+	 */
+	string function getUrl() {
+		return variables.url ?: ""
+	}
+
+	/**
+	 * @return The element aliases: name to smart selector
+	 */
+	struct function getElements() {
+		return variables.elements ?: {}
+	}
+
+	/**
+	 * @return The bound Page
+	 */
+	function getPage() {
+		if ( isNull( variables.page ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "This page object is not bound to a page.",
+				detail  = "Use page.visit( pageObject ) or page.on( pageObject )."
+			)
+		}
+		return variables.page
+	}
+
+	/**
+	 * A Locator for an element alias.
+	 *
+	 * @name The alias name from elements
+	 */
+	function element( required string name ) {
+		return getPage().locator( "@" & arguments.name )
+	}
+
+	/**
+	 * Page methods called on the page object run on the bound page. When they return the page,
+	 * the page object is returned instead so chains keep going.
+	 */
+	function onMissingMethod( string missingMethodName, struct missingMethodArguments ) {
+		var current = getPage()
+		var result  = invoke( current, arguments.missingMethodName, arguments.missingMethodArguments )
+		if ( isNull( result ) ) {
+			return this
+		}
+		if ( isObject( result ) && structKeyExists( result, "macroTarget" ) && result.macroTarget() == "page" && result.getJava() == current.getJava() ) {
+			return this
+		}
+		return result
+	}
+
+}

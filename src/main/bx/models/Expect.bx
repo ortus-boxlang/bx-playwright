@@ -1,0 +1,261 @@
+import java:com.microsoft.playwright.assertions.PlaywrightAssertions@playwright;
+
+/**
+ * Web-first assertions: they retry until they pass or the assertion timeout expires.
+ *
+ * <pre>
+ * page.expect( "h1" ).toHaveText( "Welcome" )
+ * page.expect().toHaveTitle( "Home" ).toHaveURL( page.regex( "/home$" ) )
+ * page.expect( "@error" ).not().toBeVisible()
+ * </pre>
+ *
+ * Failures throw `Playwright.AssertionFailed` with Playwright's message (expected, received and call log).
+ * Every method returns the Expect object so assertions can be chained; `not()` applies to the next assertion only.
+ */
+class extends="Base" {
+
+	/**
+	 * @target    A Page, a Locator, a Response, or the Java object they wrap
+	 * @timeout   The assertion timeout in milliseconds
+	 * @collector An array that collects failures instead of throwing (soft assertions), or null
+	 */
+	function init( required any target, numeric timeout = 5000, any collector ) {
+		variables.timeout   = arguments.timeout
+		variables.collector = arguments.collector ?: nullValue()
+		variables.negate  = false
+		variables.java    = isObject( arguments.target ) && structKeyExists( arguments.target, "getJava" ) ? arguments.target.getJava() : arguments.target
+		if ( isInstanceOf( variables.java, "com.microsoft.playwright.Page" ) ) {
+			variables.kind = "PageAssertions"
+		} else if ( isInstanceOf( variables.java, "com.microsoft.playwright.Locator" ) ) {
+			variables.kind = "LocatorAssertions"
+		} else if ( isInstanceOf( variables.java, "com.microsoft.playwright.APIResponse" ) ) {
+			variables.kind = "APIResponseAssertions"
+		} else {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "expect() needs a page, a locator or an API response.",
+				detail  = "Examples: page.expect( ""h1"" ), page.expect(), playwright().expect( page.locator( "".item"" ) )"
+			)
+		}
+		return this
+	}
+
+	/**
+	 * Negate the next assertion.
+	 */
+	function not() {
+		variables.negate = true
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Page
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * @title The exact title, or a regex from regex()
+	 */
+	function toHaveTitle( required any title ) {
+		return check( "toHaveTitle( #describe( arguments.title )# )", ( a, o ) => a.hasTitle( title, o ), "HasTitle" )
+	}
+
+	/**
+	 * @url The full URL, or a regex from regex()
+	 */
+	function toHaveURL( required any url ) {
+		return check( "toHaveURL( #describe( arguments.url )# )", ( a, o ) => a.hasURL( url, o ), "HasURL" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Locator state
+	 * --------------------------------------------------------------------------
+	 */
+
+	function toBeVisible() {
+		return check( "toBeVisible()", ( a, o ) -> a.isVisible( o ), "IsVisible" )
+	}
+
+	function toBeHidden() {
+		return check( "toBeHidden()", ( a, o ) -> a.isHidden( o ), "IsHidden" )
+	}
+
+	function toBeEnabled() {
+		return check( "toBeEnabled()", ( a, o ) -> a.isEnabled( o ), "IsEnabled" )
+	}
+
+	function toBeDisabled() {
+		return check( "toBeDisabled()", ( a, o ) -> a.isDisabled( o ), "IsDisabled" )
+	}
+
+	function toBeChecked() {
+		return check( "toBeChecked()", ( a, o ) -> a.isChecked( o ), "IsChecked" )
+	}
+
+	function toBeEditable() {
+		return check( "toBeEditable()", ( a, o ) -> a.isEditable( o ), "IsEditable" )
+	}
+
+	function toBeEmpty() {
+		return check( "toBeEmpty()", ( a, o ) -> a.isEmpty( o ), "IsEmpty" )
+	}
+
+	function toBeFocused() {
+		return check( "toBeFocused()", ( a, o ) -> a.isFocused( o ), "IsFocused" )
+	}
+
+	function toBeAttached() {
+		return check( "toBeAttached()", ( a, o ) -> a.isAttached( o ), "IsAttached" )
+	}
+
+	function toBeInViewport() {
+		return check( "toBeInViewport()", ( a, o ) -> a.isInViewport( o ), "IsInViewport" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Locator content
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * @text The full text (whitespace normalized), or a regex from regex()
+	 */
+	function toHaveText( required any text ) {
+		return check( "toHaveText( #describe( arguments.text )# )", ( a, o ) => a.hasText( text, o ), "HasText" )
+	}
+
+	/**
+	 * @text A substring, or a regex from regex()
+	 */
+	function toContainText( required any text ) {
+		return check( "toContainText( #describe( arguments.text )# )", ( a, o ) => a.containsText( text, o ), "ContainsText" )
+	}
+
+	/**
+	 * @value The input value, or a regex from regex()
+	 */
+	function toHaveValue( required any value ) {
+		return check( "toHaveValue( #describe( arguments.value )# )", ( a, o ) => a.hasValue( value, o ), "HasValue" )
+	}
+
+	/**
+	 * @count The number of matching elements
+	 */
+	function toHaveCount( required numeric count ) {
+		var expected = javacast( "int", arguments.count )
+		return check( "toHaveCount( #arguments.count# )", ( a, o ) => a.hasCount( expected, o ), "HasCount" )
+	}
+
+	/**
+	 * @name  The attribute name
+	 * @value The attribute value, or a regex from regex()
+	 */
+	function toHaveAttribute( required string name, required any value ) {
+		return check(
+			"toHaveAttribute( #arguments.name#, #describe( arguments.value )# )",
+			( a, o ) => a.hasAttribute( name, value, o ),
+			"HasAttribute"
+		)
+	}
+
+	/**
+	 * @className The full class attribute, or a regex from regex()
+	 */
+	function toHaveClass( required any className ) {
+		return check( "toHaveClass( #describe( arguments.className )# )", ( a, o ) => a.hasClass( className, o ), "HasClass" )
+	}
+
+	/**
+	 * @className One or more classes that must be present
+	 */
+	function toContainClass( required string className ) {
+		return check( "toContainClass( #arguments.className# )", ( a, o ) => a.containsClass( className, o ), "ContainsClass" )
+	}
+
+	/**
+	 * @id The element id
+	 */
+	function toHaveId( required any id ) {
+		return check( "toHaveId( #describe( arguments.id )# )", ( a, o ) => a.hasId( id, o ), "HasId" )
+	}
+
+	/**
+	 * @name  The CSS property
+	 * @value The computed value, or a regex from regex()
+	 */
+	function toHaveCSS( required string name, required any value ) {
+		return check( "toHaveCSS( #arguments.name#, #describe( arguments.value )# )", ( a, o ) => a.hasCSS( name, value, o ), "HasCSS" )
+	}
+
+	/**
+	 * @name The accessible name, or a regex from regex()
+	 */
+	function toHaveAccessibleName( required any name ) {
+		return check( "toHaveAccessibleName( #describe( arguments.name )# )", ( a, o ) => a.hasAccessibleName( name, o ), "HasAccessibleName" )
+	}
+
+	/**
+	 * @role The ARIA role, e.g. button, heading, link
+	 */
+	function toHaveRole( required string role ) {
+		var ariaRole = enumValue( "AriaRole", arguments.role )
+		return check( "toHaveRole( #arguments.role# )", ( a, o ) => a.hasRole( ariaRole, o ), "HasRole" )
+	}
+
+	/**
+	 * @snapshot The expected ARIA snapshot in YAML, see page.snapshot()
+	 */
+	function toMatchAriaSnapshot( required string snapshot ) {
+		return check( "toMatchAriaSnapshot()", ( a, o ) => a.matchesAriaSnapshot( snapshot, o ), "MatchesAriaSnapshot" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * API responses
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The response status is 2xx.
+	 */
+	function toBeOK() {
+		return check( "toBeOK()", ( a, o ) -> a.isOK(), "" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Private
+	 * --------------------------------------------------------------------------
+	 */
+
+	private function check( required string label, required function assertion, required string optionsName ) {
+		var target = PlaywrightAssertions.assertThat( variables.java )
+		var label  = ( variables.negate ? "not()." : "" ) & arguments.label
+		if ( variables.negate ) {
+			target = target.not()
+		}
+		variables.negate = false
+		var options = len( arguments.optionsName ) ? buildOptions( "assertions.#variables.kind#.#arguments.optionsName#Options", { timeout : variables.timeout } ) : nullValue()
+		var run     = arguments.assertion
+		try {
+			tryAction( () => run( target, options ), label )
+		} catch ( "Playwright.AssertionFailed" e ) {
+			if ( isNull( variables.collector ) ) {
+				rethrow;
+			}
+			variables.collector.append( e.message )
+		}
+		return this
+	}
+
+	private string function describe( any value ) {
+		if ( isNull( arguments.value ) ) {
+			return "null"
+		}
+		return isRegex( arguments.value ) ? "/#arguments.value.pattern()#/" : """#arguments.value#"""
+	}
+
+}

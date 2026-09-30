@@ -1,4 +1,4 @@
-# ⚡︎ BoxLang Module: @MODULE_NAME@
+# ⚡︎ BoxLang Playwright
 
 ```
 |:------------------------------------------------------:|
@@ -14,124 +14,112 @@
 	<a href="https://www.ortussolutions.com">www.ortussolutions.com</a>
 </blockquote>
 
-<p>&nbsp;</p>
+Fluent browser automation and testing for BoxLang, powered by [Microsoft Playwright](https://playwright.dev). Drive Chromium, Firefox and WebKit, test web apps, mock the network, test APIs, and render HTML to PDF or images.
 
-This template can be used to create Ortus based BoxLang Modules. To use, just click the `Use this Template` button in the github repository: https://github.com/ortus-boxlang/boxlang-module-template and run the setup task from where you cloned it.
+## Install
 
-```bash
-box task run taskFile=src/build/SetupTemplate
-```
+Two distributions, same module (`playwright`), same API:
 
-The `SetupTemplate` task will ask you for your module name, id and description and configure the template for you! Enjoy!
-
-## Install Skills
-
-If you are using the Copilot agent workflow with this template, restore the project skills from `skills-lock.json` when you first start working in the project:
+| Module | Size | Node.js |
+|---|---|---|
+| `bx-playwright` | ~4 MB | Downloaded by `bxPlaywright install` for your OS |
+| `bx-playwright-full` | ~206 MB | Bundled for every platform (offline friendly) |
 
 ```bash
-npx skills experimental_install
+install-bx-module bx-playwright
+bxPlaywright install            # driver + Node.js + Chromium
+bxPlaywright install firefox webkit
+bxPlaywright doctor             # check everything
 ```
 
-Run the command from the project root so the workspace restores the pinned skills defined for this template.
+Requires BoxLang 1.17+ and Java 21+.
 
-## Directory Structure
+## Quick Start
 
-Here is a brief overview of the directory structure:
+```js
+playwright().visit( "https://boxlang.io" )
+	.assertTitleContains( "BoxLang" )
+	.click( "Docs" )
+	.screenshot( "docs.png" )
+	.quit()
+```
 
-- `.github/workflows` - These are the github actions to test and build the module via CI
-- `build` - This is a temporary non-sourced folder that contains the build assets for the module that gradle produces
-- `gradle` - The gradle wrapper and configuration
-- `src` - Where your module source code lives
-- `.cfformat.json` - A CFFormat using the Ortus Standards
-- `.editorconfig` - Smooth consistency between editors
-- `.gitattributes` - Git attributes
-- `.gitignore` - Basic ignores. Modify as needed.
-- `.markdownlint.json` - A linting file for markdown docs
-- `.ortus-java-style.xml` - Ortus Java Style for IntelliJ, VScode, Eclipse.
-- `box.json` - The box.json for your module used to publish to ForgeBox
-- `build.gradle` - The gradle build file for the module
-- `changelog.md` - A nice changelog tracking file
-- `CONTRIBUTING.md` - A contribution guideline
-- `gradlew` - The gradle wrapper
-- `gradlew.bat` - The gradle wrapper for windows
-- `ModuleConfig.cfc` - Your module's configuration. Modify as needed.
-- `readme.md` - Your module's readme. Modify as needed.
-- `settings.gradle` - The gradle settings file
+```js
+// Scoped work, cleaned up automatically
+playwright( "mobile" ).browse( ( page ) => {
+	page.visit( "http://localhost:8080/login" )
+		.fill( "Email", "luis@ortus.com" )     // by label, placeholder or name
+		.fill( "Password", "secret" )
+		.click( "Sign in" )                    // by button or link text
+		.assertPathIs( "/dashboard" )
+		.assertSee( "Welcome" )
+} )
+```
 
-Here is a brief overview of the source directory structure:
+```js
+// One-shot helpers
+playwright().screenshot( "https://boxlang.io", "home.png", { fullPage : true } )
+playwright().pdf( "https://boxlang.io", "home.pdf", { format : "A4" } )
+html = playwright().content( "https://boxlang.io" )     // rendered HTML
+```
 
-- `build` - Build scripts and assets
-- `main` - The main module source code
-  - `bx` - The BoxLang source code
-  - `ModuleConfig.bx` - The BoxLang module configuration
-    - `bifs` - BoxLang built-in functions
-    - `components` - BoxLang components
-    - `config` - BoxLang configuration, schedulers, etc.
-    - `interceptors` - BoxLang interceptors
-    - `libs` - Java libraries to use that are NOT managed by gradle
-    - `models` - BoxLang models
-  - `java` - Java source code
-  - `resources` - Resources for the module placed in final jar
-- `test`
-  - `bx` - The BoxLang test code
-  - `java` - Java test code
-  - `resources` - Resources for testing
-    - `libs` - BoxLang binary goes here for now.
+```html
+<bx:playwrightRender type="pdf" path="invoice.pdf" format="A4" margin="1cm">
+	<h1>Invoice #invoice.id#</h1>
+</bx:playwrightRender>
+```
 
-## Project Properties
+## The API in One Screen
 
-The project name is defined in the `settings.gradle` file. You can change it there.
-The project version, BoxLang Version and JDK version is defined in the `build.gradle` file. You can change it there.
+| Area | API |
+|---|---|
+| Entry | `playwright( [profile], [options] )`, `.visit()`, `.browse()`, `.newContext()`, `.newPage()`, `.request()`, `.render()`, `.close()` |
+| Selectors | `@testId`, CSS / XPath (`#id`, `.class`, `h1`, `//div`), or visible text (labels for `fill`, buttons and links for `click`) |
+| Actions | `click`, `dblclick`, `fill`, `type`, `clear`, `press`, `check`, `uncheck`, `select`, `upload`, `hover`, `focus`, `drag`, `scrollTo` |
+| Finders | `locator`, `byRole`, `byText`, `byLabel`, `byPlaceholder`, `byTestId`, `byAltText`, `byTitle`, `frame`, `within` |
+| Locators | `first`, `last`, `nth` (1-based), `filter`, `visible`, `all`, `count`, `texts` |
+| Assertions | `assertSee`, `assertDontSee`, `assertTitle`, `assertPathIs`, `assertUrlIs`, `assertVisible`, `assertMissing`, `assertText`, `assertValue`, `assertChecked`, `assertCount`, ... |
+| Expect | `page.expect( "h1" ).toHaveText( "Hi" )`, `.not().toBeVisible()`, `toHaveURL`, `toHaveCount`, `toMatchAriaSnapshot`, ... |
+| Network | `intercept( "**/api/users" ).respondJson( data )`, `.respond()`, `.abort()`, `.resume()`, `.handle()` |
+| Events | `onConsole`, `onPageError`, `onDialog`, `onRequest`, `onResponse`, `waitForPopup`, `waitForDownload` |
+| Output | `screenshot`, `pdf`, `content`, `text`, `html`, `snapshot` (accessibility tree for AI agents) |
 
-## Gradle Tasks
+Assertions retry until they pass (web-first). Failures throw `Playwright.AssertionFailed` with Playwright's message. Other errors: `Playwright.Timeout`, `Playwright.ActionFailed`, `Playwright.InvalidOption`, `Playwright.InvalidProfile`, `Playwright.NotInstalled`.
 
-Before you get started, you need to run the `downloadBoxLang` task in order to download the latest BoxLang binary until we publish to Maven.
+## Profiles
+
+`playwright( "mobile" )`, `playwright( [ "android", "dark" ] )`. Built-in: `default`, `chromium`, `firefox`, `webkit`, `chrome`, `chrome-beta`, `edge`, `hd`, `laptop`, `macbook`, `desktop`, `4k`, `mobile`/`iphone`, `iphone-se`, `mobile-landscape`, `android`/`pixel`, `galaxy`, `tablet`/`ipad`, `android-tablet`, `dark`, `light`, `reduced-motion`, `high-contrast`, `headed`, `debug`, `record`, `ci`, `offline`, `print`, `screenshot`.
+
+Add your own in the module settings, extending any profile:
+
+```json
+"modules": {
+	"playwright": {
+		"settings": {
+			"baseURL": "http://localhost:8080",
+			"profiles": { "staging": { "extends": "desktop", "baseURL": "https://staging.example.com" } }
+		}
+	}
+}
+```
+
+Resolution order (last wins): module settings, profiles, `BX_PLAYWRIGHT_*` environment variables (`BROWSER`, `HEADLESS`, `BASEURL`; `PROFILE` picks the default profile), per-call options.
+
+## CLI
+
+`bxPlaywright <verb>` (or `boxlang module:playwright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
+
+## Development
 
 ```bash
-gradle downloadBoxLang
+./gradlew downloadBoxLang
+./gradlew shadowJar test                          # unit and integration tests
+PLAYWRIGHT_E2E=true ./gradlew shadowJar test      # plus real browser tests (downloads Node.js and Chromium once)
+./gradlew shadowJar -Pflavor=full                 # build bx-playwright-full
+./gradlew spotlessApply                           # Ortus formatting
 ```
 
-This will store the binary under `/src/test/resources/libs` for you to use in your tests and compiler. Here are some basic tasks
-
-| Task                | Description                                                                                                       |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `build`             | The default lifecycle task that triggers the build process, including tasks like `clean`, `assemble`, and others. |
-| `clean`             | Deletes the `build` folders. It helps ensure a clean build by removing any previously generated artifacts.        |
-| `compileJava`       | Compiles Java source code files located in the `src/main/java` directory                                          |
-| `compileTestJava`   | Compiles Java test source code files located in the `src/test/java` directory                                     |
-| `dependencyUpdates` | Checks for updated versions of all dependencies                                                                   |
-| `downloadBoxLang`   | Downloads the latest BoxLang binary for testing                                                                   |
-| `jar`               | Packages your project's compiled classes and resources into a JAR file `build/libs` folder                        |
-| `javadoc`           | Generates the Javadocs for your project and places them in the `build/docs/javadoc` folder                        |
-| `serviceLoader`     | Generates the ServiceLoader file for your project                                                                 |
-| `spotlessApply`     | Runs the Spotless plugin to format the code                                                                       |
-| `spotlessCheck`     | Runs the Spotless plugin to check the formatting of the code                                                      |
-| `tasks`             | Show all the available tasks in the project                                                                       |
-| `test`              | Executes the unit tests in your project and produces the reports in the `build/reports/tests` folder              |
-
-## Tests
-
-Please use the `src/test` folder for your unit tests. You can either test using TestBox o JUnit if it's Java.
-
-## VSCode Tests
-
-If you will be running tests for modules using the VSCode test explorer, then you need to make sure you remove the `/src/main/resources` line item from the configured class path, if not, the BoxLang core will try loading any service loaders it finds in that class path resolution.
-
-> Please note, this IS ONLY FOR MODULE DEVELOPMENT.
-
-Go to the `Java Projects` panel, click on the 3 dots and click on `Configure Classpath`. Remove the `/src/main/resources` line item and hit `APPLY SETTINGS` on the bottom left.
-
-## Github Actions Automation
-
-The github actions will clone, test, package, deploy your module to ForgeBox and the Ortus S3 accounts for API Docs and Artifacts. So please make sure the following environment variables are set in your repository.
-
-> Please note that most of them are already defined at the org level
-
-- `FORGEBOX_TOKEN` - The Ortus ForgeBox API Token
-- `AWS_ACCESS_KEY` - The travis user S3 account
-- `AWS_ACCESS_SECRET` - The travis secret S3
-
-> Please contact the admins in the `#infrastructure` channel for these credentials if needed
+See [AGENTS.md](AGENTS.md) for the architecture and conventions, and [PLAN.md](PLAN.md) for the roadmap.
 
 ## Ortus Sponsors
 

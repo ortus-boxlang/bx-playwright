@@ -1,0 +1,25 @@
+/**
+ * Page object for the dashboard of the example app.
+ */
+class extends="models.PageObject@playwright" {
+
+	url      = "/dashboard"
+	elements = { heading : "h1" }
+
+	/**
+	 * Assert the browser is on the dashboard by checking the URL path.
+	 */
+	function at() {
+		page.assertPathIs( "/dashboard" )
+	}
+
+	/**
+	 * Get the user menu component of this page.
+	 *
+	 * @return The UserMenu page component
+	 */
+	function userMenu() {
+		return page.component( new pages.UserMenu() )
+	}
+
+}

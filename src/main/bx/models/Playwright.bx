@@ -1,0 +1,530 @@
+import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
+import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
+import java:java.util.UUID;
+
+/**
+ * The object returned by the playwright() BIF: a resolved configuration plus a lazily started
+ * Playwright instance and browser.
+ *
+ * <pre>
+ * // One page
+ * page = playwright().visit( "https://boxlang.io" )
+ *
+ * // Scoped work with automatic cleanup
+ * playwright( "mobile" ).browse( ( page ) => page.visit( "/" ).assertSee( "BoxLang" ) )
+ *
+ * // One-shot helpers
+ * playwright().screenshot( "https://boxlang.io", "home.png", { fullPage : true } )
+ * playwright().pdf( "https://boxlang.io", "home.pdf" )
+ * </pre>
+ *
+ * Nothing starts until it is needed. Playwright is not thread safe: use a manager only from the
+ * thread that created it, and close() it when done (browse() and the one-shot helpers do it for you).
+ */
+class extends="Base" {
+
+	/**
+	 * @config        The resolved configuration (see models.Config)
+	 * @configService The models.Config that resolved it
+	 */
+	function init( required struct config, required any configService ) {
+		variables.config        = arguments.config
+		variables.configService = arguments.configService
+		variables.contexts      = []
+		return this
+	}
+
+	/**
+	 * @return The resolved configuration
+	 */
+	struct function getConfig() {
+		return variables.config
+	}
+
+	/**
+	 * @return The models.Config that resolved this manager's configuration
+	 */
+	function getConfigService() {
+		return variables.configService
+	}
+
+	/**
+	 * @return True once the Playwright driver is running
+	 */
+	boolean function isStarted() {
+		return !isNull( variables.java )
+	}
+
+	/**
+	 * Start Playwright (if needed) and return the Playwright Java object.
+	 */
+	function getJava() {
+		if ( isNull( variables.java ) ) {
+			variables.java = tryAction( () => variables.configService.home().createPlaywright(), "start Playwright" )
+			variables.java.selectors().setTestIdAttribute( variables.config.testIdAttribute ?: "data-testid" )
+			announceEvent( "onPlaywrightCreate", { playwright : this } )
+		}
+		return variables.java
+	}
+
+	/**
+	 * Launch the configured browser (if needed) and return the Playwright Browser.
+	 */
+	function getBrowser() {
+		if ( isNull( variables.browser ) ) {
+			var name = variables.config.browser ?: "chromium"
+			if ( ![ "chromium", "firefox", "webkit" ].findNoCase( name ) ) {
+				throw(
+					type    = "Playwright.InvalidOption",
+					message = "Unknown browser [#name#].",
+					detail  = "Use chromium, firefox or webkit. For Chrome or Edge use chromium with channel: chrome or msedge."
+				)
+			}
+			var playwright  = getJava()
+			var browserType = name == "firefox" ? playwright.firefox() : ( name == "webkit" ? playwright.webkit() : playwright.chromium() )
+			var options     = buildOptions( "BrowserType.LaunchOptions", variables.configService.launchOptions( variables.config ) )
+			variables.browser = tryAction(
+				() => browserType.launch( options ),
+				"launch #name#. If the browser is missing run [bxPlaywright install #name#]"
+			)
+			announceEvent( "onBrowserLaunch", { playwright : this, browser : variables.browser } )
+		}
+		return variables.browser
+	}
+
+	/**
+	 * Create an isolated browser context (cookies, storage), with the configuration plus overrides.
+	 *
+	 * @options Context-level overrides: baseURL, viewport, device, locale, timezone, colorScheme,
+	 *          storageState, contextOptions, artifacts, ...
+	 */
+	function newContext( struct options = {} ) {
+		var config = duplicate( variables.config )
+		new models.Profiles@playwright().deepMerge( config, arguments.options )
+
+		var device = {}
+		if ( len( config.device ?: "" ) ) {
+			device = Devices.get( getJava(), config.device )
+		}
+		var contextOptions = variables.configService.contextOptions( config, device )
+
+		var artifactsDir = ""
+		var artifacts    = config.artifacts ?: {}
+		if ( ( artifacts.screenshot ?: "off" ) != "off" || ( artifacts.trace ?: "off" ) != "off" || ( artifacts.video ?: "off" ) != "off" ) {
+			artifactsDir = variables.configService.artifactsPath( config ) & "/" & dateTimeFormat( now(), "yyyymmdd-HHnnss" ) & "-" & UUID.randomUUID().toString().left( 8 )
+			directoryCreate( artifactsDir, true, true )
+			if ( ( artifacts.video ?: "off" ) != "off" ) {
+				contextOptions.recordVideoDir = artifactsDir
+			}
+		}
+
+		var browser = getBrowser()
+		var opts    = buildOptions( "Browser.NewContextOptions", contextOptions )
+		var context = new models.BrowserContext@playwright(
+			tryAction( () => browser.newContext( opts ), "create a browser context" ),
+			this,
+			config,
+			artifactsDir
+		)
+		variables.contexts.append( context )
+		announceEvent( "onContextCreate", { playwright : this, context : context } )
+		return context
+	}
+
+	/**
+	 * Open a page in a new context.
+	 *
+	 * @options Context-level overrides, see newContext()
+	 */
+	function newPage( struct options = {} ) {
+		return newContext( arguments.options ).newPage()
+	}
+
+	/**
+	 * Open a page in a new context and go to a URL.
+	 *
+	 * @url     Absolute URL, or a path when baseURL is set
+	 * @options Navigation options: waitUntil, timeout, referer
+	 */
+	function visit( required string url, struct options = {} ) {
+		return newPage().visit( arguments.url, arguments.options )
+	}
+
+	/**
+	 * Run a callback with a fresh page, then close the context. If this manager was not started
+	 * before the call, it is closed as well.
+	 *
+	 * <pre>
+	 * playwright().browse( ( page ) => page.visit( "https://boxlang.io" ).assertSee( "BoxLang" ) )
+	 * playwright().browse( ( alice, bob ) => { ... } )   // one isolated page per argument
+	 * </pre>
+	 *
+	 * @callback Receives one page per declared argument (at least one)
+	 * @options  Context-level overrides, see newContext()
+	 *
+	 * @return The callback result
+	 */
+	function browse( required function callback, struct options = {} ) {
+		var wasStarted = isStarted()
+		var params     = getMetadata( arguments.callback ).parameters ?: []
+		var pages      = []
+		var failed     = true
+		try {
+			for ( var i = 1; i <= max( 1, params.len() ); i++ ) {
+				pages.append( newPage( arguments.options ) )
+			}
+			var result = arguments.callback( argumentCollection = pageArguments( params, pages ) )
+			failed     = false
+			return isNull( result ) ? nullValue() : result
+		} finally {
+			for ( var page in pages ) {
+				page.context().close( failed )
+			}
+			if ( !wasStarted ) {
+				close()
+			}
+		}
+	}
+
+	/**
+	 * Take a screenshot of a URL.
+	 *
+	 * @url     The URL
+	 * @path    The file, or empty to return the image bytes
+	 * @options Screenshot options (fullPage, type, ...) plus waitUntil
+	 */
+	function screenshot( required string url, string path = "", struct options = {} ) {
+		var target      = arguments.url
+		var destination = arguments.path
+		var values      = duplicate( arguments.options )
+		var navigation  = { waitUntil : values.waitUntil ?: "load" }
+		values.delete( "waitUntil" )
+		return browse( ( page ) => page.visit( target, navigation ).screenshot( destination, values ) )
+	}
+
+	/**
+	 * Save a URL as PDF (Chromium).
+	 *
+	 * @url     The URL
+	 * @path    The file, or empty to return the PDF bytes
+	 * @options PDF options (format, landscape, margin, ...) plus waitUntil
+	 */
+	function pdf( required string url, string path = "", struct options = {} ) {
+		var target      = arguments.url
+		var destination = arguments.path
+		var values      = duplicate( arguments.options )
+		var navigation  = { waitUntil : values.waitUntil ?: "networkidle" }
+		values.delete( "waitUntil" )
+		return browse( ( page ) => page.visit( target, navigation ).pdf( destination, values ) )
+	}
+
+	/**
+	 * The HTML of a URL after JavaScript ran (scraping).
+	 *
+	 * @url     The URL
+	 * @options Navigation options, e.g. waitUntil: networkidle
+	 */
+	string function content( required string url, struct options = {} ) {
+		var target = arguments.url
+		var values = arguments.options
+		return browse( ( page ) => page.visit( target, values ).content() )
+	}
+
+	/**
+	 * Render HTML with the browser, to PDF or an image. Used by bx:playwrightRender.
+	 *
+	 * @html    The HTML
+	 * @options type (pdf, png, jpeg, webp), path (empty returns bytes), baseURL, waitFor (selector) or
+	 *          waitUntil (load, networkidle), viewport, device, fullPage, plus PDF or screenshot options
+	 *
+	 * @return The path, or the bytes when no path is given
+	 */
+	function render( required string html, struct options = {} ) {
+		var values  = duplicate( variables.config.render ?: {} )
+		values.append( arguments.options, true )
+		var type    = lCase( values.type ?: "pdf" )
+		var path    = values.path ?: ""
+		var waitFor = values.waitFor ?: ""
+		var context = {}
+		for ( var name in [ "baseURL", "viewport", "device", "colorScheme", "locale", "timezone" ] ) {
+			if ( values.keyExists( name ) ) {
+				context[ name ] = values[ name ]
+				values.delete( name )
+			}
+		}
+		var waitUntil = values.waitUntil ?: "networkidle"
+		for ( var name in [ "type", "path", "waitFor", "waitUntil" ] ) {
+			values.delete( name )
+		}
+		var markup = arguments.html
+		return browse( ( page ) => {
+			page.setContent( markup, { waitUntil : waitUntil } )
+			if ( len( waitFor ) ) {
+				page.waitFor( waitFor )
+			}
+			if ( type == "pdf" ) {
+				return page.pdf( path, values )
+			}
+			values.type = type
+			if ( values.keyExists( "format" ) ) {
+				values.delete( "format" )
+				values.delete( "printBackground" )
+			}
+			return page.screenshot( path, values )
+		}, context )
+	}
+
+	/**
+	 * An HTTP client for API testing, without a browser.
+	 *
+	 * @options baseURL (defaults to the configured baseURL), extraHTTPHeaders, httpCredentials,
+	 *          ignoreHTTPSErrors, timeout, storageStatePath, userAgent
+	 */
+	function request( struct options = {} ) {
+		var values = duplicate( arguments.options )
+		if ( !values.keyExists( "baseURL" ) && len( variables.config.baseURL ?: "" ) ) {
+			values.baseURL = variables.config.baseURL
+		}
+		var opts = buildOptions( "APIRequest.NewContextOptions", values )
+		return new models.Request@playwright( getJava().request().newContext( opts ), variables.config )
+	}
+
+	/**
+	 * Create (or reuse) a saved session: cookies and storage recorded after a setup, such as logging in.
+	 * Use it with newPage( { session : "admin" } ) or playwright( { session : "admin" } ).
+	 *
+	 * <pre>
+	 * pw.session( "admin", ( page ) => page.visit( "/login" ).fill( "Email", "admin@site.com" ).fill( "Password", "x" ).click( "Sign in" ) )
+	 * pw.newPage( { session : "admin" } ).visit( "/admin" ).assertSee( "Dashboard" )
+	 * </pre>
+	 *
+	 * @name    The session name
+	 * @setup   Receives a fresh page; do whatever creates the session
+	 * @options maxAge (minutes, 0 = never expires), refresh (force a new setup), context (context overrides)
+	 *
+	 * @return The session file path
+	 */
+	string function session( required string name, required function setup, struct options = {} ) {
+		var file   = variables.configService.sessionPath( arguments.name )
+		var maxAge = val( arguments.options.maxAge ?: 0 )
+		var fresh  = fileExists( file ) && ( maxAge <= 0 || dateDiff( "n", getFileInfo( file ).lastModified, now() ) < maxAge )
+		if ( fresh && !( arguments.options.refresh ?: false ) ) {
+			return file
+		}
+		directoryCreate( getDirectoryFromPath( file ), true, true )
+		var context = newContext( arguments.options.context ?: {} )
+		var failed  = true
+		try {
+			arguments.setup( context.newPage() )
+			context.saveStorageState( file )
+			failed = false
+		} finally {
+			context.close( failed )
+		}
+		return file
+	}
+
+	/**
+	 * Browser tools for AI agents, in a neutral format: [ { name, description, arguments : { name : description }, handler } ].
+	 * They share one page. Use aiTools() for bx-ai, or map them to any other agent framework.
+	 */
+	array function aiToolDefinitions() {
+		var browser = new models.AiBrowser@playwright( this )
+		return [
+			{
+				name        : "browser_visit",
+				description : "Open a URL in the browser. Returns the URL, title and an accessibility snapshot where elements have refs like e12.",
+				arguments   : { url : "Absolute URL, or a path relative to the base URL" },
+				handler     : ( url ) => browser.visit( url )
+			},
+			{
+				name        : "browser_snapshot",
+				description : "Return the current URL, title and accessibility snapshot with element refs.",
+				arguments   : {},
+				handler     : () => browser.snapshot()
+			},
+			{
+				name        : "browser_click",
+				description : "Click an element. Returns the new page snapshot.",
+				arguments   : { target : "An element ref from the snapshot (e.g. e12), or the visible text of a button or link" },
+				handler     : ( target ) => browser.click( target )
+			},
+			{
+				name        : "browser_fill",
+				description : "Type text into an input. Returns the new page snapshot.",
+				arguments   : { target : "An element ref (e.g. e7), or the input label or placeholder", value : "The text to type" },
+				handler     : ( target, value ) => browser.fill( target, value )
+			},
+			{
+				name        : "browser_select",
+				description : "Choose an option in a select element. Returns the new page snapshot.",
+				arguments   : { target : "An element ref, or the select label", value : "The option value or label" },
+				handler     : ( target, value ) => browser.select( target, value )
+			},
+			{
+				name        : "browser_press",
+				description : "Press a key such as Enter, Tab or Escape. Returns the new page snapshot.",
+				arguments   : { key : "The key or combination, e.g. Enter or Control+A" },
+				handler     : ( key ) => browser.press( key )
+			},
+			{
+				name        : "browser_back",
+				description : "Go back to the previous page. Returns the new page snapshot.",
+				arguments   : {},
+				handler     : () => browser.back()
+			},
+			{
+				name        : "browser_text",
+				description : "Read the visible text of the page or of one element.",
+				arguments   : { target : "An element ref or selector, or empty for the whole page" },
+				handler     : ( target = "" ) => browser.text( target )
+			},
+			{
+				name        : "browser_screenshot",
+				description : "Save a screenshot of the page and return the file path.",
+				arguments   : { path : "The file path, e.g. page.png" },
+				handler     : ( path ) => browser.screenshot( path )
+			},
+			{
+				name        : "browser_close",
+				description : "Close the browser page when the task is done.",
+				arguments   : {},
+				handler     : () => browser.close()
+			}
+		]
+	}
+
+	/**
+	 * Browser tools for bx-ai agents: aiAgent( tools : playwright().aiTools() ).
+	 * Requires the bx-ai module.
+	 */
+	array function aiTools() {
+		if ( !getFunctionList().keyExists( "aiTool" ) ) {
+			throw(
+				type    = "Playwright.NotInstalled",
+				message = "aiTools() needs the bx-ai module.",
+				detail  = "Install it with: install-bx-module bx-ai. Or use aiToolDefinitions() with another agent framework."
+			)
+		}
+		return aiToolDefinitions().map( ( definition ) => {
+			var tool = aiTool( definition.name, definition.description, definition.handler )
+			for ( var argument in definition.arguments ) {
+				invoke( tool, "describe" & argument, [ definition.arguments[ argument ] ] )
+			}
+			return tool
+		} )
+	}
+
+	/**
+	 * Add a custom method to every page (or locator).
+	 *
+	 * <pre>
+	 * playwright().macro( "loginAs", ( page, email ) => page.visit( "/login" ).fill( "Email", email ).click( "Sign in" ) )
+	 * page.loginAs( "luis@ortus.com" ).assertSee( "Welcome" )
+	 * </pre>
+	 *
+	 * @name     The method name
+	 * @handler  Receives the page (or locator) first, then the call arguments. Return nothing to keep chaining
+	 * @target   page (default) or locator
+	 */
+	function macro( required string name, required function handler, string target = "page" ) {
+		Macros.register( arguments.target, arguments.name, arguments.handler )
+		return this
+	}
+
+	/**
+	 * Remove a macro, or every macro of a target when no name is given.
+	 *
+	 * @name   The macro name
+	 * @target page (default) or locator
+	 */
+	function removeMacro( string name = "", string target = "page" ) {
+		Macros.remove( arguments.target, arguments.name )
+		return this
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Utilities
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Start an expect-style assertion on a page, locator or API response.
+	 *
+	 * @target A Page, Locator, Response or their Java objects
+	 */
+	function expect( required any target ) {
+		return new models.Expect@playwright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
+	}
+
+	/**
+	 * @return Every device descriptor: [ { name, descriptor } ]
+	 */
+	array function devices() {
+		return Devices.list( getJava() )
+	}
+
+	/**
+	 * @name The device name, e.g. iPhone 15
+	 *
+	 * @return The descriptor: userAgent, viewport, deviceScaleFactor, isMobile, hasTouch, defaultBrowserType
+	 */
+	struct function device( required string name ) {
+		return Devices.get( getJava(), arguments.name )
+	}
+
+	/**
+	 * Forget a closed context. Called by BrowserContext.close().
+	 *
+	 * @context The context
+	 */
+	function forget( required any context ) {
+		var index = variables.contexts.find( arguments.context )
+		if ( index ) {
+			variables.contexts.deleteAt( index )
+		}
+	}
+
+	/**
+	 * Close every context, the browser and Playwright. Safe to call more than once.
+	 */
+	function close() {
+		// Shallow copy: closing a context removes it from the list
+		var open = []
+		open.append( variables.contexts, true )
+		for ( var context in open ) {
+			try {
+				context.close()
+			} catch ( any e ) {
+				// Keep closing the rest
+			}
+		}
+		variables.contexts = []
+		if ( !isNull( variables.browser ) ) {
+			try {
+				variables.browser.close()
+			} catch ( any e ) {
+				// Already closed
+			}
+			variables.browser = nullValue()
+		}
+		if ( !isNull( variables.java ) ) {
+			variables.java.close()
+			variables.java = nullValue()
+		}
+	}
+
+	private struct function pageArguments( required array params, required array pages ) {
+		var args = {}
+		if ( arguments.params.isEmpty() ) {
+			args[ "1" ] = arguments.pages[ 1 ]
+			return args
+		}
+		for ( var i = 1; i <= arguments.params.len(); i++ ) {
+			args[ arguments.params[ i ].name ] = arguments.pages[ i ]
+		}
+		return args
+	}
+
+}

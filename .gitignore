@@ -15,3 +15,9 @@ src/test/resources/libs/*
 !src/test/resources/libs/.gitkeep
 .agents/skills/**
 .opencode
+
+### AI Skills (restored from skills-lock.json)
+.claude/skills/**
+
+### bxSites build output
+site/

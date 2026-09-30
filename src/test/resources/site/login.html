@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head><title>Login</title></head>
+<body>
+	<h1>Sign in to BoxLang</h1>
+	<form id="login" onsubmit="event.preventDefault(); location.href = '/dashboard?user=' + encodeURIComponent( document.getElementById( 'email' ).value );">
+		<label for="email">Email</label>
+		<input id="email" name="email" type="email">
+		<input name="password" type="password" placeholder="Password">
+		<label><input type="checkbox" id="remember"> Remember me</label>
+		<select name="role" data-testid="role">
+			<option value="admin">Admin</option>
+			<option value="editor">Editor</option>
+		</select>
+		<button type="submit">Sign in</button>
+	</form>
+	<a href="/about" target="_blank">About</a>
+	<p data-testid="hint" style="display:none">Secret hint</p>
+</body>
+</html>

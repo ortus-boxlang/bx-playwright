@@ -1,0 +1,48 @@
+/**
+ * An HTTP response from playwright().request().
+ */
+class {
+
+	/**
+	 * @java The Playwright APIResponse
+	 */
+	function init( required any java ) {
+		variables.java = arguments.java
+		return this
+	}
+
+	/**
+	 * @return The Playwright APIResponse
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	numeric function status() {
+		return variables.java.status()
+	}
+
+	boolean function ok() {
+		return variables.java.ok()
+	}
+
+	string function url() {
+		return variables.java.url()
+	}
+
+	struct function headers() {
+		return variables.java.headers()
+	}
+
+	string function text() {
+		return variables.java.text()
+	}
+
+	/**
+	 * @return The body parsed as JSON
+	 */
+	any function json() {
+		return jsonDeserialize( variables.java.text() )
+	}
+
+}

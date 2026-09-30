@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head><title>Dashboard | BoxLang</title></head>
+<body>
+	<h1 id="welcome">Welcome</h1>
+	<ul class="todos">
+		<li>Write specs</li>
+		<li>Ship bx-playwright</li>
+		<li>Celebrate</li>
+	</ul>
+	<div data-testid="cart"><span>2 items</span><button>Remove</button></div>
+	<div id="users">Loading...</div>
+	<script>
+		console.log( "dashboard loaded" );
+		fetch( "/api/users" ).then( r => r.json() ).then( data => {
+			document.getElementById( "users" ).textContent = data.users.join( ", " );
+		} );
+	</script>
+</body>
+</html>

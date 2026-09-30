@@ -1,0 +1,409 @@
+/**
+ * The `bxPlaywright` command line.
+ *
+ * Every verb is a class in models/cli with a `run( options, config )` method returning
+ * `{ exitCode, message, data }`. Options follow the BoxLang CLI conventions:
+ *
+ * - `--flag`          -> true
+ * - `--flag=value`    -> value
+ * - `--no-flag`       -> false
+ * - anything else     -> a positional, collected in order in `_positionals`
+ *
+ * `--json` prints the verb's `data` as JSON instead of the human readable message.
+ */
+class {
+
+	/**
+	 * Browsers accepted by install and uninstall.
+	 */
+	variables.BROWSERS = [ "chromium", "firefox", "webkit", "chrome", "chrome-beta", "msedge", "all" ]
+
+	/**
+	 * The verb registry. It drives dispatch, help and the bash completions.
+	 */
+	variables.VERBS = {
+		"install"      : {
+			class       : "Install",
+			description : "Set up the driver and Node.js, then install browsers (default: chromium)",
+			usage       : "install [browsers...] [--with-deps] [--only-shell] [--force] [--skip-node]",
+			flags       : [ "--with-deps", "--only-shell", "--force", "--skip-node", "--json" ],
+			words       : variables.BROWSERS
+		},
+		"install-node" : {
+			class       : "InstallNode",
+			description : "Download the Node.js runtime only (small distribution)",
+			usage       : "install-node [--force]",
+			flags       : [ "--force", "--json" ],
+			words       : []
+		},
+		"install-deps" : {
+			class       : "Passthrough",
+			command     : "install-deps",
+			description : "Install the operating system packages browsers need (Linux)",
+			usage       : "install-deps [browsers...]",
+			flags       : [],
+			words       : variables.BROWSERS
+		},
+		"uninstall"    : {
+			class       : "Passthrough",
+			command     : "uninstall",
+			description : "Remove installed browsers",
+			usage       : "uninstall [--all]",
+			flags       : [ "--all" ],
+			words       : []
+		},
+		"doctor"       : {
+			class       : "Doctor",
+			description : "Check versions, paths, Node.js and browsers, with fix hints",
+			usage       : "doctor [--json]",
+			flags       : [ "--json" ],
+			words       : []
+		},
+		"version"      : {
+			class       : "Version",
+			description : "Show the module, Playwright and Node.js versions",
+			usage       : "version [--json]",
+			flags       : [ "--json" ],
+			words       : []
+		},
+		"clean"        : {
+			class       : "Clean",
+			description : "Remove the extracted driver and downloaded Node.js (browsers are kept)",
+			usage       : "clean [--json]",
+			flags       : [ "--json" ],
+			words       : []
+		},
+		"devices"      : {
+			class       : "DevicesList",
+			description : "List the device descriptors usable in the device setting",
+			usage       : "devices [--json]",
+			flags       : [ "--json" ],
+			words       : []
+		},
+		"profiles"     : {
+			class       : "ProfilesList",
+			description : "List profiles, or show one fully resolved",
+			usage       : "profiles [name] [--json]",
+			flags       : [ "--json" ],
+			words       : "@profiles"
+		},
+		"codegen"      : {
+			class       : "Codegen",
+			description : "Record browser actions and generate BoxLang code (or --target=java, javascript, python)",
+			usage       : "codegen [url] [--output=file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
+			flags       : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
+			words       : []
+		},
+		"open"         : {
+			class       : "Passthrough",
+			command     : "open",
+			description : "Open a headed browser",
+			usage       : "open [url]",
+			flags       : [ "--device", "--browser" ],
+			words       : []
+		},
+		"screenshot"   : {
+			class       : "Passthrough",
+			command     : "screenshot",
+			description : "Take a screenshot of a URL",
+			usage       : "screenshot <url> <file> [--full-page] [--device=name]",
+			flags       : [ "--full-page", "--device", "--browser" ],
+			words       : "@files"
+		},
+		"pdf"          : {
+			class       : "Passthrough",
+			command     : "pdf",
+			description : "Save a URL as PDF (Chromium)",
+			usage       : "pdf <url> <file> [--paper-format=A4]",
+			flags       : [ "--paper-format" ],
+			words       : "@files"
+		},
+		"show-trace"   : {
+			class       : "Passthrough",
+			command     : "show-trace",
+			description : "Open the trace viewer",
+			usage       : "show-trace [trace.zip]",
+			flags       : [],
+			words       : "@files"
+		},
+		"mcp"          : {
+			class       : "Passthrough",
+			command     : "mcp",
+			description : "Start the Playwright MCP server for AI agents",
+			usage       : "mcp [options]",
+			flags       : [ "--headless", "--browser", "--port" ],
+			words       : []
+		},
+		"run"          : {
+			class       : "Passthrough",
+			command     : "",
+			description : "Run any Playwright CLI command as-is",
+			usage       : "run <playwright cli arguments...>",
+			flags       : [],
+			words       : []
+		},
+		"completions"  : {
+			class       : "Completions",
+			description : "Print the bash completion script",
+			usage       : "completions",
+			flags       : [],
+			words       : []
+		},
+		"help"         : {
+			class       : "",
+			description : "Show help for all verbs or one verb",
+			usage       : "help [verb] [--json]",
+			flags       : [ "--json" ],
+			words       : "@verbs"
+		}
+	}
+
+	/**
+	 * Create the CLI dispatcher.
+	 *
+	 * @config The configuration to use. Defaults to the loaded module settings
+	 */
+	function init( any config ) {
+		variables.config = arguments.config ?: nullValue()
+		return this
+	}
+
+	/**
+	 * Run the CLI.
+	 *
+	 * @args The CLI arguments (verb first)
+	 *
+	 * @return The exit code
+	 */
+	numeric function run( array args = [] ) {
+		var first = arrayLen( arguments.args ) ? arguments.args[ 1 ] : ""
+		var rest  = arguments.args.len() > 1 ? arguments.args.slice( 2 ) : []
+
+		if ( first == "--version" || first == "-v" ) {
+			first = "version"
+		}
+		if ( !len( first ) || first == "--help" || first == "-h" ) {
+			printUsage()
+			return len( first ) ? 0 : 1
+		}
+		if ( first == "help" ) {
+			return help( parseOptions( rest ) )
+		}
+		if ( !variables.VERBS.keyExists( first ) ) {
+			println( "Unknown verb [#first#]." )
+			println( "" )
+			printUsage()
+			return 1
+		}
+		if ( first != "run" && ( rest.findNoCase( "--help" ) || rest.findNoCase( "-h" ) ) ) {
+			return help( { _positionals : [ first ] } )
+		}
+
+		var verb    = variables.VERBS[ first ]
+		var options = parseOptions( rest )
+		options._verb = first
+		options._raw  = rest
+
+		try {
+			var result = new "models.cli.#verb.class#@playwright"().run( options, getConfig(), verb )
+			return output( result, options.json ?: false )
+		} catch ( any e ) {
+			if ( options.json ?: false ) {
+				println( jsonSerialize( { "error" : { "type" : e.type, "message" : e.message, "detail" : e.detail } } ) )
+			} else {
+				println( "Error [#e.type#]: #e.message#" )
+				if ( len( e.detail ) ) {
+					println( "Fix: #e.detail#" )
+				}
+			}
+			return 1
+		}
+	}
+
+	/**
+	 * Parse CLI arguments into an options struct.
+	 *
+	 * @args The arguments after the verb
+	 *
+	 * @return The options, with positionals in `_positionals`
+	 */
+	struct function parseOptions( array args = [] ) {
+		var options = { _positionals : [] }
+		for ( var token in arguments.args ) {
+			if ( token.startsWith( "--no-" ) ) {
+				options[ token.mid( 6, token.len() ) ] = false
+			} else if ( token.startsWith( "--" ) ) {
+				var body  = token.mid( 3, token.len() )
+				var eqPos = body.find( "=" )
+				if ( eqPos ) {
+					options[ body.left( eqPos - 1 ) ] = stripQuotes( body.mid( eqPos + 1, body.len() ) )
+				} else {
+					options[ body ] = true
+				}
+			} else {
+				options._positionals.append( token )
+			}
+		}
+		return options
+	}
+
+	/**
+	 * Get the registry of CLI verbs.
+	 *
+	 * @return The verb registry
+	 */
+	struct function getVerbs() {
+		return variables.VERBS
+	}
+
+	/**
+	 * Build the bash completion script from the verb registry.
+	 *
+	 * @return The completion script
+	 */
+	string function completionScript() {
+		var nl    = char( 10 )
+		var names = variables.VERBS.keyArray().sort( "textnocase" )
+		var lines = [
+			"##!/usr/bin/env bash",
+			"## bxPlaywright bash completions. Generated by `bxPlaywright completions`, do not edit.",
+			"_bxplaywright_complete() {",
+			"	local cur verb",
+			"	cur=""${COMP_WORDS[COMP_CWORD]}""",
+			"	verb=""${COMP_WORDS[1]}""",
+			"	if [[ ${COMP_CWORD} -eq 1 ]]; then",
+			"		COMPREPLY=( $(compgen -W ""#names.toList( " " )# --help --version"" -- ""$cur"") )",
+			"		return 0",
+			"	fi",
+			"	case ""$verb"" in"
+		]
+		for ( var name in names ) {
+			var verb  = variables.VERBS[ name ]
+			var words = verb.flags.duplicate()
+			if ( isArray( verb.words ) ) {
+				words.append( verb.words, true )
+			} else if ( verb.words == "@profiles" ) {
+				words.append( new models.Profiles@playwright().builtIn().keyArray().sort( "textnocase" ), true )
+			} else if ( verb.words == "@verbs" ) {
+				words.append( names, true )
+			}
+			if ( verb.words == "@files" ) {
+				lines.append( "		#name#) COMPREPLY=( $(compgen -W ""#words.toList( " " )#"" -- ""$cur"") $(compgen -f -- ""$cur"") ) ;;" )
+			} else {
+				lines.append( "		#name#) COMPREPLY=( $(compgen -W ""#words.toList( " " )#"" -- ""$cur"") ) ;;" )
+			}
+		}
+		lines.append( "		*) COMPREPLY=() ;;" )
+		lines.append( "	esac" )
+		lines.append( "}" )
+		lines.append( "complete -F _bxplaywright_complete bxPlaywright" )
+		return lines.toList( nl ) & nl
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Private
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * Get the configuration, lazily creating one from the module settings when none was given.
+	 *
+	 * @return The configuration
+	 */
+	private function getConfig() {
+		if ( isNull( variables.config ) ) {
+			variables.config = new models.Config@playwright()
+		}
+		return variables.config
+	}
+
+	/**
+	 * Print a verb result: its data as JSON when requested, otherwise its message.
+	 *
+	 * @result The verb result (`message`, `data`, `exitCode`)
+	 * @json   Whether to print JSON output
+	 *
+	 * @return The result's exit code (0 when not set)
+	 */
+	private numeric function output( required struct result, boolean json = false ) {
+		if ( arguments.json ) {
+			println( jsonSerialize( arguments.result.data ?: { "message" : arguments.result.message ?: "" } ) )
+		} else if ( len( arguments.result.message ?: "" ) ) {
+			println( arguments.result.message )
+		}
+		return arguments.result.exitCode ?: 0
+	}
+
+	/**
+	 * Print help for all verbs, or for the verb named by the first positional, as text or JSON.
+	 *
+	 * @options The parsed options (`_positionals`, `json`)
+	 *
+	 * @return The exit code (1 when the verb is unknown)
+	 */
+	private numeric function help( required struct options ) {
+		var target = options._positionals.len() ? options._positionals[ 1 ] : ""
+		if ( options.json ?: false ) {
+			var data = {}
+			for ( var name in variables.VERBS ) {
+				if ( !len( target ) || target == name ) {
+					var verb     = variables.VERBS[ name ]
+					data[ name ] = {
+						"description" : verb.description,
+						"usage"       : "bxPlaywright " & verb.usage,
+						"flags"       : verb.flags
+					}
+				}
+			}
+			println( jsonSerialize( data ) )
+			return 0
+		}
+		if ( len( target ) ) {
+			if ( !variables.VERBS.keyExists( target ) ) {
+				println( "Unknown verb [#target#]." )
+				return 1
+			}
+			var verb = variables.VERBS[ target ]
+			println( "bxPlaywright #verb.usage#" )
+			println( "" )
+			println( "  #verb.description#" )
+			return 0
+		}
+		printUsage()
+		return 0
+	}
+
+	/**
+	 * Print the general usage text listing every verb and the global options.
+	 */
+	private void function printUsage() {
+		println( "bxPlaywright - Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright" )
+		println( "" )
+		println( "Usage: bxPlaywright <verb> [options]" )
+		println( "" )
+		for ( var name in variables.VERBS.keyArray().sort( "textnocase" ) ) {
+			println( "  #name.lJustify( 14 )# #variables.VERBS[ name ].description#" )
+		}
+		println( "" )
+		println( "Global options:" )
+		println( "  -h, --help     Show help (also: bxPlaywright help <verb>)" )
+		println( "  -v, --version  Show versions" )
+		println( "  --json         Machine readable output, where supported" )
+	}
+
+	/**
+	 * Remove surrounding quotes from a value that starts with a single or double quote.
+	 *
+	 * @value The value to unquote
+	 *
+	 * @return The value without its first and last characters when quoted, otherwise unchanged
+	 */
+	private string function stripQuotes( required string value ) {
+		if ( arguments.value.len() >= 2 && ( arguments.value.startsWith( """" ) || arguments.value.startsWith( "'" ) ) ) {
+			return arguments.value.mid( 2, arguments.value.len() - 2 )
+		}
+		return arguments.value
+	}
+
+}

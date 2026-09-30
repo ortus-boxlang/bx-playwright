@@ -1,0 +1,82 @@
+/**
+ * Base class for reusable page components (date pickers, modals, menus, tables...).
+ * A component has a root selector, element aliases scoped to it, and its own actions.
+ * Every page action (click, fill, assertSee, ...) is available on it, scoped to its root.
+ *
+ * <pre>
+ * // DatePicker.bx
+ * class extends="models.PageComponent@playwright" {
+ *     selector = ".datepicker"
+ *     elements = { next : ".next-month", title : ".month-title" }
+ *
+ *     function pick( required numeric day ) {
+ *         return click( "text=#day#" )
+ *     }
+ * }
+ *
+ * page.within( new DatePicker(), ( picker ) => picker.click( "@next" ).pick( 12 ) )
+ * picker = page.component( new DatePicker() )
+ * </pre>
+ */
+class extends="Scope" {
+
+	variables.selector = ""
+	variables.elements = {}
+
+	/**
+	 * Bind the component to a page and its root element. Called by page.within() and page.component().
+	 *
+	 * @page The Page
+	 * @root The Playwright locator of the component root
+	 */
+	function bind( required any page, required any root ) {
+		variables.owner = arguments.page
+		variables.java  = arguments.root
+		return this
+	}
+
+	/**
+	 * @return The root selector
+	 */
+	string function getSelector() {
+		return variables.selector ?: ""
+	}
+
+	/**
+	 * @return The Playwright locator of the component root
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	function root() {
+		return variables.java
+	}
+
+	function self() {
+		return variables.java
+	}
+
+	function page() {
+		return variables.owner
+	}
+
+	function getConfig() {
+		return variables.owner.getConfig()
+	}
+
+	/**
+	 * The page aliases plus the component aliases (the component wins).
+	 */
+	struct function getAliases() {
+		var aliases = duplicate( variables.owner.getAliases() )
+		aliases.append( variables.elements ?: {}, true )
+		return aliases
+	}
+
+	function captureScreenshot( struct options = {} ) {
+		var opts = buildOptions( "Locator.ScreenshotOptions", arguments.options )
+		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+	}
+
+}

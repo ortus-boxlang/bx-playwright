@@ -1,0 +1,167 @@
+import java:ortus.boxlang.modules.playwright.engine.OptionsMapper@playwright;
+import java:ortus.boxlang.modules.playwright.engine.PlaywrightErrors@playwright;
+
+/**
+ * Shared helpers for the bx-playwright DSL objects.
+ */
+abstract class {
+
+	/**
+	 * Build a Playwright options object from a struct.
+	 *
+	 * @className The options class relative to com.microsoft.playwright, e.g. Page.NavigateOptions
+	 * @values    The options struct
+	 */
+	function buildOptions( required string className, struct values = {} ) {
+		return OptionsMapper.build( arguments.className, arguments.values )
+	}
+
+	/**
+	 * Convert a string to a Playwright enum value.
+	 *
+	 * @enumName The enum name, e.g. AriaRole
+	 * @value    The value, e.g. button
+	 */
+	function enumValue( required string enumName, required string value ) {
+		return OptionsMapper.enumValue( arguments.enumName, arguments.value )
+	}
+
+	/**
+	 * Run a Playwright call and rethrow its errors as typed bx-playwright errors:
+	 * Playwright.Timeout, Playwright.AssertionFailed or Playwright.ActionFailed.
+	 *
+	 * @action   A closure doing the Playwright call
+	 * @describe What was being done, for the error message
+	 *
+	 * @return The closure result
+	 */
+	function tryAction( required function action, string describe = "" ) {
+		try {
+			return arguments.action()
+		} catch ( any e ) {
+			var errorType = e.type ?: ""
+			if ( errorType.startsWith( "Playwright." ) && errorType != "Playwright.Error" ) {
+				rethrow;
+			}
+			var rootType = PlaywrightErrors.rootType( e )
+			var message  = PlaywrightErrors.rootMessage( e )
+			if ( rootType.findNoCase( "AssertionFailedError" ) ) {
+				announceEvent( "onPlaywrightAssertionFailure", { message : message, action : arguments.describe } )
+				throw( type = "Playwright.AssertionFailed", message = message, detail = "Assertion: #arguments.describe#" )
+			}
+			if ( rootType.findNoCase( "TimeoutError" ) ) {
+				throw(
+					type    = "Playwright.Timeout",
+					message = message,
+					detail  = "#arguments.describe# timed out. Check the selector, or raise the 'timeouts' setting or the timeout option."
+				)
+			}
+			throw(
+				type    = "Playwright.ActionFailed",
+				message = message,
+				detail  = len( arguments.describe ) ? "While: #arguments.describe#" : ""
+			)
+		}
+	}
+
+	/**
+	 * Announce a bx-playwright interception point. Errors in listeners never break the browser flow.
+	 *
+	 * @name The interception point, e.g. onPageCreate
+	 * @data The event data
+	 */
+	function announceEvent( required string name, struct data = {} ) {
+		try {
+			BoxAnnounce( arguments.name, arguments.data )
+		} catch ( any e ) {
+			// Listeners are optional
+		}
+	}
+
+	/**
+	 * Build a java.util.regex.Pattern.
+	 *
+	 * @pattern The regular expression
+	 * @flags   Any of i (case insensitive), m (multiline), s (dot matches newlines)
+	 */
+	function regex( required string pattern, string flags = "" ) {
+		var Pattern = createObject( "java", "java.util.regex.Pattern" )
+		var bits    = 0
+		if ( arguments.flags.findNoCase( "i" ) ) {
+			bits = bitOr( bits, Pattern.CASE_INSENSITIVE )
+		}
+		if ( arguments.flags.find( "m" ) ) {
+			bits = bitOr( bits, Pattern.MULTILINE )
+		}
+		if ( arguments.flags.find( "s" ) ) {
+			bits = bitOr( bits, Pattern.DOTALL )
+		}
+		return Pattern.compile( arguments.pattern, bits )
+	}
+
+	/**
+	 * Is the value a java.util.regex.Pattern?
+	 */
+	boolean function isRegex( any value ) {
+		return isInstanceOf( arguments.value, "java.util.regex.Pattern" )
+	}
+
+	/**
+	 * Describe the public API of this object: every method with its description, arguments and return value.
+	 * Built from the docblocks, so it is always in sync with the code. Handy for AI agents and the REPL.
+	 *
+	 * <pre>
+	 * page.help()             // every method
+	 * page.help( "fill" )     // one method
+	 * </pre>
+	 *
+	 * @method A method name, or empty for all methods
+	 *
+	 * @return A struct of method name to { description, arguments, returns }
+	 */
+	struct function help( string method = "" ) {
+		var internal = [
+			"init", "onMissingMethod", "root", "self", "captureScreenshot", "macroTarget", "newExpect", "scopeLocator",
+			"expectTarget", "softCollector", "bind", "checkAt", "forget", "wrapPage", "tryAction", "buildOptions", "enumValue",
+			"announceEvent", "failAssertion", "stableScreenshot", "resolve", "getAliases"
+		]
+		var methods = [:]
+		var meta    = getMetadata( this )
+		while ( !isNull( meta ) && isStruct( meta ) && !meta.isEmpty() ) {
+			for ( var fn in meta.functions ?: [] ) {
+				if ( fn.access != "public" || internal.findNoCase( fn.name ) || methods.keyExists( fn.name ) ) {
+					continue
+				}
+				methods[ fn.name ] = {
+					"description" : fn.documentation.hint ?: "",
+					"returns"     : fn.documentation.return ?: fn.returnType,
+					"arguments"   : fn.parameters.map( ( param ) -> {
+						return {
+							"name"        : param.name,
+							"type"        : param.type,
+							"required"    : param.required,
+							"description" : param.documentation.hint ?: ""
+						}
+					} )
+				}
+			}
+			meta = meta.extends ?: {}
+		}
+		var sorted = [:]
+		for ( var name in methods.keyArray().sort( "textnocase" ) ) {
+			sorted[ name ] = methods[ name ]
+		}
+		if ( !len( arguments.method ) ) {
+			return sorted
+		}
+		if ( !sorted.keyExists( arguments.method ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "No method [#arguments.method#].",
+				detail  = "Available methods: #sorted.keyArray().toList( ", " )#"
+			)
+		}
+		return { "#arguments.method#" : sorted[ arguments.method ] }
+	}
+
+}

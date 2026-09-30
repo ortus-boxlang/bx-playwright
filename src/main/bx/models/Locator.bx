@@ -1,0 +1,149 @@
+/**
+ * A set of elements, returned by page.locator(), byRole(), byText(), frame(), within() and friends.
+ *
+ * Locators are lazy and auto-waiting: nothing is looked up until an action or assertion runs.
+ * Actions without a selector act on the locator itself; with a selector they act inside it.
+ *
+ * <pre>
+ * page.locator( ".todo" ).first().click()
+ * page.byRole( "row", { name : "Luis" } ).click( "Edit" )
+ * page.locator( "@cart" ).assertSee( "2 items" ).count()
+ * </pre>
+ */
+class extends="Scope" {
+
+	/**
+	 * @java The Playwright locator
+	 * @page The owning Page wrapper
+	 */
+	function init( required any java, required any page ) {
+		variables.java  = arguments.java
+		variables.owner = arguments.page
+		return this
+	}
+
+	/**
+	 * @return The Playwright Locator, for anything not covered by the DSL
+	 */
+	function getJava() {
+		return variables.java
+	}
+
+	function root() {
+		return variables.java
+	}
+
+	function self() {
+		return variables.java
+	}
+
+	function page() {
+		return variables.owner
+	}
+
+	function getConfig() {
+		return variables.owner.getConfig()
+	}
+
+	function captureScreenshot( struct options = {} ) {
+		var opts = buildOptions( "Locator.ScreenshotOptions", arguments.options )
+		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Refining
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The first matching element.
+	 */
+	function first() {
+		return new models.Locator@playwright( variables.java.first(), variables.owner )
+	}
+
+	/**
+	 * The last matching element.
+	 */
+	function last() {
+		return new models.Locator@playwright( variables.java.last(), variables.owner )
+	}
+
+	/**
+	 * The element at a 1-based position (BoxLang style).
+	 *
+	 * @position 1 for the first element
+	 */
+	function nth( required numeric position ) {
+		return new models.Locator@playwright( variables.java.nth( javacast( "int", arguments.position - 1 ) ), variables.owner )
+	}
+
+	/**
+	 * Keep elements matching the filter.
+	 *
+	 * @options hasText, hasNotText (text or regex()), has, hasNot (a Locator), visible
+	 */
+	function filter( struct options = {} ) {
+		var values = duplicate( arguments.options )
+		for ( var name in [ "has", "hasNot" ] ) {
+			if ( values.keyExists( name ) && isObject( values[ name ] ) && structKeyExists( values[ name ], "getJava" ) ) {
+				values[ name ] = values[ name ].getJava()
+			}
+		}
+		return new models.Locator@playwright( variables.java.filter( buildOptions( "Locator.FilterOptions", values ) ), variables.owner )
+	}
+
+	/**
+	 * Only the visible elements.
+	 */
+	function visible() {
+		return filter( { visible : true } )
+	}
+
+	/**
+	 * All matching elements, as an array of Locators (use in loops).
+	 */
+	array function all() {
+		var owner = variables.owner
+		return variables.java.all().map( ( item ) => new models.Locator@playwright( item, owner ) )
+	}
+
+	/**
+	 * The visible text of every matching element.
+	 */
+	array function texts() {
+		return variables.java.allInnerTexts()
+	}
+
+	/**
+	 * Is the element checked right now?
+	 */
+	boolean function isChecked() {
+		return variables.java.isChecked()
+	}
+
+	/**
+	 * Is the element enabled right now?
+	 */
+	boolean function isEnabled() {
+		return variables.java.isEnabled()
+	}
+
+	/**
+	 * Take a screenshot of the element.
+	 *
+	 * @path    The file path, or empty to return the image bytes
+	 * @options type, quality, omitBackground, timeout, ...
+	 */
+	function screenshot( string path = "", struct options = {} ) {
+		var values = duplicate( arguments.options )
+		if ( len( arguments.path ) ) {
+			values.path = expandPath( arguments.path )
+		}
+		var opts  = buildOptions( "Locator.ScreenshotOptions", values )
+		var bytes = tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
+		return len( arguments.path ) ? values.path : bytes
+	}
+
+}

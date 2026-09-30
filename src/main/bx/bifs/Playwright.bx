@@ -1,0 +1,38 @@
+/**
+ * playwright( [profile], [options] )
+ *
+ * Returns a bx-playwright manager with the resolved configuration. Nothing starts until it is used.
+ *
+ * <pre>
+ * playwright()                                          // default profile and module settings
+ * playwright( "firefox" )                               // a profile (browser names are profiles)
+ * playwright( [ "mobile", "dark" ] )                    // profiles merge left to right
+ * playwright( "mobile", { locale : "es-ES" } )          // profile plus overrides
+ * playwright( { headless : false, baseURL : "http://localhost:8080" } )
+ *
+ * playwright().visit( "/login" ).fill( "Email", "a@b.com" ).click( "Sign in" ).assertSee( "Welcome" )
+ * </pre>
+ */
+@BoxBIF
+class {
+
+	/**
+	 * Resolve the profiles and overrides into a configuration and return a new manager for it.
+	 *
+	 * @profile A profile name, a list or array of names, or an options struct
+	 * @options Overrides with the highest priority
+	 *
+	 * @return The manager (models.Playwright)
+	 */
+	function invoke( any profile = "", struct options = {} ) {
+		var profiles  = arguments.profile
+		var overrides = arguments.options
+		if ( isStruct( profiles ) ) {
+			overrides = profiles
+			profiles  = ""
+		}
+		var configService = new models.Config@playwright()
+		return new models.Playwright@playwright( configService.resolve( profiles, overrides ), configService )
+	}
+
+}

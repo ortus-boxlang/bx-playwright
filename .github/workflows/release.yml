@@ -89,7 +89,13 @@ jobs:
           npm install -g markdownlint-cli
           markdownlint changelog.md --fix
           ./gradlew downloadBoxLang
+          # Small distribution: bx-playwright
           ./gradlew build -x test --stacktrace --console=plain
+          cp -r build/module build/module-small
+          # Full distribution: bx-playwright-full (bundles Node.js for every platform)
+          # Its zip lands next to the small one in build/distributions, so one S3 upload ships both
+          ./gradlew shadowJar -Pflavor=full -x test --stacktrace --console=plain
+          mv build/module build/module-full
 
       - name: Commit Changelog [unreleased] with latest version
         uses: EndBug/add-and-commit@v11.1.1
@@ -117,6 +123,7 @@ jobs:
             build/reports/tests/**
             changelog.md
 
+      # One upload ships both zips: bx-playwright-{version}.zip and bx-playwright-full-{version}.zip
       - name: Upload Distributions to S3
         uses: jakejarvis/s3-sync-action@master
         with:
@@ -139,9 +146,13 @@ jobs:
           SOURCE_DIR: "build/docs/javadoc"
           DEST_DIR: "boxlang-modules/${{ env.MODULE_ID }}/${{ env.VERSION }}"
 
+      # ForgeBox only receives the box.json of each module: its location points to the zip on S3,
+      # so the size of the full zip does not matter. Two publishes create two ForgeBox entries.
       - name: Publish to ForgeBox
         run: |
-          cd build/module
+          cd build/module-small
+          box forgebox publish --force
+          cd $GITHUB_WORKSPACE/build/module-full
           box forgebox publish --force
           cd $GITHUB_WORKSPACE
 

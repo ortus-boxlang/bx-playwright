@@ -1,0 +1,670 @@
+/**
+ * [BoxLang]
+ *
+ * Copyright [2026] [Ortus Solutions, Corp]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS"
+ * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
+package ortus.boxlang.modules.playwright.e2e;
+
+import static com.google.common.truth.Truth.assertThat;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.sun.net.httpserver.HttpServer;
+
+import ortus.boxlang.modules.playwright.BaseIntegrationTest;
+
+/**
+ * Drives the DSL against a fake site (src/test/resources/site) served through request interception.
+ */
+public class DslE2ETest extends BaseIntegrationTest {
+
+	private String setup;
+
+	/**
+	 * Prepare the end-to-end home, map the fixtures folder and build the BoxLang preamble that serves the fake site through request interception.
+	 */
+	@BeforeEach
+	public void prepare() {
+		E2E.home();
+		runtime.getConfiguration().registerMapping( "/fixtures", Path.of( "src/test/resources/fixtures" ).toAbsolutePath().toString() );
+		String site = Path.of( "src/test/resources/site" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		setup = """
+			import java:ortus.boxlang.modules.playwright.engine.OptionsMapper@playwright;
+			site = "%s"
+			function serve( ctx ) {
+				ctx.intercept( "http://app.test/**" ).handle( ( route ) => {
+					var path = createObject( "java", "java.net.URI" ).init( route.request().url() ).getPath()
+					var file = site & ( path == "/" ? "/login.html" : path & ".html" )
+					if ( !fileExists( file ) ) {
+						return route.fulfill( OptionsMapper.build( "Route.FulfillOptions", { status : 404, body : "Not found" } ) )
+					}
+					route.fulfill( OptionsMapper.build( "Route.FulfillOptions", { status : 200, contentType : "text/html", body : fileRead( file ) } ) )
+				} )
+				return ctx
+			}
+			pw = playwright( { baseURL : "http://app.test" } )
+			""".formatted( site );
+		// @formatter:on
+	}
+
+	/**
+	 * Run BoxLang code after the site preamble, closing the Playwright manager afterwards.
+	 *
+	 * @param code The BoxLang code to run, which should set a `result` variable
+	 *
+	 * @return The value of `result`
+	 */
+	private Object bx( String code ) {
+		return run( setup + "\ntry {\n" + code + "\n} finally {\n pw.close()\n}" );
+	}
+
+	/**
+	 * A login form is filled with smart selectors, submitted and asserted through the fluent page API, ending on the dashboard URL.
+	 */
+	@DisplayName( "Fill a form with smart selectors, submit and assert" )
+	@Test
+	public void testLoginFlow() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage()
+			page.visit( "/login" )
+				.assertTitle( "Login" )
+				.assertSee( "Sign in to BoxLang" )
+				.fill( "Email", "luis@ortus.com" )
+				.fill( "Password", "secret" )
+				.check( "Remember me" )
+				.select( "@role", "editor" )
+				.assertValue( "Email", "luis@ortus.com" )
+				.assertChecked( "Remember me" )
+				.click( "Sign in" )
+				.assertPathIs( "/dashboard" )
+				.assertUrlContains( "user=luis" )
+				.assertTitleContains( "Dashboard" )
+				.assertSee( "Welcome" )
+			result = page.url()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).isEqualTo( "http://app.test/dashboard?user=luis%40ortus.com" );
+	}
+
+	/**
+	 * Locators count, list texts, pick nth and last elements, find by role, filter, scope with within() and assert visibility.
+	 */
+	@DisplayName( "Locators: count, texts, nth, roles, within and hidden elements" )
+	@Test
+	public void testLocators() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage().visit( "/dashboard" )
+			todos = page.locator( ".todos li" )
+			page.assertCount( ".todos li", 3 )
+				.within( "@cart", ( cart ) => cart.assertSee( "2 items" ).click( "Remove" ) )
+				.assertVisible( "##welcome" )
+			page.byRole( "heading", { name : "Welcome" } ).expect().toBeVisible()
+			page.expect( ".todos li" ).toHaveCount( 3 )
+			page.locator( ".todos li" ).filter( { hasText : "Ship" } ).expect().toHaveText( "Ship bx-playwright" )
+			result = todos.count() & "|" & todos.texts().toList() & "|" & todos.nth( 2 ).text() & "|" & todos.last().text() & "|" & page.text( "h1" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "3|Write specs,Ship bx-playwright,Celebrate|Ship bx-playwright|Celebrate|Welcome" );
+	}
+
+	/**
+	 * A mocked JSON API response is rendered on the page and console messages reach the onConsole() listener.
+	 */
+	@DisplayName( "Mock the network and listen to console messages" )
+	@Test
+	public void testNetworkAndConsole() {
+		// @formatter:off
+		Object value = bx( """
+			messages = []
+			page = serve( pw.newContext() ).newPage()
+			page.onConsole( ( message ) => messages.append( message.text ) )
+				.intercept( "**/api/users" ).respondJson( { users : [ "Luis", "Brad" ] } )
+				.visit( "/dashboard" )
+				.assertText( "##users", "Luis, Brad" )
+			result = messages.toList()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).contains( "dashboard loaded" );
+	}
+
+	/**
+	 * waitForPopup() returns the page opened by a click as a new page that can be asserted.
+	 */
+	@DisplayName( "Popups open as new pages" )
+	@Test
+	public void testPopup() {
+		// @formatter:off
+		Object value = bx( """
+			page  = serve( pw.newContext() ).newPage().visit( "/login" )
+			popup = page.waitForPopup( () => page.click( "About" ) )
+			popup.assertTitle( "About" ).assertSee( "About BoxLang" )
+			result = popup.title()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "About" );
+	}
+
+	/**
+	 * Failed assertions, action timeouts and invalid profiles throw typed Playwright errors that carry the Playwright message.
+	 */
+	@DisplayName( "Assertion failures and timeouts are typed errors with Playwright's message" )
+	@Test
+	public void testTypedErrors() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { action : 500, assertion : 500 } } )
+			page.setContent( "<h1>Hello</h1>" )
+			errors = []
+			try {
+				page.assertSee( "Goodbye" )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				errors.append( "assert:" & ( e.message contains "Goodbye" ) )
+			}
+			try {
+				page.click( "##missing" )
+			} catch ( "Playwright.Timeout" e ) {
+				errors.append( "timeout:" & ( e.detail contains "timed out" ) )
+			}
+			try {
+				page.getJava()
+				playwright( "nope" )
+			} catch ( "Playwright.InvalidProfile" e ) {
+				errors.append( "profile" )
+			}
+			result = errors.toList()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "assert:true,timeout:true,profile" );
+	}
+
+	/**
+	 * Pages write screenshots and PDFs to files or bytes, return their content, and render() turns HTML into PDF or PNG bytes.
+	 */
+	@DisplayName( "Screenshots, PDFs, content and rendering HTML" )
+	@Test
+	public void testOutputs() {
+		String	dir		= Path.of( "build", "e2e-output" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			dir = "%s"
+			directoryCreate( dir, true, true )
+			page  = pw.newPage()
+			page.setContent( "<h1>Report</h1>" )
+			shot  = page.screenshot( dir & "/page.png" )
+			bytes = page.screenshot()
+			pdf   = page.pdf( dir & "/page.pdf", { format : "A4" } )
+			html  = page.content()
+			rendered = playwright().render( "<h1>Invoice 42</h1>", { type : "pdf" } )
+			image    = playwright().render( "<h1>Card</h1>", { type : "png", viewport : { width : 600, height : 315 } } )
+			result = fileExists( shot ) & "|" & ( arrayLen( bytes ) > 100 ) & "|" & fileExists( pdf ) & "|" & ( html contains "Report" )
+				& "|" & ( charsetEncode( arraySlice( rendered, 1, 4 ), "utf-8" ) ) & "|" & ( arrayLen( image ) > 100 )
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true|true|%PDF|true" );
+	}
+
+	/**
+	 * browse() gives each closure argument a page in its own context and stops the manager afterwards.
+	 */
+	@DisplayName( "browse() gives each argument an isolated page and cleans up" )
+	@Test
+	public void testBrowseMultiUser() {
+		// @formatter:off
+		Object value = run( """
+			manager = playwright()
+			result = manager.browse( ( alice, bob ) => {
+				alice.setContent( "<p>alice</p>" )
+				bob.setContent( "<p>bob</p>" )
+				return alice.text( "p" ) & "," & bob.text( "p" ) & "," & ( alice.context() != bob.context() )
+			} )
+			result &= "," & manager.isStarted()
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "alice,bob,true,false" );
+	}
+
+	/**
+	 * The android profile emulates an Android user agent, a 412px wide viewport and the light color scheme.
+	 */
+	@DisplayName( "Profiles and devices shape the browser context" )
+	@Test
+	public void testDeviceProfile() {
+		// @formatter:off
+		Object value = run( """
+			result = playwright( "android" ).browse( ( page ) => {
+				page.setContent( "<meta name='viewport' content='width=device-width'><p>x</p>" )
+				return page.evaluate( "navigator.userAgent.includes( 'Android' ) + '|' + window.innerWidth + '|' + matchMedia( '(prefers-color-scheme: light)' ).matches" )
+			} )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|412|true" );
+	}
+
+	/**
+	 * A context closed as failed keeps its screenshot, trace and video, while a context closed as passed removes them.
+	 */
+	@DisplayName( "Artifacts are kept on failure and removed on success" )
+	@Test
+	public void testArtifacts() {
+		String	dir		= Path.of( "build", "e2e-artifacts" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			options  = { artifacts : { directory : "%s", screenshot : "only-on-failure", trace : "retain-on-failure", video : "retain-on-failure" } }
+			failed   = pw.newContext( options )
+			failed.newPage().setContent( "<h1>Oops</h1>" )
+			kept     = failed.close( true )
+			passed   = pw.newContext( options )
+			passed.newPage().setContent( "<h1>Fine</h1>" )
+			dropped  = passed.close( false )
+			result = kept.screenshots.len() & "|" & fileExists( kept.trace ) & "|" & kept.videos.len() & "|" & fileExists( kept.videos[ 1 ] )
+				& "|" & dropped.screenshots.len() & "|" & len( dropped.trace ) & "|" & dropped.videos.len()
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "1|true|1|true|0|0|0" );
+	}
+
+	/**
+	 * snapshot() returns a compact accessibility view that lists the heading and button with their names.
+	 */
+	@DisplayName( "The accessibility snapshot is a compact page view" )
+	@Test
+	public void testSnapshot() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.setContent( "<h1>Hello</h1><button>Save</button>" )
+			result = page.snapshot()
+			page.expect().not().toHaveTitle( "Nope" )
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).contains( "heading \"Hello\"" );
+		assertThat( value.toString() ).contains( "button \"Save\"" );
+	}
+
+	/**
+	 * bx:playwrightRender writes its body to a PDF file or stores image bytes in a variable, and fails without a target.
+	 */
+	@DisplayName( "bx:playwrightRender renders its body to a PDF file or image bytes" )
+	@Test
+	public void testRenderComponent() {
+		String	dir		= Path.of( "build", "e2e-output" ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = run( """
+			dir = "%s"
+			directoryCreate( dir, true, true )
+			invoice = 42
+			bx:playwrightRender type="pdf" path="#dir#/component.pdf" format="A4" margin="1cm" {
+				writeOutput( "<h1>Invoice #invoice#</h1>" )
+			}
+			bx:playwrightRender type="png" variable="card" viewport="600x315" {
+				writeOutput( "<h1>Card</h1>" )
+			}
+			errors = []
+			try {
+				bx:playwrightRender type="pdf" {
+					writeOutput( "<h1>No target</h1>" )
+				}
+			} catch ( "Playwright.InvalidOption" e ) {
+				errors.append( "missing target" )
+			}
+			result = fileExists( dir & "/component.pdf" ) & "|" & ( arrayLen( card ) > 100 ) & "|" & errors.toList()
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|missing target" );
+	}
+
+	/**
+	 * request() sends API calls with JSON bodies, headers and query params to a local server and reports the status of each response.
+	 */
+	@DisplayName( "API testing with request(): verbs, JSON, headers and status" )
+	@Test
+	public void testRequest() throws IOException {
+		HttpServer server = HttpServer.create( new InetSocketAddress( "127.0.0.1", 0 ), 0 );
+		server.createContext( "/api/echo", exchange -> {
+			byte[]	body	= exchange.getRequestBody().readAllBytes();
+			String	json	= "{\"method\":\"" + exchange.getRequestMethod() + "\",\"query\":\"" + exchange.getRequestURI().getQuery()
+			    + "\",\"token\":\"" + exchange.getRequestHeaders().getFirst( "X-Token" ) + "\",\"body\":"
+			    + ( body.length == 0 ? "null" : new String( body, StandardCharsets.UTF_8 ) ) + "}";
+			byte[]	out		= json.getBytes( StandardCharsets.UTF_8 );
+			exchange.getResponseHeaders().add( "Content-Type", "application/json" );
+			exchange.sendResponseHeaders( 200, out.length );
+			exchange.getResponseBody().write( out );
+			exchange.close();
+		} );
+		server.createContext( "/api/missing", exchange -> {
+			exchange.sendResponseHeaders( 404, -1 );
+			exchange.close();
+		} );
+		server.start();
+		try {
+			// @formatter:off
+			Object value = run( """
+				api  = playwright().request( { baseURL : "http://127.0.0.1:%d" } )
+				try {
+					a = api.post( "/api/echo", { json : { name : "Luis" }, headers : { "X-Token" : "abc" }, params : { page : 2 } } )
+					api.expect( a ).toBeOK()
+					data = a.json()
+					b = api.get( "/api/missing" )
+					result = a.status() & "|" & data.method & "|" & data.body.name & "|" & data.token & "|" & data.query & "|" & b.status() & "|" & b.ok()
+				} finally {
+					api.close()
+				}
+			""".formatted( server.getAddress().getPort() ) );
+			// @formatter:on
+			assertThat( value ).isEqualTo( "200|POST|Luis|abc|page=2|404|false" );
+		} finally {
+			server.stop( 0 );
+		}
+	}
+
+	/**
+	 * Creating a context and a page announces the onContextCreate and onPageCreate interception points.
+	 */
+	@DisplayName( "Interception points are announced" )
+	@Test
+	public void testInterceptors() {
+		// @formatter:off
+		Object value = run( """
+			events = []
+			BoxRegisterInterceptor( ( data ) => events.append( "page" ), "onPageCreate" )
+			BoxRegisterInterceptor( ( data ) => events.append( "context" ), "onContextCreate" )
+			playwright().browse( ( page ) => page.setContent( "<p>x</p>" ) )
+			result = events.toList()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).contains( "context" );
+		assertThat( value.toString() ).contains( "page" );
+	}
+
+	/**
+	 * Screenshot matching creates a baseline, matches it, honors masks, fails on changes with diff and actual images, and updates the baseline on
+	 * request.
+	 */
+	@DisplayName( "Visual regression: baseline, match, mismatch with diff image, update" )
+	@Test
+	public void testScreenshotMatches() {
+		String	dir		= Path.of( "build", "e2e-snapshots-" + System.nanoTime() ).toAbsolutePath().toString().replace( "\\", "/" );
+		// @formatter:off
+		Object value = bx( """
+			dir  = "%s"
+			opts = { directory : dir }
+			page = pw.newPage()
+			page.setContent( "<h1 style='color:black'>Hello</h1><p id='clock'>12:00</p>" )
+			page.assertScreenshotMatches( "hello", opts )
+			created = fileExists( dir & "/hello.png" )
+			page.assertScreenshotMatches( "hello", opts )
+			page.locator( "h1" ).assertScreenshotMatches( "title", opts )
+			page.assertScreenshotMatches( "masked", { directory : dir, mask : [ "##clock" ] } )
+			page.setContent( "<h1 style='color:black'>Hello</h1><p id='clock'>12:01</p>" )
+			page.assertScreenshotMatches( "masked", { directory : dir, mask : [ "##clock" ] } )
+			page.setContent( "<h1 style='color:red'>Hello world</h1><p id='clock'>12:00</p>" )
+			failure = ""
+			try {
+				page.assertScreenshotMatches( "hello", opts )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				failure = e.message
+			}
+			diffWritten = fileExists( dir & "/hello-diff.png" ) && fileExists( dir & "/hello-actual.png" )
+			page.assertScreenshotMatches( "hello", { directory : dir, update : true } )
+			page.assertScreenshotMatches( "hello", opts )
+			cleaned = !fileExists( dir & "/hello-diff.png" )
+			result = created & "|" & ( failure contains "differs from its baseline" ) & "|" & diffWritten & "|" & cleaned
+		""".formatted( dir ) );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "true|true|true|true" );
+	}
+
+	/**
+	 * Console errors can be listed, asserted and ignored, smoke tests report failing paths, and accessibility checks filter by impact or rule.
+	 */
+	@DisplayName( "Quality checks: console errors, smoke test and accessibility" )
+	@Test
+	public void testQualityChecks() {
+		// @formatter:off
+		Object value = bx( """
+			results = []
+			page = serve( pw.newContext() ).newPage()
+			page.setContent( "<script>console.error( 'boom' ); console.error( 'favicon.ico missing' )</script><p>x</p>" )
+			results.append( page.consoleErrors().len() )
+			try {
+				page.assertNoConsoleErrors()
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( e.message contains "boom" )
+			}
+			try {
+				page.assertNoConsoleErrors( [ "boom", "favicon" ] )
+				results.append( "ignored" )
+			} catch ( any e ) {
+				results.append( "not ignored" )
+			}
+
+			try {
+				page.assertNoSmoke( [ "/login", "/nope" ] )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( ( e.message contains "/nope: HTTP 404" ) && !( e.message contains "/login:" ) )
+			}
+
+			page.setContent( "<html lang='en'><head><title>ok</title></head><body><main><h1>Title</h1><img src='a.png'><button></button></main></body></html>" )
+			violations = page.accessibility()
+			results.append( violations.map( ( v ) -> v.id ).sort( "text" ).toList() )
+			try {
+				page.assertNoAccessibilityIssues( { impact : "critical" } )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				results.append( e.message contains "image-alt" )
+			}
+			page.assertNoAccessibilityIssues( { exclude : [ "image-alt", "button-name" ] } )
+			result = results.toList( "|" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2|true|ignored|true|button-name,image-alt|true" );
+	}
+
+	/**
+	 * Page objects are visited, checked with at(), use element aliases and chain into other page objects.
+	 */
+	@DisplayName( "Page objects: visit, at() checks, element aliases and chaining" )
+	@Test
+	public void testPageObjects() {
+		// @formatter:off
+		Object value = bx( """
+			page      = serve( pw.newContext() ).newPage()
+			dashboard = page.visit( new fixtures.LoginPage() )
+				.assertSee( "Sign in to BoxLang" )
+				.loginAs( "luis@ortus.com" )
+			dashboard.assertSee( "Welcome" ).assertVisible( "@welcome" )
+			wrongPage = ""
+			try {
+				page.on( new fixtures.LoginPage() )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				wrongPage = "not at login"
+			}
+			result = dashboard.todoCount() & "|" & dashboard.element( "welcome" ).text() & "|" & wrongPage & "|" & getMetadata( dashboard ).name
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).startsWith( "3|Welcome|not at login|" );
+		assertThat( value.toString() ).endsWith( "DashboardPage" );
+	}
+
+	/**
+	 * Page components scope actions, assertions and aliases to their root element through within() and component().
+	 */
+	@DisplayName( "Page components scope actions and aliases to their root" )
+	@Test
+	public void testComponents() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage().visit( "/dashboard" )
+			page.evaluate( "() => { document.querySelector( '[data-testid=cart] button' ).onclick = () => document.querySelector( '[data-testid=cart] span' ).textContent = 'Empty' }" )
+			page.within( new fixtures.CartComponent(), ( cart ) => cart.assertSee( "2 items" ).empty().assertSee( "Empty" ) )
+			cart = page.component( new fixtures.CartComponent() )
+			result = cart.text( "span" ) & "|" & cart.count( "button" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "Empty|1" );
+	}
+
+	/**
+	 * Macros add methods to pages and locators, unknown methods list the available macros, and macros can be removed.
+	 */
+	@DisplayName( "Macros add methods to pages and locators" )
+	@Test
+	public void testMacros() {
+		// @formatter:off
+		Object value = bx( """
+			pw.macro( "fillLogin", ( page, email ) => page.fill( "Email", email ).fill( "Password", "secret" ) )
+			pw.macro( "shout", ( locator ) => uCase( locator.text() ), "locator" )
+			page = serve( pw.newContext() ).newPage().visit( "/login" )
+			page.fillLogin( "a@b.com" ).assertValue( "Email", "a@b.com" )
+			shouted = page.locator( "h1" ).shout()
+			unknown = ""
+			try {
+				page.flyAway()
+			} catch ( "Playwright.InvalidOption" e ) {
+				unknown = e.detail contains "fillLogin"
+			}
+			pw.removeMacro( "fillLogin" ).removeMacro( "shout", "locator" )
+			result = shouted & "|" & unknown
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "SIGN IN TO BOXLANG|true" );
+	}
+
+	/**
+	 * soft() runs every assertion and then throws one error that counts and lists all the failures.
+	 */
+	@DisplayName( "Soft assertions collect every failure and fail once" )
+	@Test
+	public void testSoftAssertions() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage( { timeouts : { assertion : 300 } } )
+			page.setContent( "<title>Home</title><h1>Hello</h1>" )
+			message = ""
+			try {
+				page.soft( ( p ) => {
+					p.assertSee( "Hello" )
+					p.assertSee( "Missing one" )
+					p.assertTitle( "Other" )
+					p.expect( "h1" ).toHaveText( "Nope" )
+				} )
+			} catch ( "Playwright.AssertionFailed" e ) {
+				message = e.message
+			}
+			page.assertSee( "Hello" )
+			result = listFirst( message, ":" ) & "|" & ( message contains "Missing one" ) & "|" & ( message contains "Nope" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "3 soft assertion(s) failed|true|true" );
+	}
+
+	/**
+	 * A saved session runs its setup once, is reused by later calls and new pages, and a missing session fails.
+	 */
+	@DisplayName( "Saved sessions are created once and reused" )
+	@Test
+	public void testSessions() {
+		// @formatter:off
+		Object value = bx( """
+			runs = 0
+			setup = ( page ) => {
+				runs++
+				page.context().addCookies( [ { name : "auth", value : "admin-token", url : "http://app.test/" } ] )
+			}
+			file1 = pw.session( "admin-test", setup, { refresh : true } )
+			file2 = pw.session( "admin-test", setup )
+			page  = pw.newPage( { session : "admin-test" } )
+			token = page.context().cookies().filter( ( c ) -> c.name == "auth" )[ 1 ].value
+			missing = ""
+			try {
+				pw.newPage( { session : "nobody-yet" } )
+			} catch ( "Playwright.InvalidOption" e ) {
+				missing = "missing"
+			}
+			result = runs & "|" & ( file1 == file2 ) & "|" & token & "|" & missing
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "1|true|admin-token|missing" );
+	}
+
+	/**
+	 * freezeTime() fixes the page clock, and setViewport() and emulate() change the viewport, color scheme and media.
+	 */
+	@DisplayName( "Emulation and time helpers" )
+	@Test
+	public void testEmulationAndTime() {
+		// @formatter:off
+		Object value = bx( """
+			page = pw.newPage()
+			page.freezeTime( "2030-05-01T10:00:00" )
+			page.setContent( "<p>x</p>" )
+			year = page.evaluate( "new Date().getFullYear()" )
+			page.setViewport( 500, 400 ).emulate( { colorScheme : "dark", media : "print" } )
+			result = year & "|" & page.evaluate( "window.innerWidth + '|' + matchMedia( '(prefers-color-scheme: dark)' ).matches + '|' + matchMedia( 'print' ).matches" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "2030|500|true|true" );
+	}
+
+	/**
+	 * The AI browser returns snapshots with element refs, acts by ref or by text, and reports failures and closing as text.
+	 */
+	@DisplayName( "AI browser: snapshots with refs, acting by ref or text, errors as text" )
+	@Test
+	public void testAiBrowser() {
+		// @formatter:off
+		Object value = bx( """
+			ctx     = serve( pw.newContext() )
+			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			state   = browser.visit( "http://app.test/login" )
+			found    = reFind( "textbox ""Email"" \\[ref=(e[0-9]+)\\]", state, 1, true )
+			emailRef = found.pos[ 1 ] ? found.match[ 2 ] : ""
+			browser.fill( emailRef, "ai@ortus.com" )
+			browser.fill( "Password", "secret" )
+			after   = browser.click( "Sign in" )
+			failure = browser.click( "Does not exist here" )
+			result  = len( emailRef ) & "|" & ( state contains "Title: Login" ) & "|" & ( after contains "/dashboard?user=ai%40ortus.com" )
+				& "|" & ( failure contains "Error [Playwright." ) & "|" & browser.close()
+		""" );
+		// @formatter:on
+		assertThat( value.toString() ).matches( "[23]\\|true\\|true\\|true\\|Closed\\." );
+	}
+
+	/**
+	 * Locator fill, type, select and press act on the located element itself.
+	 */
+	@DisplayName( "Locator shortcuts: fill, type, select and press act on the locator itself" )
+	@Test
+	public void testLocatorShortcuts() {
+		// @formatter:off
+		Object value = bx( """
+			page = serve( pw.newContext() ).newPage().visit( "/login" )
+			page.byLabel( "Email" ).fill( "a@b.com" )
+			page.byPlaceholder( "Password" ).type( "xyz" )
+			page.byTestId( "role" ).select( "editor" )
+			page.byLabel( "Email" ).press( "End" )
+			result = page.value( "Email" ) & "|" & page.value( "Password" ) & "|" & page.value( "@role" )
+		""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "a@b.com|xyz|editor" );
+	}
+
+}
