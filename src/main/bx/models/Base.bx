@@ -101,6 +101,10 @@ abstract class {
 
 	/**
 	 * Is the value a java.util.regex.Pattern?
+	 *
+	 * @value The value to check
+	 *
+	 * @return True if the value is a compiled regex
 	 */
 	boolean function isRegex( any value ) {
 		return isInstanceOf( arguments.value, "java.util.regex.Pattern" )

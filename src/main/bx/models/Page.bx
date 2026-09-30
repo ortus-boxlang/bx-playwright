@@ -30,6 +30,11 @@ class extends="Scope" {
 		return this
 	}
 
+	/**
+	 * Which macros apply to this object.
+	 *
+	 * @return Always "page"
+	 */
 	string function macroTarget() {
 		return "page"
 	}
@@ -98,10 +103,18 @@ class extends="Scope" {
 		return variables.java
 	}
 
+	/**
+	 * The Playwright locator that scopes the page: the document root element.
+	 *
+	 * @return A Playwright locator for :root
+	 */
 	function root() {
 		return variables.java.locator( ":root" )
 	}
 
+	/**
+	 * A page has no element to act on without a selector, so this always throws Playwright.InvalidOption.
+	 */
 	function self() {
 		throw(
 			type    = "Playwright.InvalidOption",
@@ -110,22 +123,49 @@ class extends="Scope" {
 		)
 	}
 
+	/**
+	 * The owning Page wrapper, which is this page.
+	 *
+	 * @return This page
+	 */
 	function page() {
 		return this
 	}
 
+	/**
+	 * The resolved configuration of the owning playwright() call, taken from the browser context.
+	 *
+	 * @return The configuration struct
+	 */
 	function getConfig() {
 		return variables.context.getConfig()
 	}
 
+	/**
+	 * The locator used by page-wide reads and assertions: the document body.
+	 *
+	 * @return A Playwright locator for body
+	 */
 	function scopeLocator() {
 		return variables.java.locator( "body" )
 	}
 
+	/**
+	 * The target of expect() without a selector: the Playwright Page itself.
+	 *
+	 * @return The Playwright Page
+	 */
 	function expectTarget() {
 		return variables.java
 	}
 
+	/**
+	 * Take a screenshot of the page and return the PNG bytes.
+	 *
+	 * @options Playwright screenshot options (fullPage, clip, animations, mask, ...)
+	 *
+	 * @return The PNG bytes
+	 */
 	function captureScreenshot( struct options = {} ) {
 		var opts = buildOptions( "Page.ScreenshotOptions", arguments.options )
 		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )
@@ -763,6 +803,9 @@ class extends="Scope" {
 		return variables.java.isClosed()
 	}
 
+	/**
+	 * Load the bundled axe-core script into the page, unless window.axe is already defined.
+	 */
 	private function injectAxe() {
 		if ( variables.java.evaluate( "typeof window.axe !== 'undefined'" ) ) {
 			return
@@ -771,12 +814,23 @@ class extends="Scope" {
 		variables.java.addScriptTag( buildOptions( "Page.AddScriptTagOptions", { content : source } ) )
 	}
 
+	/**
+	 * The first line of the root cause message of an exception.
+	 *
+	 * @error The caught exception
+	 *
+	 * @return The message line
+	 */
 	private string function tryMessage( required any error ) {
 		return PlaywrightErrors.rootMessage( arguments.error ).listFirst( char( 10 ) )
 	}
 
 	/**
 	 * Escape regex special characters. Playwright runs regexes in the browser, so Java's \Q...\E quoting cannot be used.
+	 *
+	 * @text The literal text
+	 *
+	 * @return The text with regex special characters escaped
 	 */
 	private string function quoteRegex( required string text ) {
 		return arguments.text.reReplace( "([.*+?^$\{\}()|\[\]\\/])", "\\\1", "all" )

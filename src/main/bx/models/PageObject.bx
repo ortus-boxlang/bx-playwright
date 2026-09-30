@@ -93,6 +93,11 @@ class {
 	/**
 	 * Page methods called on the page object run on the bound page. When they return the page,
 	 * the page object is returned instead so chains keep going.
+	 *
+	 * @missingMethodName      The name of the called method
+	 * @missingMethodArguments The arguments of the call
+	 *
+	 * @return The method result, or this page object when the result is the page or null
 	 */
 	function onMissingMethod( string missingMethodName, struct missingMethodArguments ) {
 		var current = getPage()

@@ -798,6 +798,12 @@ abstract class extends="Base" {
 
 	/**
 	 * Calls to unknown methods run the macros registered with playwright().macro().
+	 * Throws Playwright.InvalidOption when no macro has that name.
+	 *
+	 * @missingMethodName      The name of the called method, used as the macro name
+	 * @missingMethodArguments The arguments of the call, passed to the macro after this object
+	 *
+	 * @return The macro result, or this object when the macro returns null
 	 */
 	function onMissingMethod( string missingMethodName, struct missingMethodArguments ) {
 		var macro = Macros.get( macroTarget(), arguments.missingMethodName )
@@ -836,10 +842,25 @@ abstract class extends="Base" {
 		return scopeLocator()
 	}
 
+	/**
+	 * The Playwright locator an action works on: the resolved selector, or self() when the selector is empty.
+	 *
+	 * @selector A smart selector, or empty for this scope
+	 * @intent   What the selector is for, passed to resolve()
+	 *
+	 * @return A Playwright locator
+	 */
 	private function target( required string selector, required string intent ) {
 		return len( arguments.selector ) ? resolve( arguments.selector, arguments.intent ) : self()
 	}
 
+	/**
+	 * Wrap a Playwright locator in a Locator bound to the owning page.
+	 *
+	 * @javaLocator The Playwright locator
+	 *
+	 * @return A Locator
+	 */
 	private function wrapLocator( required any javaLocator ) {
 		return new models.Locator@playwright( arguments.javaLocator, page() )
 	}

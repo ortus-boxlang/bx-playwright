@@ -515,6 +515,14 @@ class extends="Base" {
 		}
 	}
 
+	/**
+	 * Map the pages opened by browse() to the callback arguments: by parameter name, or positionally as argument 1 when the callback declares none.
+	 *
+	 * @params The callback parameter metadata
+	 * @pages  The opened Page wrappers, one per parameter (at least one)
+	 *
+	 * @return An argument collection for the callback
+	 */
 	private struct function pageArguments( required array params, required array pages ) {
 		var args = {}
 		if ( arguments.params.isEmpty() ) {

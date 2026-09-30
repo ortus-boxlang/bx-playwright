@@ -139,6 +139,15 @@ class {
 		return arguments.target
 	}
 
+	/**
+	 * Resolve one profile, merging the profiles it extends first. Throws Playwright.InvalidProfile for unknown profiles or extends loops.
+	 *
+	 * @name     The profile name
+	 * @profiles All available profiles
+	 * @seen     The profile names already on the extends chain, to detect loops
+	 *
+	 * @return The resolved profile settings
+	 */
 	private struct function resolveOne( required string name, required struct profiles, required array seen ) {
 		if ( !arguments.profiles.keyExists( arguments.name ) ) {
 			throw(
@@ -165,6 +174,15 @@ class {
 		return deepMerge( result, profile )
 	}
 
+	/**
+	 * Resolve several profiles and deep merge them in order, later ones winning.
+	 *
+	 * @names    A list or array of profile names
+	 * @profiles All available profiles
+	 * @seen     The profile names already on the extends chain, to detect loops
+	 *
+	 * @return The merged profile settings
+	 */
 	private struct function resolveChain( required any names, required struct profiles, required array seen ) {
 		var result = {}
 		var list   = isArray( arguments.names ) ? arguments.names : listToArray( arguments.names )

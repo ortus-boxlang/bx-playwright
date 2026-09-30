@@ -29,22 +29,49 @@ class extends="Scope" {
 		return variables.java
 	}
 
+	/**
+	 * The Playwright locator that scopes this locator.
+	 *
+	 * @return The Playwright locator
+	 */
 	function root() {
 		return variables.java
 	}
 
+	/**
+	 * The Playwright locator acted on when no selector is given: the locator itself.
+	 *
+	 * @return The Playwright locator
+	 */
 	function self() {
 		return variables.java
 	}
 
+	/**
+	 * The owning Page wrapper.
+	 *
+	 * @return The Page
+	 */
 	function page() {
 		return variables.owner
 	}
 
+	/**
+	 * The resolved configuration of the owning playwright() call, taken from the page.
+	 *
+	 * @return The configuration struct
+	 */
 	function getConfig() {
 		return variables.owner.getConfig()
 	}
 
+	/**
+	 * Take a screenshot of the matched element and return the PNG bytes.
+	 *
+	 * @options Playwright screenshot options (animations, caret, mask, ...)
+	 *
+	 * @return The PNG bytes
+	 */
 	function captureScreenshot( struct options = {} ) {
 		var opts = buildOptions( "Locator.ScreenshotOptions", arguments.options )
 		return tryAction( () => variables.java.screenshot( opts ), "screenshot()" )

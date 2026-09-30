@@ -185,6 +185,8 @@ class {
 	}
 
 	/**
+	 * @config A resolved configuration whose artifacts.directory wins over the module setting
+	 *
 	 * @return The artifacts directory: the `artifacts.directory` setting or {home}/artifacts
 	 */
 	string function artifactsPath( struct config = {} ) {
@@ -193,6 +195,8 @@ class {
 	}
 
 	/**
+	 * @config A resolved configuration whose snapshots.directory wins over the module setting
+	 *
 	 * @return The snapshots directory: the `snapshots.directory` setting or {current directory}/tests/snapshots
 	 */
 	string function snapshotsPath( struct config = {} ) {

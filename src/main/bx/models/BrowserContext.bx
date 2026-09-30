@@ -266,6 +266,14 @@ class extends="Base" {
 		return variables.config.artifacts[ arguments.type ] ?: "off"
 	}
 
+	/**
+	 * Whether an artifact of the given type should be kept, based on its policy and the test outcome.
+	 *
+	 * @type   screenshot, trace or video
+	 * @failed True if the test failed
+	 *
+	 * @return True to keep the artifact
+	 */
 	private boolean function keep( required string type, required boolean failed ) {
 		var value = policy( arguments.type )
 		return value == "on" || ( arguments.failed && ( value == "only-on-failure" || value == "retain-on-failure" ) )
