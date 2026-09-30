@@ -1,0 +1,28 @@
+/**
+ * `bxPlaywright profiles [name]`: list profiles, or show one fully resolved with the module settings.
+ */
+class {
+
+	/**
+	 * @options CLI options: _positionals (profile names)
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var profiles = new models.Profiles@playwright()
+		if ( arguments.options._positionals.len() ) {
+			var resolved = arguments.config.resolve( arguments.options._positionals )
+			return { exitCode : 0, message : jsonSerialize( resolved, true ), data : resolved }
+		}
+		var all   = profiles.all( arguments.config.getSettings().profiles ?: {} )
+		var names = all.keyArray().sort( "textnocase" )
+		var lines = [ "Profiles (combine them: playwright( [ ""mobile"", ""dark"" ] )):", "" ]
+		for ( var name in names ) {
+			lines.append( "  #name.lJustify( 18 )# #jsonSerialize( all[ name ] )#" )
+		}
+		return { exitCode : 0, message : lines.toList( char( 10 ) ), data : all }
+	}
+
+}

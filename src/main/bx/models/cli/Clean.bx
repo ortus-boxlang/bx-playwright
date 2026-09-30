@@ -1,0 +1,23 @@
+/**
+ * `bxPlaywright clean`: remove the extracted drivers and downloaded Node.js. Browsers are kept.
+ */
+class {
+
+	/**
+	 * @options CLI options
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var home = arguments.config.home()
+		home.clean()
+		return {
+			exitCode : 0,
+			message  : "Removed the extracted driver and downloaded Node.js from #home.getHome()#. Browsers were kept.",
+			data     : { "home" : home.getHome().toString() }
+		}
+	}
+
+}

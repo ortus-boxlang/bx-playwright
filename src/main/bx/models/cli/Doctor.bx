@@ -1,0 +1,100 @@
+import java:java.lang.System;
+
+/**
+ * `bxPlaywright doctor`: check the installation and explain how to fix what is missing.
+ * Read only: it never installs or changes anything.
+ */
+class {
+
+	/**
+	 * @options CLI options
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var home   = arguments.config.home()
+		var build  = arguments.config.buildInfo()
+		var checks = []
+
+		checks.append( {
+			"status"  : "ok",
+			"check"   : "module",
+			"message" : "bx-playwright #build.module# (#build.distribution#), Playwright #build.playwright#, Java #System.getProperty( "java.version" )#"
+		} )
+		checks.append( {
+			"status"  : "ok",
+			"check"   : "platform",
+			"message" : "#home.getPlatform().name().lCase()# (driver folder #home.getPlatform().getDriverFolder()#)"
+		} )
+		checks.append( { "status" : "ok", "check" : "home", "message" : home.getHome().toString() } )
+
+		if ( home.isDriverInstalled() ) {
+			checks.append( { "status" : "ok", "check" : "driver", "message" : "Extracted at #home.getDriverDir()#" } )
+		} else {
+			checks.append( {
+				"status"  : "warn",
+				"check"   : "driver",
+				"message" : "Not extracted yet (it is extracted automatically on first use)",
+				"fix"     : "bxPlaywright install"
+			} )
+		}
+
+		var node = home.resolveNode()
+		if ( node.isPresent() ) {
+			var info = node.get().toMap()
+			checks.append( {
+				"status"  : "ok",
+				"check"   : "node",
+				"message" : "Node.js #info.version# (#info.source#) at #info.executable#"
+			} )
+		} else {
+			checks.append( {
+				"status"  : "fail",
+				"check"   : "node",
+				"message" : "No Node.js runtime available",
+				"fix"     : "bxPlaywright install (downloads Node.js #home.getNodeVersion()#), or set the 'nodePath' setting"
+			} )
+		}
+
+		var browsers = home.installedBrowsers()
+		if ( browsers.len() ) {
+			checks.append( {
+				"status"  : "ok",
+				"check"   : "browsers",
+				"message" : "#browsers.toList( ", " )# in #home.getBrowsersPath()#"
+			} )
+		} else {
+			checks.append( {
+				"status"  : "fail",
+				"check"   : "browsers",
+				"message" : "No browsers installed in #home.getBrowsersPath()#",
+				"fix"     : "bxPlaywright install chromium"
+			} )
+		}
+
+		var resolved = arguments.config.resolve()
+		checks.append( {
+			"status"  : "ok",
+			"check"   : "defaults",
+			"message" : "profile #resolved.profiles.toList( "+" )#, #resolved.browser#, headless #resolved.headless#"
+		} )
+
+		var failed = checks.filter( ( check ) -> check.status == "fail" ).len()
+		var lines  = []
+		for ( var check in checks ) {
+			var icon = check.status == "ok" ? "[ok]  " : ( check.status == "warn" ? "[warn]" : "[fail]" )
+			lines.append( "#icon# #check.check.lJustify( 9 )# #check.message#" )
+			if ( check.keyExists( "fix" ) ) {
+				lines.append( "              fix: #check.fix#" )
+			}
+		}
+		return {
+			exitCode : failed ? 1 : 0,
+			message  : lines.toList( char( 10 ) ),
+			data     : { "ok" : failed == 0, "checks" : checks }
+		}
+	}
+
+}

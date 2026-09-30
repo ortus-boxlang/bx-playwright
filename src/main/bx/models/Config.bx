@@ -1,0 +1,247 @@
+import java:ortus.boxlang.runtime.BoxRuntime;
+import java:ortus.boxlang.runtime.scopes.Key;
+import java:java.lang.System;
+import java:ortus.boxlang.modules.playwright.engine.PlaywrightHome@playwright;
+
+/**
+ * Resolves the effective configuration of a playwright() call.
+ *
+ * Resolution order, last wins:
+ * 1. Module settings (defaults in ModuleConfig, overridden in boxlang.json)
+ * 2. Profile(s): the requested ones, or the `defaultProfile` setting
+ * 3. Environment overrides: BX_PLAYWRIGHT_BROWSER, BX_PLAYWRIGHT_HEADLESS, BX_PLAYWRIGHT_BASEURL
+ * 4. Per-call options
+ *
+ * BX_PLAYWRIGHT_PROFILE replaces the default profile when no profile is requested explicitly.
+ */
+class {
+
+	property name="settings" type="struct";
+	property name="environment" type="struct";
+
+	/**
+	 * Build info stamped at build time.
+	 */
+	static {
+		PLAYWRIGHT_VERSION = "@playwright.version@"
+		FLAVOR             = "@build.flavor@"
+		MODULE_VERSION     = "@build.version@"
+		ENV_PREFIX         = "BX_PLAYWRIGHT_"
+	}
+
+	/**
+	 * Keys that are module-level only and never part of a resolved browser configuration.
+	 */
+	variables.MODULE_ONLY_KEYS = [
+		"home",
+		"browsersPath",
+		"nodePath",
+		"nodeVersion",
+		"nodeDownloadURL",
+		"defaultProfile",
+		"profiles"
+	]
+
+	/**
+	 * @settings    The module settings. Defaults to the loaded playwright module settings
+	 * @environment Environment variables. Defaults to the process environment
+	 */
+	function init( struct settings, struct environment ) {
+		variables.settings    = arguments.settings ?: moduleSettings()
+		variables.environment = arguments.environment ?: server.system.environment
+		variables.profiles    = new models.Profiles@playwright()
+		return this
+	}
+
+	/**
+	 * @return The settings of the loaded playwright module
+	 */
+	struct function moduleSettings() {
+		return BoxRuntime.getInstance().getModuleService().getModuleSettings( Key.of( "playwright" ) )
+	}
+
+	/**
+	 * @return Build information: module version, distribution flavor and Playwright version
+	 */
+	struct function buildInfo() {
+		return {
+			"module"       : static.MODULE_VERSION,
+			"distribution" : static.FLAVOR,
+			"playwright"   : static.PLAYWRIGHT_VERSION
+		}
+	}
+
+	/**
+	 * @return The module settings used by this config
+	 */
+	struct function getSettings() {
+		return variables.settings
+	}
+
+	/**
+	 * Resolve the configuration for a playwright() call.
+	 *
+	 * @profiles A profile name, a list, an array of names, or empty for the default profile
+	 * @options  Per-call options, highest priority
+	 *
+	 * @return The resolved configuration
+	 */
+	struct function resolve( any profiles = "", struct options = {} ) {
+		var config = duplicate( variables.settings )
+		for ( var optionName in variables.MODULE_ONLY_KEYS ) {
+			config.delete( optionName )
+		}
+
+		var requested = arguments.profiles
+		if ( isSimpleValue( requested ) && !len( trim( requested ) ) ) {
+			requested = envValue( "PROFILE", variables.settings.defaultProfile ?: "default" )
+		}
+		config.profiles = isArray( requested ) ? requested : listToArray( requested )
+
+		variables.profiles.deepMerge( config, variables.profiles.resolve( requested, variables.settings.profiles ?: {} ) )
+		variables.profiles.deepMerge( config, environmentOverrides() )
+		variables.profiles.deepMerge( config, arguments.options )
+		return config
+	}
+
+	/**
+	 * The settings set through BX_PLAYWRIGHT_* environment variables.
+	 *
+	 * @return A struct with any of browser, headless and baseURL
+	 */
+	struct function environmentOverrides() {
+		var overrides = {}
+		var browser   = envValue( "BROWSER" )
+		var headless  = envValue( "HEADLESS" )
+		var baseURL   = envValue( "BASEURL" )
+		if ( len( browser ) ) {
+			overrides.browser = browser
+		}
+		if ( len( headless ) && isBoolean( headless ) ) {
+			overrides.headless = headless ? true : false
+		}
+		if ( len( baseURL ) ) {
+			overrides.baseURL = baseURL
+		}
+		return overrides
+	}
+
+	/**
+	 * Build the on-disk home (driver, Node.js, browsers) from the module settings.
+	 *
+	 * @return A PlaywrightHome
+	 */
+	function home() {
+		return PlaywrightHome.of(
+			homePath(),
+			variables.settings.browsersPath ?: "",
+			static.PLAYWRIGHT_VERSION,
+			variables.settings.nodeVersion,
+			nodePath()
+		)
+	}
+
+	/**
+	 * @return The home directory: the `home` setting, BX_PLAYWRIGHT_HOME, or ~/.boxlang/playwright
+	 */
+	string function homePath() {
+		var configured = trim( variables.settings.home ?: "" )
+		if ( !len( configured ) ) {
+			configured = envValue( "HOME" )
+		}
+		if ( !len( configured ) ) {
+			configured = System.getProperty( "user.home" ) & "/.boxlang/playwright"
+		}
+		return configured
+	}
+
+	/**
+	 * @return The explicit Node.js path: the `nodePath` setting or PLAYWRIGHT_NODEJS_PATH, or empty
+	 */
+	string function nodePath() {
+		var configured = trim( variables.settings.nodePath ?: "" )
+		return len( configured ) ? configured : ( variables.environment[ "PLAYWRIGHT_NODEJS_PATH" ] ?: "" )
+	}
+
+	/**
+	 * @return The artifacts directory: the `artifacts.directory` setting or {home}/artifacts
+	 */
+	string function artifactsPath( struct config = {} ) {
+		var configured = arguments.config.artifacts.directory ?: ( variables.settings.artifacts.directory ?: "" )
+		return len( trim( configured ) ) ? configured : homePath() & "/artifacts"
+	}
+
+	/**
+	 * Build the struct passed to BrowserType.LaunchOptions.
+	 *
+	 * @config A resolved configuration
+	 *
+	 * @return The launch options struct
+	 */
+	struct function launchOptions( required struct config ) {
+		var options = { headless : arguments.config.headless ?: true }
+		if ( val( arguments.config.slowMo ?: 0 ) > 0 ) {
+			options.slowMo = arguments.config.slowMo
+		}
+		if ( len( arguments.config.channel ?: "" ) ) {
+			options.channel = arguments.config.channel
+		}
+		options.append( arguments.config.launchOptions ?: {}, true )
+		return options
+	}
+
+	/**
+	 * Build the struct passed to Browser.NewContextOptions.
+	 *
+	 * @config A resolved configuration
+	 * @device The device descriptor for config.device, if any
+	 *
+	 * @return The context options struct
+	 */
+	struct function contextOptions( required struct config, struct device = {} ) {
+		var options = {}
+		if ( !isNull( arguments.config.viewport ) && isStruct( arguments.config.viewport ) ) {
+			options.viewport = arguments.config.viewport
+		}
+		if ( !arguments.device.isEmpty() ) {
+			for ( var optionName in [ "userAgent", "viewport", "deviceScaleFactor", "isMobile", "hasTouch" ] ) {
+				if ( arguments.device.keyExists( optionName ) ) {
+					options[ optionName ] = arguments.device[ optionName ]
+				}
+			}
+		}
+		var mapping = {
+			baseURL           : "baseURL",
+			locale            : "locale",
+			timezone          : "timezoneId",
+			colorScheme       : "colorScheme",
+			reducedMotion     : "reducedMotion",
+			forcedColors      : "forcedColors",
+			deviceScaleFactor : "deviceScaleFactor",
+			offline           : "offline",
+			ignoreHTTPSErrors : "ignoreHTTPSErrors",
+			userAgent         : "userAgent",
+			storageState      : "storageStatePath"
+		}
+		for ( var optionName in mapping ) {
+			var value = arguments.config[ optionName ] ?: ""
+			if ( !isSimpleValue( value ) || len( value ) ) {
+				options[ mapping[ optionName ] ] = value
+			}
+		}
+		options.append( arguments.config.contextOptions ?: {}, true )
+		return options
+	}
+
+	/**
+	 * Read a BX_PLAYWRIGHT_* environment variable.
+	 *
+	 * @name         The suffix, e.g. HEADLESS
+	 * @defaultValue Returned when the variable is not set
+	 */
+	string function envValue( required string name, string defaultValue = "" ) {
+		var value = variables.environment[ static.ENV_PREFIX & arguments.name ] ?: ""
+		return len( trim( value ) ) ? trim( value ) : arguments.defaultValue
+	}
+
+}

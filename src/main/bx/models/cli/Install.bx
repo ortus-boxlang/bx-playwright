@@ -1,0 +1,65 @@
+import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
+
+/**
+ * `bxPlaywright install [browsers...]`
+ *
+ * 1. Extracts the Playwright driver into the playwright home (once per Playwright version)
+ * 2. Makes sure a Node.js runtime is available, downloading it when needed (small distribution)
+ * 3. Installs the requested browsers (default: chromium; `all` for every browser)
+ */
+class {
+
+	/**
+	 * @options CLI options: _positionals (browsers), with-deps, only-shell, force, skip-node
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var home = arguments.config.home()
+		var data = { "driver" : "", "node" : {}, "browsers" : [] }
+
+		println( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
+		data.driver = home.installDriver( arguments.options.force ?: false ).toString()
+
+		if ( !( arguments.options[ "skip-node" ] ?: false ) ) {
+			var node = home.resolveNode()
+			if ( !node.isPresent() ) {
+				new NodeInstaller(
+					home,
+					arguments.config.getSettings().nodeDownloadURL ?: "",
+					( message ) => println( message )
+				).install( false )
+				node = home.resolveNode()
+			}
+			data.node = node.get().toMap()
+			println( "Using Node.js #data.node.version# (#data.node.source#) at #data.node.executable#" )
+		}
+
+		var browsers = arguments.options._positionals.len() ? arguments.options._positionals : [ "chromium" ]
+		if ( browsers.findNoCase( "all" ) ) {
+			browsers = []
+		}
+		var cliArgs = [ "install" ]
+		cliArgs.append( browsers, true )
+		if ( arguments.options[ "with-deps" ] ?: false ) {
+			cliArgs.append( "--with-deps" )
+		}
+		if ( arguments.options[ "only-shell" ] ?: false ) {
+			cliArgs.append( "--only-shell" )
+		}
+		if ( arguments.options.force ?: false ) {
+			cliArgs.append( "--force" )
+		}
+
+		var exitCode  = home.runCli( cliArgs )
+		data.browsers = home.installedBrowsers()
+		return {
+			exitCode : exitCode,
+			message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
+			data     : data
+		}
+	}
+
+}

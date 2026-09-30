@@ -1,0 +1,24 @@
+/**
+ * Verbs that forward their arguments to the Playwright CLI as-is:
+ * codegen, open, screenshot, pdf, show-trace, mcp, install-deps, uninstall and run.
+ */
+class {
+
+	/**
+	 * @options CLI options, the raw arguments are in `_raw`
+	 * @config  The models.Config
+	 * @verb    The verb registry entry, `command` is the Playwright CLI command
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var cliArgs = len( arguments.verb.command ?: "" ) ? [ arguments.verb.command ] : []
+		cliArgs.append( arguments.options._raw ?: [], true )
+		if ( cliArgs.isEmpty() ) {
+			return { exitCode : 1, message : "Nothing to run. Example: bxPlaywright run --help" }
+		}
+		var exitCode = arguments.config.home().runCli( cliArgs )
+		return { exitCode : exitCode, message : "", data : { "exitCode" : exitCode } }
+	}
+
+}

@@ -1,0 +1,19 @@
+/**
+ * `bxPlaywright completions`: print the bash completion script.
+ * The same script ships in the module (completions/bxPlaywright.bash) and is installed by install-bx-module.
+ */
+class {
+
+	/**
+	 * @options CLI options
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var script = new models.cli.Cli@playwright().completionScript()
+		return { exitCode : 0, message : script.left( script.len() - 1 ), data : { "script" : script } }
+	}
+
+}

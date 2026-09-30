@@ -17,6 +17,9 @@ plugins {
 ext {
 	buildID = System.getenv( 'BUILD_ID' ) ?: '0'
 	branch = System.getenv( 'BRANCH' ) ?: 'development'
+	// Distribution flavor: 'small' (bx-playwright) or 'full' (bx-playwright-full, bundles Node for every platform)
+	flavor = project.findProperty( 'flavor' ) ?: 'small'
+	moduleSlug = flavor == 'full' ? "${project.name}-full" : project.name
 }
 
 if ( branch == 'development' ) {
@@ -44,6 +47,15 @@ dependencies {
 	}
 
 	// Implementation Dependencies FOR THIS MODULE
+	// Playwright Java API + driver (JS). The Node runtime bundle is only shipped in the 'full' flavor.
+	// SLF4J is provided by the BoxLang runtime.
+	implementation( "com.microsoft.playwright:playwright:${playwrightVersion}" ) {
+		exclude group: "com.microsoft.playwright", module: "driver-bundle"
+		exclude group: "org.slf4j"
+	}
+	if ( flavor == 'full' ) {
+		implementation( "com.microsoft.playwright:driver-bundle:${playwrightVersion}" )
+	}
 
 	// Test Frameworks
 	testImplementation 'io.github.cdimascio:dotenv-java:3.2.0'
@@ -137,11 +149,13 @@ serviceLoader {
 jar {
     archiveVersion =  "${version}"
  	manifest {
-	   attributes 'Description': 'ExampleBoxLangModule'
+	   attributes 'Description': 'BoxLang Playwright'
     }
 }
 shadowJar {
 	archiveClassifier = ''
+	// Only this module's classes: third-party jars are copied as-is into the module libs folder
+	configurations = []
     mergeServiceFiles()
     destinationDirectory = file( "build/libs" )
 }
@@ -171,12 +185,19 @@ task createModuleStructure(type: Copy) {
 		include "${project.name}-${version}.jar"
         into 'libs'
     }
+    from( configurations.runtimeClasspath ) {
+        into 'libs'
+    }
     from( 'src/main/bx' ) {
 		include '**/*.bx'
 		include '**/*.bxm'
 		include '**/*.bxs'
+		include '**/*.bash'
 		// Token Replacements Go Here
 		filter{ line -> line.replaceAll( '@build.version@', project.version ) }
+		filter{ line -> line.replaceAll( '@playwright.version@', playwrightVersion ) }
+		filter{ line -> line.replaceAll( '@build.flavor@', project.flavor ) }
+		filter{ line -> line.replaceAll( '@node.version@', nodeVersion ) }
 		if( project.branch == "development" ){
 			filter{ line -> line.replaceAll( '\\+@build.number@', '' ) }
 		} else {
@@ -189,6 +210,11 @@ task createModuleStructure(type: Copy) {
 		include 'changelog.md'
 		// Token Replacements Go Here
 		filter{ line -> line.replaceAll( '@build.version@', project.version ) }
+		if( project.flavor == 'full' ){
+			// The full flavor is published under its own ForgeBox slug
+			filter{ line -> line.contains( '"slug"' ) || line.contains( '"location"' ) ? line.replaceAll( 'bx-playwright', 'bx-playwright-full' ) : line }
+			filter{ line -> line.contains( '"name"' ) ? line.replace( 'BoxLang Playwright', 'BoxLang Playwright (Full)' ) : line }
+		}
 		if( project.branch == "development" ){
 			filter{ line -> line.replaceAll( '\\+@build.number@', '' ) }
 		} else {
@@ -205,7 +231,7 @@ task createModuleStructure(type: Copy) {
 task zipModuleStructure( type: Zip ) {
     group = "distribution"
     from createModuleStructure.destinationDir
-    archiveFileName = "${project.name}-${version}.zip"
+    archiveFileName = "${project.moduleSlug}-${version}.zip"
     destinationDirectory = file( "$buildDir/distributions" )
     // Output that the module has been zippped
     doLast {

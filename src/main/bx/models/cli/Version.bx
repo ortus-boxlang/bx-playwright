@@ -1,0 +1,30 @@
+/**
+ * `bxPlaywright version`: module, Playwright and Node.js versions.
+ */
+class {
+
+	/**
+	 * @options CLI options
+	 * @config  The models.Config
+	 * @verb    The verb registry entry
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function run( required struct options, required any config, struct verb = {} ) {
+		var home  = arguments.config.home()
+		var build = arguments.config.buildInfo()
+		var data  = {
+			"module"       : build.module,
+			"distribution" : build.distribution,
+			"playwright"   : build.playwright,
+			"node"         : home.getNodeVersion(),
+			"browsers"     : home.installedBrowsers()
+		}
+		return {
+			exitCode : 0,
+			message  : "bx-playwright #data.module# (#data.distribution#), Playwright #data.playwright#, Node.js #data.node#, browsers: #data.browsers.len() ? data.browsers.toList( ", " ) : "none"#",
+			data     : data
+		}
+	}
+
+}
