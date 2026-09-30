@@ -1,6 +1,6 @@
 # bx-playwright: Research and Consolidated Plan
 
-Status: draft v9 (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
+Status: v10, phases 0 to 3 implemented (see checkboxes) (engine, bundling, TestBox location, naming, versions, CLI, assertions and components decided). No code yet. API shapes below are proposals to agree on before implementation.
 
 ## 1. Goal
 
@@ -374,7 +374,7 @@ Every setting has a default in `ModuleConfig.configure()` and can be overridden 
 
 Environment overrides for CI (confirmed prefix `BX_PLAYWRIGHT_*`, read at module load, win over settings): `BX_PLAYWRIGHT_PROFILE`, `BX_PLAYWRIGHT_BROWSER`, `BX_PLAYWRIGHT_HEADLESS`, `BX_PLAYWRIGHT_BASEURL`.
 
-Resolution order, last wins: built-in defaults, module settings, environment overrides, profile(s), per-call options.
+Resolution order, last wins: module settings, profile(s), environment overrides, per-call options. `BX_PLAYWRIGHT_PROFILE` picks the profile when none is requested. (Implemented order: environment variables win over profiles so CI can force a browser or headless mode.)
 
 ### 6.11 Profiles
 
@@ -409,9 +409,9 @@ Built-in profiles, grouped:
 | `iphone-se` | webkit, `iPhone SE` (small screen) |
 | `mobile-landscape` | webkit, `iPhone 15 landscape` |
 | `android` / `pixel` | chromium, `Pixel 7` |
-| `galaxy` | chromium, `Galaxy S9+` |
+| `galaxy` | chromium, `Galaxy S24` |
 | `tablet` / `ipad` | webkit, `iPad Pro 11` |
-| `android-tablet` | chromium, `Galaxy Tab S4` |
+| `android-tablet` | chromium, `Galaxy Tab S9` |
 
 **Appearance and accessibility** (meant to be merged, e.g. `[ "mobile", "dark" ]`)
 
@@ -433,7 +433,7 @@ Built-in profiles, grouped:
 | `print` | chromium, headless, light, for PDF and render work |
 | `screenshot` | chromium, `deviceScaleFactor: 2`, `reducedMotion: "reduce"`, `timezone: "UTC"`, `locale: "en-US"` (stable, repeatable images for visual diffs) |
 
-Device names must be validated against the bundled Playwright device registry during the Phase 0 spike. Network throttling (e.g. `slow-3g`) is Chromium-only via CDP; considered for later.
+Device names were validated against the Playwright 1.63 device registry (207 devices, read at runtime from the driver). Network throttling (e.g. `slow-3g`) is Chromium-only via CDP; considered for later.
 
 Tooling: `bxPlaywright profiles` lists the resolved profiles; `doctor` shows the active settings after merge.
 
@@ -534,38 +534,41 @@ docs/
 ## 9. Phased Roadmap and Tasks
 
 ### Phase 0: Foundations
-- [ ] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
-- [ ] AGENTS.md for the module; typed error catalog.
-- [ ] Gradle: `playwright` + `driver` deps into `libs/`; `full` flavor adds `driver-bundle`. Build two zips, two `box.json` slugs (`bx-playwright`, `bx-playwright-full`), stamp version.
-- [ ] Release workflow publishes both to ForgeBox together. Check the full zip against ForgeBox size limits.
-- [ ] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
-- [ ] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
+- [x] Run `SetupTemplate` (slug `bx-playwright`, mapping `playwright`), clean example BIFs/components.
+- [x] AGENTS.md for the module; typed error catalog.
+- [x] Gradle: `playwright` + `driver` deps into `libs/`; `full` flavor adds `driver-bundle`. Build two zips, two `box.json` slugs (`bx-playwright`, `bx-playwright-full`), stamp version.
+- [x] Release workflow publishes both to ForgeBox together.
+- [ ] Check the full zip (~206 MB) against ForgeBox size limits.
+- [x] Spike: load jars in the module classloader, create `Playwright` with `PLAYWRIGHT_DRIVER_DIR` and the bundled Node. Confirm thread confinement behavior under BoxLang.
+- [x] Spike: find a stable way to ship device descriptors (extract from driver bundle at build time) and validate built-in profile device names.
 
 ### Phase 1: Install and CLI
-- [ ] `PlaywrightService`: home resolution, one-time driver extraction (`install-driver`), env wiring.
-- [ ] Node resolution and download (4.1): OS/arch detection incl. arm64, checksum, mirror, `install-node` verb.
-- [ ] `box.json` `boxlang.executable` (`bxPlaywright`) and `boxlang.completions`.
-- [ ] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`, `--json` on every verb.
-- [ ] Verbs: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `clean`, `run`.
-- [ ] Verbs: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
-- [ ] Build step that generates `completions/bxPlaywright.bash` from the verb registry.
-- [ ] CLI specs calling `dispatch()` in-process.
-- [ ] GitHub Action example for CI (install with deps, cache browsers).
+- [x] `PlaywrightService`: home resolution, one-time driver extraction (`install-driver`), env wiring.
+- [x] Node resolution and download (4.1): OS/arch detection incl. arm64, checksum, mirror, `install-node` verb.
+- [x] `box.json` `boxlang.executable` (`bxPlaywright`) and `boxlang.completions`.
+- [x] `main()` / `dispatch()` / verb registry (bx-agents pattern), `help`, `--version`, exit codes via `CLIExit`, `--json` on every verb.
+- [x] Verbs: `install`, `install-deps`, `uninstall`, `doctor`, `version`, `clean`, `run`.
+- [x] Verbs: `codegen`, `open`, `show-trace`, `screenshot`, `pdf`, `mcp`, `devices`.
+- [x] Build step that generates `completions/bxPlaywright.bash` from the verb registry.
+- [x] CLI specs calling `dispatch()` in-process.
+- [x] CI: browser tests on Linux with a cached playwright home.
+- [ ] Documented GitHub Action example for users (install with deps, cache browsers).
 
 ### Phase 2: Core DSL
-- [ ] `OptionsMapper` with tests for every options class used.
-- [ ] `Manager` (thread-confined, auto cleanup), `Browser`, `Context`, `Page`, `Locator` wrappers.
-- [ ] Smart selector resolver.
-- [ ] Assertions (inline + `playwright().expect()`), web-first, configurable timeout, predictable failure type.
-- [ ] Network (`intercept`, events), `request()` API testing, storage state `session()`, tracing, video, screenshots, PDF, clock.
+- [x] `OptionsMapper` with tests for every options class used.
+- [x] `Manager` (thread-confined, auto cleanup), `Browser`, `Context`, `Page`, `Locator` wrappers.
+- [x] Smart selector resolver.
+- [x] Assertions (inline + `playwright().expect()`), web-first, configurable timeout, predictable failure type.
+- [x] Network (`intercept`, events), `request()` API testing, tracing, video, screenshots, PDF.
+- [ ] Storage state `session( name, setup )` caching and `clock()` helpers (only `saveStorageState()` and raw `getJava().clock()` today).
 
 ### Phase 3: BIF, config, profiles, interceptors
-- [ ] Module settings and resolution order (6.10); env overrides.
-- [ ] Built-in profiles, `extends`, merging, `profiles` CLI verb (6.11).
-- [ ] `playwright()` BIF, one-shot helpers (6.7).
-- [ ] `bx:playwrightRender` component and `playwright().render()` (6.8).
-- [ ] Interceptor events (6.9).
-- [ ] Artifact policies and `close( { failed } )` semantics, `artifacts()` paths (7).
+- [x] Module settings and resolution order (6.10); env overrides.
+- [x] Built-in profiles, `extends`, merging, `profiles` CLI verb (6.11).
+- [x] `playwright()` BIF, one-shot helpers (6.7).
+- [x] `bx:playwrightRender` component and `playwright().render()` (6.8).
+- [x] Interceptor events (6.9).
+- [x] Artifact policies and `close( { failed } )` semantics, `artifacts()` paths (7).
 - [ ] Hand off to TestBox core: document the public API it builds on.
 
 ### Phase 4: Advanced
@@ -573,7 +576,8 @@ docs/
 - [ ] Devices and emulation modifiers.
 - [ ] Quality checks: console/smoke, axe accessibility, aria snapshots.
 - [ ] Visual regression (baseline + pixel diff + diff image).
-- [ ] Soft assertions, multi-user `browse()`.
+- [x] Multi-user `browse()`.
+- [ ] Soft assertions.
 
 ### Phase 5: Tooling and AI features
 - [ ] BoxLang codegen target (post-process Java codegen output, or custom recorder; needs a spike).
