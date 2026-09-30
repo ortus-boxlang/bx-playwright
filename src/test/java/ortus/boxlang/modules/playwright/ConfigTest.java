@@ -73,8 +73,10 @@ public class ConfigTest extends BaseIntegrationTest {
 			result = a & "|" & b.getBrowsersPath().toString()
 		""" );
 		// @formatter:on
-		// Windows paths use backslashes and a drive letter
-		assertThat( value.toString().replace( '\\', '/' ) ).endsWith( ".boxlang/playwright|/tmp/pw/browsers" );
+		// Windows paths use backslashes and a drive letter, so compare each path's tail
+		String[]	paths	= value.toString().replace( '\\', '/' ).split( "\\|" );
+		assertThat( paths[ 0 ] ).endsWith( ".boxlang/playwright" );
+		assertThat( paths[ 1 ] ).endsWith( "/tmp/pw/browsers" );
 	}
 
 }
