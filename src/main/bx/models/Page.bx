@@ -521,10 +521,10 @@ class extends="Scope" {
 	 */
 	function onRequest( required function callback ) {
 		var listener = arguments.callback
-		variables.java.onRequest( ( request ) => listener( {
-			url          : request.url(),
-			method       : request.method(),
-			resourceType : request.resourceType()
+		variables.java.onRequest( ( sent ) => listener( {
+			url          : sent.url(),
+			method       : sent.method(),
+			resourceType : sent.resourceType()
 		} ) )
 		return this
 	}

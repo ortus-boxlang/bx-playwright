@@ -9,6 +9,13 @@ tags: [reference, testing]
 
 Test frameworks, application frameworks and your own libraries build on `bx-playwright` through the same public API every application uses. There is no private SPI. TestBox and ColdBox use exactly what this page lists.
 
+Ready-made integrations built on this contract:
+
+| Framework | Base class | Guide |
+|---|---|---|
+| TestBox 7.2+ | `testbox.system.BrowserSpec`, matchers in `testbox.system.browser.BrowserMatchers` | [TestBox Browser Testing](https://testbox.ortusbooks.com/browser-testing) |
+| ColdBox 8.3+ | `coldbox.system.testing.BrowserTestCase` | [ColdBox Browser Testing](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing) |
+
 ## The contract
 
 | Surface | What you can rely on |

@@ -396,7 +396,7 @@ class extends="Base" {
 				name        : "browser_visit",
 				description : "Open a URL in the browser. Returns the URL, title and an accessibility snapshot where elements have refs like e12.",
 				arguments   : { url : "Absolute URL, or a path relative to the base URL" },
-				handler     : ( url ) => browser.visit( url )
+				handler     : ( target ) => browser.visit( target )
 			},
 			{
 				name        : "browser_snapshot",

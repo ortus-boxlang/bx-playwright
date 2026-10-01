@@ -134,11 +134,11 @@ class extends="Base" {
 			requestOptions.setHeader( "content-type", "application/json" )
 			requestOptions.setData( jsonSerialize( values.json ) )
 		} else if ( values.keyExists( "form" ) ) {
-			var form = createObject( "java", "com.microsoft.playwright.options.FormData" ).create()
+			var formData = createObject( "java", "com.microsoft.playwright.options.FormData" ).create()
 			for ( var field in values.form ) {
-				form.set( field, toString( values.form[ field ] ) )
+				formData.set( field, toString( values.form[ field ] ) )
 			}
-			requestOptions.setForm( form )
+			requestOptions.setForm( formData )
 		} else if ( values.keyExists( "data" ) ) {
 			requestOptions.setData( toString( values.data ) )
 		}

@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* On a web runtime (TestBox and ColdBox browser specs run inside a web server), `toHaveURL()`, `assertUrlIs()`, `assertPathIs()`, `onRequest()`, `cookies()`, `addCookies()`, `request()` form posts and the AI `browser_visit` tool resolved a closure parameter or local variable named `url`, `request`, `cookie` or `form` to the scope of the same name. They now use other names, and a test keeps scope names out of the module source
 * `onPlaywrightArtifact` announced `screenshots` and `videos` when a context closed, but `screenshot` from `page.screenshot()`: every artifact type is now singular
 * `render()` with `baseURL` no longer needs the bx-esapi module
 * A relative `artifacts.directory` resolves against the current directory instead of the module folder

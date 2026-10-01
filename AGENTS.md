@@ -42,7 +42,7 @@ UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completi
 
 - Built-in functions win over your own methods for unqualified calls: a method named `attempt` or `wrap` calls the BIF. Check names against `getFunctionList()`.
 - Imports and variables are case insensitive: `import ...Key` clashes with `var key`, `import ...Devices` clashes with `var devices`.
-- `var request` (and other scope names) resolve to the scope. Pick other variable names.
+- Scope names (`url`, `form`, `request`, `cookie`, `session`, `cgi`, ...) resolve to the scope on a web runtime, even as a `var`, a closure parameter, or an argument used without `arguments.`. Pick other names; `ScopeNamesTest` enforces it.
 - `#` in strings starts interpolation: write `##id` for a literal `#id`.
 - `property` declarations must come before any other statement in a class body.
 - Relative `new models.X()` only resolves from `ModuleConfig.bx`; elsewhere use `new models.X@playwright()`.
