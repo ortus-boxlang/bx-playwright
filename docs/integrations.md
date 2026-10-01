@@ -7,7 +7,7 @@ tags: [reference, testing]
 
 # Building on bx-playwright
 
-Test frameworks, application frameworks and your own libraries build on bx-playwright through the same public API every application uses. There is no private SPI. TestBox and ColdBox use exactly what this page lists.
+Test frameworks, application frameworks and your own libraries build on `bx-playwright` through the same public API every application uses. There is no private SPI. TestBox and ColdBox use exactly what this page lists.
 
 ## The contract
 
@@ -24,15 +24,15 @@ bx-playwright follows semantic versioning for everything in this table. A minor 
 
 ## Detecting the module
 
-bx-playwright only runs on BoxLang. Check for it before you use it, so your library still loads without it:
+Check for it before you use it, so your library still loads without it:
 
 ```js
 function hasPlaywright() {
-	return server.keyExists( "boxlang" ) && getModuleList().keyExists( "playwright" )
+	return getModuleList().keyExists( "playwright" )
 }
 ```
 
-The module is registered as `playwright`, and its classes are available as `models.X@playwright`, for example `new models.PageObject@playwright()`.
+The module is registered as `playwright`, and its classes are available as `models.X@playwright`, for example, `new models.PageObject@playwright()`.
 
 ## Owning the lifecycle
 
