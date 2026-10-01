@@ -112,15 +112,15 @@ class extends="Base" {
 	 * @return The cookies as an array of structs
 	 */
 	array function cookies() {
-		return variables.java.cookies().map( ( cookie ) -> {
+		return variables.java.cookies().map( ( item ) -> {
 			return {
-				name     : cookie.name,
-				value    : cookie.value,
-				domain   : cookie.domain,
-				path     : cookie.path,
-				expires  : cookie.expires,
-				httpOnly : cookie.httpOnly,
-				secure   : cookie.secure
+				name     : item.name,
+				value    : item.value,
+				domain   : item.domain,
+				path     : item.path,
+				expires  : item.expires,
+				httpOnly : item.httpOnly,
+				secure   : item.secure
 			}
 		} )
 	}
@@ -131,7 +131,7 @@ class extends="Base" {
 	 * @cookies An array of { name, value, url } or { name, value, domain, path }
 	 */
 	function addCookies( required array cookies ) {
-		var list = arguments.cookies.map( ( cookie ) => buildOptions( "options.Cookie", cookie ) )
+		var list = arguments.cookies.map( ( item ) => buildOptions( "options.Cookie", item ) )
 		variables.java.addCookies( list )
 		return this
 	}

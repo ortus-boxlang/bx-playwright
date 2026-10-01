@@ -69,7 +69,9 @@ class extends="Base" {
 	 * @url The full URL, or a regex from regex()
 	 */
 	function toHaveURL( required any url ) {
-		return check( "toHaveURL( #describe( arguments.url )# )", ( a, o ) => a.hasURL( url, o ), "HasURL" )
+		// Never use a scope name such as url inside a closure: on a web runtime it resolves to the scope
+		var expected = arguments.url
+		return check( "toHaveURL( #describe( expected )# )", ( a, o ) => a.hasURL( expected, o ), "HasURL" )
 	}
 
 	/**
