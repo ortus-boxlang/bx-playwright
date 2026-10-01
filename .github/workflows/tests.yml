@@ -66,7 +66,7 @@ jobs:
       # Node.js and browsers downloaded by the end-to-end tests
       - name: Cache Playwright Home
         if: runner.os == 'Linux'
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: build/playwright-home
           key: playwright-home-${{ runner.os }}-${{ hashFiles( 'gradle.properties' ) }}
