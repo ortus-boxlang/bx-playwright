@@ -20,7 +20,8 @@
 			"configuration.md",
 			"profiles.md",
 			"cli.md",
-			"errors.md"
+			"errors.md",
+			"integrations.md"
 		]
 	}
 ]

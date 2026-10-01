@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Documentation: [Building on bx-playwright](https://bxplaywright.boxlang.io/integrations/), the public contract for TestBox, ColdBox and other libraries (API, errors, interception points, lifecycle, module detection)
+* Documentation: a complete GitHub Actions workflow for browser tests, with cached browsers and failure artifacts
 * Homepage for [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) in the style of bxsites.io: hero, features, AI agents, distributions, ecosystem and professional services, plus a social card rendered by bx-playwright
 * Documentation site published from `docs/` to GitHub Pages at [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) by the `docs.yml` workflow
 * `playwright()` BIF: fluent browser automation with smart selectors, chainable actions, web-first assertions (inline and `expect()` style), network mocking, events, popups, downloads, screenshots, PDF, rendered content and accessibility snapshots
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* `onPlaywrightArtifact` announced `screenshots` and `videos` when a context closed, but `screenshot` from `page.screenshot()`: every artifact type is now singular
 * `render()` with `baseURL` no longer needs the bx-esapi module
 * A relative `artifacts.directory` resolves against the current directory instead of the module folder
 * `click( "text" )` clicks the matching button or link even when another element with the same text (like a heading) comes first
