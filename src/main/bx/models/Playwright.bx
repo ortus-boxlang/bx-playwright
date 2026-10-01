@@ -1,5 +1,6 @@
 import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
 import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
+import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwright;
 import java:java.util.UUID;
 
 /**
@@ -67,6 +68,8 @@ class extends="Base" {
 	function getJava() {
 		if ( isNull( variables.java ) ) {
 			variables.java = tryAction( () => variables.configService.home().createPlaywright(), "start Playwright" )
+			// Tracked until close(), so the module closes it on unload and at JVM shutdown if close() never runs
+			PlaywrightRegistry::register( variables.java )
 			variables.java.selectors().setTestIdAttribute( variables.config.testIdAttribute ?: "data-testid" )
 			announceEvent( "onPlaywrightCreate", { playwright : this } )
 		}
@@ -575,8 +578,12 @@ class extends="Base" {
 			variables.browser = nullValue()
 		}
 		if ( !isNull( variables.java ) ) {
-			variables.java.close()
-			variables.java = nullValue()
+			PlaywrightRegistry::release( variables.java )
+			try {
+				variables.java.close()
+			} finally {
+				variables.java = nullValue()
+			}
 		}
 	}
 

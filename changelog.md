@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+* Every Playwright instance a manager starts is closed, with its driver and browsers, when the module unloads or the JVM shuts down, even when `close()` never ran (an aborted request, a failed test run, a script that exits)
 * Documentation: [Building on bx-playwright](https://bxplaywright.boxlang.io/integrations/), the public contract for TestBox, ColdBox and other libraries (API, errors, interception points, lifecycle, module detection)
 * Documentation: a complete GitHub Actions workflow for browser tests, with cached browsers and failure artifacts
 * Homepage for [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) in the style of bxsites.io: hero, features, AI agents, distributions, ecosystem and professional services, plus a social card rendered by bx-playwright

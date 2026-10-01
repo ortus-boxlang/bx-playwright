@@ -15,6 +15,7 @@
 package ortus.boxlang.modules.playwright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,9 +23,11 @@ import org.junit.jupiter.api.Test;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.PlaywrightException;
 
 import ortus.boxlang.modules.playwright.engine.NodeRuntime;
 import ortus.boxlang.modules.playwright.engine.PlaywrightHome;
+import ortus.boxlang.modules.playwright.engine.PlaywrightRegistry;
 
 public class EngineE2ETest {
 
@@ -42,6 +45,22 @@ public class EngineE2ETest {
 			page.setContent( "<h1>Hello BoxLang</h1>" );
 			assertThat( page.locator( "h1" ).textContent() ).isEqualTo( "Hello BoxLang" );
 		}
+	}
+
+	/**
+	 * closeAll() stops a registered Playwright instance with its driver and browsers.
+	 */
+	@DisplayName( "closeAll() stops a registered Playwright instance and its browsers" )
+	@Test
+	public void testRegistryClosesInstances() {
+		PlaywrightRegistry.closeAll();
+		Playwright	playwright	= PlaywrightRegistry.register( E2E.home().createPlaywright() );
+		Browser		browser		= playwright.chromium().launch();
+		assertThat( PlaywrightRegistry.openCount() ).isEqualTo( 1 );
+
+		assertThat( PlaywrightRegistry.closeAll() ).isEqualTo( 1 );
+		assertThat( PlaywrightRegistry.openCount() ).isEqualTo( 0 );
+		assertThrows( PlaywrightException.class, () -> browser.newPage() );
 	}
 
 }

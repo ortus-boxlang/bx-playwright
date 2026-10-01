@@ -83,6 +83,25 @@ public class DslE2ETest extends BaseIntegrationTest {
 	}
 
 	/**
+	 * A manager registers its Playwright instance when it starts one and releases it on close(), so the module only
+	 * closes instances that are still open when it unloads or the JVM stops.
+	 */
+	@DisplayName( "close() releases the Playwright instance from the registry" )
+	@Test
+	public void testCloseReleasesRegistry() {
+		// @formatter:off
+		Object value = run( "import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwright;\n" + setup + """
+			PlaywrightRegistry.closeAll()
+			pw.newPage().setContent( "<h1>Hi</h1>" )
+			open = PlaywrightRegistry.openCount()
+			pw.close()
+			result = open & "|" & PlaywrightRegistry.openCount()
+			""" );
+		// @formatter:on
+		assertThat( value ).isEqualTo( "1|0" );
+	}
+
+	/**
 	 * click( "Sign in" ) clicks the button even when a heading with the same text comes first in the page, and
 	 * assertSee() only counts rendered text: text inside a hidden element fails assertSee() and passes assertDontSee().
 	 */
