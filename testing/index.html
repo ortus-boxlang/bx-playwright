@@ -192,7 +192,7 @@
 		<div class="row" :class="{ 'bxsites-nav-collapsed' : !navOpen }">
 			
 			<aside class="col-lg-3 col-xl-2 sidebar" id="bxsites-sidebar" x-show="navOpen" x-cloak>
-				<ul class="nav flex-column"><li class="nav-item"><a class="nav-link" href="/index.html">BoxLang Playwright</a></li><li class="nav-item"><a class="nav-link" href="/getting-started/index.html">Getting Started</a></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Using bx-playwright</span><button type="button" class="nav-toggle" aria-expanded="true" aria-label="Toggle Using bx-playwright section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested"><li class="nav-item"><a class="nav-link" href="/browsing/index.html">Browsing</a></li><li class="nav-item"><a class="nav-link" href="/assertions/index.html">Assertions</a></li><li class="nav-item"><a class="nav-link" href="/network/index.html">Network and APIs</a></li><li class="nav-item"><a class="nav-link" href="/rendering/index.html">Screenshots, PDFs and Rendering</a></li><li class="nav-item"><a class="nav-link" href="/page-objects/index.html">Page Objects, Components and Macros</a></li><li class="nav-item"><a class="nav-link" href="/quality/index.html">Quality Checks</a></li><li class="nav-item"><a class="nav-link active" href="/testing/index.html">Testing</a></li><li class="nav-item"><a class="nav-link" href="/ai/index.html">AI Agents</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Reference</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Reference section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested" hidden><li class="nav-item"><a class="nav-link" href="/configuration/index.html">Configuration</a></li><li class="nav-item"><a class="nav-link" href="/profiles/index.html">Profiles</a></li><li class="nav-item"><a class="nav-link" href="/cli/index.html">CLI</a></li><li class="nav-item"><a class="nav-link" href="/errors/index.html">Errors</a></li></ul></li></ul>
+				<ul class="nav flex-column"><li class="nav-item"><a class="nav-link" href="/index.html">BoxLang Playwright</a></li><li class="nav-item"><a class="nav-link" href="/getting-started/index.html">Getting Started</a></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Using bx-playwright</span><button type="button" class="nav-toggle" aria-expanded="true" aria-label="Toggle Using bx-playwright section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested"><li class="nav-item"><a class="nav-link" href="/browsing/index.html">Browsing</a></li><li class="nav-item"><a class="nav-link" href="/assertions/index.html">Assertions</a></li><li class="nav-item"><a class="nav-link" href="/network/index.html">Network and APIs</a></li><li class="nav-item"><a class="nav-link" href="/rendering/index.html">Screenshots, PDFs and Rendering</a></li><li class="nav-item"><a class="nav-link" href="/page-objects/index.html">Page Objects, Components and Macros</a></li><li class="nav-item"><a class="nav-link" href="/quality/index.html">Quality Checks</a></li><li class="nav-item"><a class="nav-link active" href="/testing/index.html">Testing</a></li><li class="nav-item"><a class="nav-link" href="/ai/index.html">AI Agents</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Reference</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Reference section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested" hidden><li class="nav-item"><a class="nav-link" href="/configuration/index.html">Configuration</a></li><li class="nav-item"><a class="nav-link" href="/profiles/index.html">Profiles</a></li><li class="nav-item"><a class="nav-link" href="/cli/index.html">CLI</a></li><li class="nav-item"><a class="nav-link" href="/errors/index.html">Errors</a></li><li class="nav-item"><a class="nav-link" href="/integrations/index.html">Building on bx-playwright</a></li></ul></li></ul>
 				<a class="bxsites-powered-by" href="https://bxsites.io" target="_blank" rel="noopener noreferrer">
 					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg> <span>Powered by BxSites</span>
 				</a>
@@ -232,12 +232,12 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#artifacts">Artifacts</a></li><li class="toc-level-2"><a href="#debugging">Debugging</a></li><li class="toc-level-2"><a href="#ci">CI</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#artifacts">Artifacts</a></li><li class="toc-level-2"><a href="#debugging">Debugging</a></li><li class="toc-level-2"><a href="#ci">CI</a></li><li class="toc-level-3"><a href="#github-actions">GitHub Actions</a></li></ul></details>
 		
 
 		
 		<h1 id="testing"><a href="#testing" id="testing" name="testing" class="anchor"></a>Testing</h1>
-<p>bx-playwright works in any test framework. TestBox will ship base specs and matchers built on the same public API.</p>
+<p>bx-playwright works in any test framework. TestBox and ColdBox build their browser testing support on the same public API, described in <a href="/integrations/index.html">Building on bx-playwright</a>.</p>
 <pre><code class="language-js">describe( &quot;Login&quot;, () =&gt; {
 	it( &quot;signs in&quot;, () =&gt; {
 		playwright( &quot;ci&quot; ).browse( ( page ) =&gt; {
@@ -281,12 +281,67 @@ bxPlaywright install chromium --with-deps
 BX_PLAYWRIGHT_PROFILE=ci boxlang run-tests.bxs
 </code></pre>
 <p>Cache <code>~/.boxlang/playwright</code> between runs to skip the downloads.</p>
+<h3 id="github-actions"><a href="#github-actions" id="github-actions" name="github-actions" class="anchor"></a>GitHub Actions</h3>
+<p>A complete workflow: it installs BoxLang and the module, caches the driver, Node.js and browsers, runs the tests with the <code>ci</code> profile, and uploads the screenshots, traces and videos of failed tests.</p>
+<pre><code class="language-yaml">name: Browser Tests
+
+on: [ push, pull_request ]
+
+jobs:
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: &quot;21&quot;
+
+      - uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-playwright
+
+      # Driver, Node.js and browsers: one download per bx-playwright version
+      - name: Read the bx-playwright version
+        id: pw
+        run: echo &quot;version=$( jq -r .version ~/.boxlang/modules/bx-playwright/box.json )&quot; &gt;&gt; &quot;$GITHUB_OUTPUT&quot;
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.boxlang/playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # --with-deps installs the system libraries, which are not cached
+      - name: Install Chromium
+        run: |
+          export PATH=&quot;$HOME/.boxlang/bin:$PATH&quot;
+          bxPlaywright install chromium --with-deps
+          bxPlaywright doctor
+
+      - name: Run tests
+        env:
+          BX_PLAYWRIGHT_PROFILE: ci
+        run: |
+          export PATH=&quot;$HOME/.boxlang/bin:$PATH&quot;
+          boxlang run-tests.bxs
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: ~/.boxlang/playwright/artifacts
+          if-no-files-found: ignore
+</code></pre>
+<p>Replace <code>boxlang run-tests.bxs</code> with your test command. If your tests need the application running, start it in an earlier step, for example <code>boxlang-miniserver --port 8080 &amp;</code>, and set <code>BX_PLAYWRIGHT_BASEURL</code>. Artifacts go to <code>~/.boxlang/playwright/artifacts</code> unless you set <code>artifacts.directory</code>. Open a downloaded trace with <code>bxPlaywright show-trace trace.zip</code>.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Sep 30, 2026, 7&#x3a;24&#x3a;11 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 1, 2026, 10&#x3a;58&#x3a;07 AM</span></div>
 	
 </article>
 
@@ -318,7 +373,7 @@ BX_PLAYWRIGHT_PROFILE=ci boxlang run-tests.bxs
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#artifacts">Artifacts</a></li><li class="toc-level-2"><a href="#debugging">Debugging</a></li><li class="toc-level-2"><a href="#ci">CI</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#artifacts">Artifacts</a></li><li class="toc-level-2"><a href="#debugging">Debugging</a></li><li class="toc-level-2"><a href="#ci">CI</a></li><li class="toc-level-3"><a href="#github-actions">GitHub Actions</a></li></ul></nav>
 				</aside>
 			
 		</div>

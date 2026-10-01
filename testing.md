@@ -7,7 +7,7 @@ tags: [testing]
 
 # Testing
 
-bx-playwright works in any test framework. TestBox will ship base specs and matchers built on the same public API.
+bx-playwright works in any test framework. TestBox and ColdBox build their browser testing support on the same public API, described in [Building on bx-playwright](integrations.md).
 
 ```js
 describe( "Login", () => {
@@ -59,3 +59,63 @@ BX_PLAYWRIGHT_PROFILE=ci boxlang run-tests.bxs
 ```
 
 Cache `~/.boxlang/playwright` between runs to skip the downloads.
+
+### GitHub Actions
+
+A complete workflow: it installs BoxLang and the module, caches the driver, Node.js and browsers, runs the tests with the `ci` profile, and uploads the screenshots, traces and videos of failed tests.
+
+```yaml
+name: Browser Tests
+
+on: [ push, pull_request ]
+
+jobs:
+  browser-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-playwright
+
+      # Driver, Node.js and browsers: one download per bx-playwright version
+      - name: Read the bx-playwright version
+        id: pw
+        run: echo "version=$( jq -r .version ~/.boxlang/modules/bx-playwright/box.json )" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.boxlang/playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # --with-deps installs the system libraries, which are not cached
+      - name: Install Chromium
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          bxPlaywright install chromium --with-deps
+          bxPlaywright doctor
+
+      - name: Run tests
+        env:
+          BX_PLAYWRIGHT_PROFILE: ci
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          boxlang run-tests.bxs
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: ~/.boxlang/playwright/artifacts
+          if-no-files-found: ignore
+```
+
+Replace `boxlang run-tests.bxs` with your test command. If your tests need the application running, start it in an earlier step, for example `boxlang-miniserver --port 8080 &`, and set `BX_PLAYWRIGHT_BASEURL`. Artifacts go to `~/.boxlang/playwright/artifacts` unless you set `artifacts.directory`. Open a downloaded trace with `bxPlaywright show-trace trace.zip`.

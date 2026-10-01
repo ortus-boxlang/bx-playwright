@@ -18,3 +18,4 @@
 - [Profiles](https://bxplaywright.boxlang.io/profiles.md) ([HTML](https://bxplaywright.boxlang.io/profiles/index.html))
 - [CLI](https://bxplaywright.boxlang.io/cli.md) ([HTML](https://bxplaywright.boxlang.io/cli/index.html))
 - [Errors](https://bxplaywright.boxlang.io/errors.md) ([HTML](https://bxplaywright.boxlang.io/errors/index.html))
+- [Building on bx-playwright](https://bxplaywright.boxlang.io/integrations.md) ([HTML](https://bxplaywright.boxlang.io/integrations/index.html))
