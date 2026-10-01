@@ -9,6 +9,9 @@ tags: [testing]
 
 bx-playwright works in any test framework. TestBox and ColdBox build their browser testing support on the same public API, described in [Building on bx-playwright](integrations.md).
 
+!!! tip "Using TestBox or ColdBox?"
+    Extend `testbox.system.BrowserSpec` (TestBox 7.2+) or `coldbox.system.testing.BrowserTestCase` (ColdBox 8.3+). You get `browse()`, browser matchers such as `expect( page ).toSee( "Welcome" )`, screenshots and traces attached to failed specs, retries, and for ColdBox named routes and `loginAs()`. See the [TestBox Browser Testing guide](https://testbox.ortusbooks.com/browser-testing) and the [ColdBox Browser Testing guide](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing).
+
 ```js
 describe( "Login", () => {
 	it( "signs in", () => {
