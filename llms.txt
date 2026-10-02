@@ -14,6 +14,7 @@
 - [Quality Checks](https://bxplaywright.boxlang.io/quality.md) ([HTML](https://bxplaywright.boxlang.io/quality/index.html))
 - [Testing](https://bxplaywright.boxlang.io/testing.md) ([HTML](https://bxplaywright.boxlang.io/testing/index.html))
 - [AI Agents](https://bxplaywright.boxlang.io/ai.md) ([HTML](https://bxplaywright.boxlang.io/ai/index.html))
+- [Automation Scripts](https://bxplaywright.boxlang.io/automation.md) ([HTML](https://bxplaywright.boxlang.io/automation/index.html))
 - [Configuration](https://bxplaywright.boxlang.io/configuration.md) ([HTML](https://bxplaywright.boxlang.io/configuration/index.html))
 - [Profiles](https://bxplaywright.boxlang.io/profiles.md) ([HTML](https://bxplaywright.boxlang.io/profiles/index.html))
 - [CLI](https://bxplaywright.boxlang.io/cli.md) ([HTML](https://bxplaywright.boxlang.io/cli/index.html))
