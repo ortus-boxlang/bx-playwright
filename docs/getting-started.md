@@ -48,3 +48,8 @@ playwright().browse( ( page ) => {
 ```
 
 A manager is not thread safe: use it from the thread that created it.
+
+## Next
+
+- [Automation Scripts](automation.md): turn a script into a recorded, scheduled job.
+- [Testing](testing.md): browser tests with TestBox and ColdBox.
