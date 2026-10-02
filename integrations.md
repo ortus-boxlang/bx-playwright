@@ -68,6 +68,8 @@ pw.close()
 
 `context.close()` returns the artifacts it kept, ready to attach to the test result.
 
+Always close what you start. As a safety net, bx-playwright closes every manager that is still open, with its driver and browsers, when the module unloads and when the JVM shuts down, so an aborted request or a crashed run does not leave browser processes behind.
+
 ## Errors
 
 Every error carries a `type`, a `message` and a `detail` with the fix. A runner maps them to its own outcomes:
