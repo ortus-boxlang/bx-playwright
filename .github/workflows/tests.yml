@@ -145,7 +145,9 @@ jobs:
       - name: Build and Check Docs
         run: |
           export PATH="$HOME/.boxlang/bin:$PATH"
+          bxSites -v
           bxSites lint
           bxSites build
           test -s site/index.html
+          test -s site/404.html
           bxSites audit
