@@ -46,6 +46,7 @@ jobs:
           export PATH="$HOME/.boxlang/bin:$PATH"
           bxSites lint
           bxSites build
+          test -s site/index.html
           bxSites audit
 
       - name: Publish to gh-pages
