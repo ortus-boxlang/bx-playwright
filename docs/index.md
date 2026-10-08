@@ -20,6 +20,24 @@ playwright().visit( "https://boxlang.io" )
 	.quit()
 ```
 
+## See it in action
+
+A TestBox `BrowserSpec` signing in to a demo shop and checking the dashboard:
+
+![A browser test signing in to a demo shop and checking the dashboard](assets/demo-browser-test.gif)
+
+When a test fails, the `ci` profile keeps a screenshot, a trace and a video. Here the spec expected the last order to be `Shipped`:
+
+![Failure screenshot of the dashboard with the last order still Processing](assets/demo-failure-screenshot.png)
+
+`bxPlaywright show-trace` replays every action with the DOM, console and network:
+
+![The Playwright trace viewer showing the failed hasText assertion](assets/demo-trace-viewer.png)
+
+TestBox attaches all three to the failing spec in its report:
+
+![A failing TestBox spec with its screenshot, trace and video attached](assets/demo-testbox-attachments.png)
+
 ## What you get
 
 | Piece | What it is |
