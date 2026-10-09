@@ -256,7 +256,26 @@ agent.run( &quot;Log in as luis@ortus.com and tell me how many todos I have&quot
 <p>Tools: <code>browser_visit</code>, <code>browser_snapshot</code>, <code>browser_click</code>, <code>browser_fill</code>, <code>browser_select</code>, <code>browser_press</code>, <code>browser_back</code>, <code>browser_text</code>, <code>browser_screenshot</code>, <code>browser_close</code>. Each returns the new page state; errors come back as text so the agent can recover.</p>
 <p>For other frameworks, <code>aiToolDefinitions()</code> returns <code>[ { name, description, arguments, handler } ]</code>, and <code>models.AiBrowser@playwright</code> can be used directly.</p>
 <h2 id="playwright-mcp"><a href="#playwright-mcp" id="playwright-mcp" name="playwright-mcp" class="anchor"></a>Playwright MCP</h2>
-<p><code>bxPlaywright mcp</code> starts Playwright's MCP server for Claude, Cursor and other MCP clients.</p>
+<p><code>bxPlaywright mcp</code> starts <a href="https://github.com/microsoft/playwright-mcp">Playwright's MCP server</a>, so Claude, Cursor, VS Code and any other MCP client can drive a browser. It runs the driver that bx-playwright manages, with the configured browser (<code>--browser=chromium</code> by default, unless you pass <code>--browser</code>), so there is no Node.js project to install.</p>
+<p>By default it talks over standard input and output: register the command with your client.</p>
+<pre><code class="language-bash"># Claude Code
+claude mcp add playwright -- bxPlaywright mcp --headless
+</code></pre>
+<pre><code class="language-json">{
+  &quot;mcpServers&quot;: {
+    &quot;playwright&quot;: {
+      &quot;command&quot;: &quot;bxPlaywright&quot;,
+      &quot;args&quot;: [ &quot;mcp&quot;, &quot;--headless&quot; ]
+    }
+  }
+}
+</code></pre>
+<p>The JSON form works for Claude Desktop, Cursor and most clients. VS Code reads the same entry under a <code>servers</code> key in <code>.vscode/mcp.json</code>.</p>
+<p>To share one server, start it on a port and point clients at its URL:</p>
+<pre><code class="language-bash">bxPlaywright mcp --headless --port 8931
+# clients connect to http://localhost:8931/mcp (or /sse for the legacy transport)
+</code></pre>
+<p>Useful options, passed straight to Playwright: <code>--headless</code> (the browser is headed by default), <code>--browser</code>, <code>--port</code>, <code>--isolated</code> (keep the browser profile in memory), <code>--device &quot;iPhone 15&quot;</code>, <code>--viewport-size 1280x720</code> and <code>--output-dir</code>. Run <code>bxPlaywright mcp --help</code> for the full list.</p>
 <h2 id="codegen-to-boxlang"><a href="#codegen-to-boxlang" id="codegen-to-boxlang" name="codegen-to-boxlang" class="anchor"></a>Codegen to BoxLang</h2>
 <p><code>bxPlaywright codegen http://localhost:8080 --output=login.bxs</code> records your actions and writes bx-playwright code. <code>--target=java</code> (or javascript, python) keeps Playwright's own output.</p>
 <h2 id="self-description"><a href="#self-description" id="self-description" name="self-description" class="anchor"></a>Self description</h2>
@@ -266,7 +285,7 @@ agent.run( &quot;Log in as luis@ortus.com and tell me how many todos I have&quot
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 9, 2026, 10&#x3a;47&#x3a;39 AM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 9, 2026, 11&#x3a;10&#x3a;23 AM</span></div>
 	
 </article>
 
@@ -353,6 +372,8 @@ agent.run( &quot;Log in as luis@ortus.com and tell me how many todos I have&quot
 	
 
 	
+	
+		<script src="/assets/image-gallery-init.fecaa494.js" defer></script>
 	
 
 	

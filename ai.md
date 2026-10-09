@@ -35,7 +35,36 @@ For other frameworks, `aiToolDefinitions()` returns `[ { name, description, argu
 
 ## Playwright MCP
 
-`bxPlaywright mcp` starts Playwright's MCP server for Claude, Cursor and other MCP clients.
+`bxPlaywright mcp` starts [Playwright's MCP server](https://github.com/microsoft/playwright-mcp), so Claude, Cursor, VS Code and any other MCP client can drive a browser. It runs the driver that bx-playwright manages, with the configured browser (`--browser=chromium` by default, unless you pass `--browser`), so there is no Node.js project to install.
+
+By default it talks over standard input and output: register the command with your client.
+
+```bash
+# Claude Code
+claude mcp add playwright -- bxPlaywright mcp --headless
+```
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "bxPlaywright",
+      "args": [ "mcp", "--headless" ]
+    }
+  }
+}
+```
+
+The JSON form works for Claude Desktop, Cursor and most clients. VS Code reads the same entry under a `servers` key in `.vscode/mcp.json`.
+
+To share one server, start it on a port and point clients at its URL:
+
+```bash
+bxPlaywright mcp --headless --port 8931
+# clients connect to http://localhost:8931/mcp (or /sse for the legacy transport)
+```
+
+Useful options, passed straight to Playwright: `--headless` (the browser is headed by default), `--browser`, `--port`, `--isolated` (keep the browser profile in memory), `--device "iPhone 15"`, `--viewport-size 1280x720` and `--output-dir`. Run `bxPlaywright mcp --help` for the full list.
 
 ## Codegen to BoxLang
 
