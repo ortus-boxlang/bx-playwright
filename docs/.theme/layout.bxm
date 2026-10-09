@@ -66,6 +66,7 @@
 	<!--- Favicon --->
 	<bx:if len( variables.faviconUrl )>
 		<link rel="icon" href="#resolveAssetUrl( variables.faviconUrl )#">
+		<link rel="apple-touch-icon" href="#variables.basePath#assets/brand/apple-touch-icon.png">
 	</bx:if>
 
 	<!--- Theme color and accent color --->

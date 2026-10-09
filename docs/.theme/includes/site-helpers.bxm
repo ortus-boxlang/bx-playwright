@@ -209,6 +209,25 @@
 	}
 
 	/**
+	 * Builds the full logo (icon plus wordmark) for light backgrounds: the `theme.wordmark` image, and the
+	 * `theme.wordmarkDark` image swapped in by CSS on the dark theme. The images carry the site name as alt
+	 * text. Falls back to renderBrandMark() when no wordmark is configured.
+	 */
+	function renderWordmark() {
+		var light = trim( variables.siteConfig.theme.wordmark ?: "" )
+		var dark  = trim( variables.siteConfig.theme.wordmarkDark ?: "" )
+		var name  = encodeForHTML( variables.siteConfig.name )
+		if ( !len( light ) ) {
+			return renderBrandMark()
+		}
+		var html = '<img class="brand-wordmark brand-wordmark-light" src="' & resolveAssetUrl( light ) & '" alt="' & name & '">'
+		if ( len( dark ) ) {
+			html &= '<img class="brand-wordmark brand-wordmark-dark" src="' & resolveAssetUrl( dark ) & '" alt="' & name & '">'
+		}
+		return html
+	}
+
+	/**
 	 * Emits one <link rel="stylesheet"> per entry of bxsites.yaml's own
 	 * `extraCss` list, resolved through resolveAssetUrl() (absolute URLs
 	 * keep working, relative paths get the basePath). Returns "" for an

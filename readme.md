@@ -1,3 +1,10 @@
+<p align="center">
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/ortus-boxlang/bx-playwright/development/docs/assets/brand/bxplaywright-logo-horizontal-dark.svg">
+		<img src="https://raw.githubusercontent.com/ortus-boxlang/bx-playwright/development/docs/assets/brand/bxplaywright-logo-horizontal.svg" alt="BxPlaywright" width="560">
+	</picture>
+</p>
+
 # ⚡︎ BoxLang Playwright
 
 ```
