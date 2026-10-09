@@ -421,14 +421,10 @@ body {
 }
 
 .brand-logo {
-    height: 28px;
-    width: 28px;
+    height: 40px;
+    width: 40px;
     display: block;
     object-fit: contain;
-    padding: 3px;
-    border-radius: 50%;
-    background: rgba(4, 18, 26, 0.4);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
     flex-shrink: 0;
 }
 
