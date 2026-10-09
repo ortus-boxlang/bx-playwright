@@ -1,4 +1,4 @@
-name: "BoxLang Playwright"
+name: "BxPlaywright"
 description: "Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright."
 baseURL: "https://bxplaywright.boxlang.io/"
 source: docs
