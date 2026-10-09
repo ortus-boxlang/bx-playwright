@@ -523,6 +523,7 @@ public class PlaywrightHome {
 		// PW_LANG_NAME is deliberately not set: Playwright would then print Java/Maven commands ("mvn exec:java ...") in
 		// its help and hints. The driver used by the Java API gets it from Playwright Java itself, and codegen passes --target.
 		builder.environment().putAll( env );
+		builder.environment().putIfAbsent( "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT", "120000" );
 		return builder;
 	}
 

@@ -223,6 +223,7 @@ public class PlaywrightHomeTest {
 			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME" );
 			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME_VERSION" );
 			assertThat( builder.environment() ).containsKey( "PLAYWRIGHT_BROWSERS_PATH" );
+			assertThat( builder.environment() ).containsKey( "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT" );
 		} finally {
 			if ( previous == null ) {
 				System.clearProperty( "playwright.cli.dir" );

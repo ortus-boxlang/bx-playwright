@@ -57,6 +57,7 @@ Override any setting in `boxlang.json`:
 | `BX_PLAYWRIGHT_UPDATE_SNAPSHOTS` | `true` rewrites visual baselines |
 | `BX_PLAYWRIGHT_HOME` | The home directory |
 | `PLAYWRIGHT_NODEJS_PATH` | Explicit Node.js executable |
+| `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` | Browser-download idle timeout in milliseconds; defaults to `120000` (2 minutes) |
 
 ## Resolution order
 
