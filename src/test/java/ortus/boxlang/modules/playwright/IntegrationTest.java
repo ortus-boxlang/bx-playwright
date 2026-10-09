@@ -36,4 +36,21 @@ public class IntegrationTest extends BaseIntegrationTest {
 		assertThat( settings.getAsString( Key.of( "nodeVersion" ) ) ).isNotEmpty();
 	}
 
+	/**
+	 * The in-process browser installer BIF is registered and rejects unsupported browser names before setup.
+	 */
+	@DisplayName( "The browser installer BIF validates browser names" )
+	@Test
+	public void testEnsureBrowserRejectsUnsupportedBrowser() {
+		Object value = run( """
+			try {
+				playwrightEnsureBrowser( "safari" )
+				result = "not rejected"
+			} catch ( any e ) {
+				result = e.type
+			}
+		""" );
+		assertThat( value ).isEqualTo( "Playwright.InvalidOption" );
+	}
+
 }

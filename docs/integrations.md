@@ -13,7 +13,7 @@ Ready-made integrations built on this contract:
 
 | Framework | Base class | Guide |
 |---|---|---|
-| TestBox 7.2+ | `testbox.system.BrowserSpec`, matchers in `testbox.system.browser.BrowserMatchers` | [TestBox Browser Testing](https://testbox.ortusbooks.com/browser-testing) |
+| TestBox 7.2+ | `testbox.system.BrowserSpec`, matchers in `testbox.system.browser.BrowserMatchers` | [TestBox Browser Testing](testbox.md) |
 | ColdBox 8.3+ | `coldbox.system.testing.BrowserTestCase` | [ColdBox Browser Testing](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing) |
 
 ## The contract

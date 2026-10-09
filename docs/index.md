@@ -57,3 +57,5 @@ TestBox attaches all three to the failing spec in its report:
 Same module name (`playwright`), same API. Install one of them.
 
 Next: [Getting Started](getting-started.md).
+
+Framework guides: [TestBox Browser Testing](testbox.md) and [BoxLang Web Applications](web-applications.md).

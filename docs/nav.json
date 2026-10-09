@@ -16,13 +16,20 @@
 		]
 	},
 	{
+		"title": "Framework Integrations",
+		"children": [
+			"testbox.md",
+			"web-applications.md",
+			"integrations.md"
+		]
+	},
+	{
 		"title": "Reference",
 		"children": [
 			"configuration.md",
 			"profiles.md",
 			"cli.md",
-			"errors.md",
-			"integrations.md"
+			"errors.md"
 		]
 	}
 ]

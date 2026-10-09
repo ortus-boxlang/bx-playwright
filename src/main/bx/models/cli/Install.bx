@@ -1,5 +1,3 @@
-import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
-
 /**
  * `bxPlaywright install [browsers...]`
  *
@@ -21,53 +19,7 @@ class {
 	 * @throws Playwright.NotInstalled when the configured Node.js cannot run
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var home     = arguments.config.home()
-		var data     = { "driver" : "", "node" : {}, "browsers" : [] }
-		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
-
-		terminal.progress( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
-		data.driver = home.installDriver( arguments.options.force ?: false ).toString()
-
-		if ( !( arguments.options[ "skip-node" ] ?: false ) ) {
-			var node = terminal.node( home, arguments.config.nodePath() )
-			if ( !node.found ) {
-				new NodeInstaller(
-					home,
-					arguments.config.getSettings().nodeDownloadURL ?: "",
-					( message ) => terminal.progress( message )
-				).install( false )
-				node = terminal.node( home, arguments.config.nodePath() )
-			}
-			if ( !node.ok ) {
-				throw( type = "Playwright.NotInstalled", message = "#node.problem#.", detail = node.fix )
-			}
-			data.node = { "executable" : node.executable, "source" : node.source, "version" : node.version }
-			terminal.progress( "Using Node.js #data.node.version# (#data.node.source#) at #data.node.executable#" )
-		}
-
-		var browsers = arguments.options._positionals.len() ? arguments.options._positionals : [ "chromium" ]
-		if ( browsers.findNoCase( "all" ) ) {
-			browsers = []
-		}
-		var cliArgs = [ "install" ]
-		cliArgs.append( browsers, true )
-		if ( arguments.options[ "with-deps" ] ?: false ) {
-			cliArgs.append( "--with-deps" )
-		}
-		if ( arguments.options[ "only-shell" ] ?: false ) {
-			cliArgs.append( "--only-shell" )
-		}
-		if ( arguments.options.force ?: false ) {
-			cliArgs.append( "--force" )
-		}
-
-		var exitCode  = terminal.runPlaywright( home, cliArgs )
-		data.browsers = home.installedBrowsers()
-		return {
-			exitCode : exitCode,
-			message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
-			data     : data
-		}
+		return new models.BrowserInstaller@playwright().install( arguments.options, arguments.config )
 	}
 
 }

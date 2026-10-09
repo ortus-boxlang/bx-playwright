@@ -1,0 +1,27 @@
+/**
+ * playwrightEnsureBrowser( browser )
+ *
+ * Ensure a Playwright-managed browser is installed in the configured module home. Safe to call repeatedly.
+ *
+ * <pre>
+ * playwrightEnsureBrowser( "chromium" )
+ * </pre>
+ */
+@BoxBIF
+class {
+
+	/**
+	 * Ensure a browser is installed using this deployed module's runtime and paths.
+	 *
+	 * @browser The browser to ensure: chromium, firefox or webkit
+	 *
+	 * @return Browser name, cache path and installed browser directories
+	 */
+	struct function invoke( string browser = "chromium" ) {
+		return new models.BrowserInstaller@playwright().ensure(
+			arguments.browser,
+			new models.Config@playwright()
+		)
+	}
+
+}

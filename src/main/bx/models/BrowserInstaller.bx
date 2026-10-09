@@ -1,0 +1,102 @@
+import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
+
+/**
+ * Installs Playwright browsers using this module's configured home and runtime.
+ */
+class {
+
+	/**
+	 * Install browsers through the bundled Playwright CLI.
+	 *
+	 * @options CLI options, including _positionals (browser names)
+	 * @config  The module configuration
+	 *
+	 * @return { exitCode, message, data }
+	 */
+	struct function install( required struct options, required any config ) {
+		var home     = arguments.config.home()
+		var data     = { "driver" : "", "node" : {}, "browsers" : [] }
+		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
+		var result   = {}
+
+		lock name="bx-playwright-install-#hash( home.getBrowsersPath().toString() )#" type="exclusive" timeout="600" {
+			terminal.progress( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
+			data.driver = home.installDriver( arguments.options.force ?: false ).toString()
+
+			if ( !( arguments.options[ "skip-node" ] ?: false ) ) {
+				var node = terminal.node( home, arguments.config.nodePath() )
+				if ( !node.found ) {
+					new NodeInstaller(
+						home,
+						arguments.config.getSettings().nodeDownloadURL ?: "",
+						( message ) => terminal.progress( message )
+					).install( false )
+					node = terminal.node( home, arguments.config.nodePath() )
+				}
+				if ( !node.ok ) {
+					throw( type = "Playwright.NotInstalled", message = "#node.problem#.", detail = node.fix )
+				}
+				data.node = { "executable" : node.executable, "source" : node.source, "version" : node.version }
+				terminal.progress( "Using Node.js #data.node.version# (#data.node.source#) at #data.node.executable#" )
+			}
+
+			var positionals = arguments.options._positionals ?: []
+			var browsers    = positionals.len() ? positionals : [ "chromium" ]
+			if ( browsers.findNoCase( "all" ) ) {
+				browsers = []
+			}
+			var cliArgs = [ "install" ]
+			cliArgs.append( browsers, true )
+			if ( arguments.options[ "with-deps" ] ?: false ) {
+				cliArgs.append( "--with-deps" )
+			}
+			if ( arguments.options[ "only-shell" ] ?: false ) {
+				cliArgs.append( "--only-shell" )
+			}
+			if ( arguments.options.force ?: false ) {
+				cliArgs.append( "--force" )
+			}
+
+			var exitCode = terminal.runPlaywright( home, cliArgs )
+			data.browsers = home.installedBrowsers()
+			result = {
+				exitCode : exitCode,
+				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
+				data     : data
+			}
+		}
+		return result
+	}
+
+	/**
+	 * Ensure one supported browser is installed for use by an application.
+	 *
+	 * @browser The browser name: chromium, firefox or webkit
+	 * @config  The module configuration
+	 *
+	 * @return Installation details for the browser
+	 *
+	 * @throws Playwright.InvalidOption when the browser name is unsupported
+	 * @throws Playwright.NotInstalled when installation fails
+	 */
+	struct function ensure( required string browser, required any config ) {
+		var browserName = arguments.browser.lCase().trim()
+		if ( ![ "chromium", "firefox", "webkit" ].findNoCase( browserName ) ) {
+			throw(
+				type    = "Playwright.InvalidOption",
+				message = "Unknown browser [#arguments.browser#].",
+				detail  = "Use chromium, firefox or webkit."
+			)
+		}
+		var result = install( { _positionals : [ browserName ] }, arguments.config )
+		if ( result.exitCode != 0 ) {
+			throw(
+				type    = "Playwright.NotInstalled",
+				message = "Could not install #browserName# (exit code #result.exitCode#).",
+				detail  = "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
+			)
+		}
+		return { "browser" : browserName, "path" : arguments.config.home().getBrowsersPath().toString(), "installed" : result.data.browsers }
+	}
+
+}
