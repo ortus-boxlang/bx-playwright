@@ -71,6 +71,7 @@
 	<!--- Favicon --->
 	<bx:if len( variables.faviconUrl )>
 		<link rel="icon" href="#resolveAssetUrl( variables.faviconUrl )#">
+		<link rel="apple-touch-icon" href="#variables.basePath#assets/brand/apple-touch-icon.png">
 	</bx:if>
 
 	<!--- Color mode detection (before CSS, to avoid flash) --->
@@ -97,6 +98,15 @@
 		[data-theme=dark] .pw-code .k{color:##34d399}[data-theme=dark] .pw-code .s{color:##7dd3fc}
 		.eco-card .icon img{width:100%;height:100%;object-fit:contain;display:block}
 		.pw-dist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+		.bxh-brand img.brand-wordmark{width:auto;height:48px;display:block;margin-block:-6px}
+		.footer-brand .bxh-brand img.brand-wordmark{height:56px;margin:0 0 4px -4px}
+		.brand-wordmark-dark{display:none!important}
+		[data-theme=dark] .brand-wordmark-light{display:none!important}
+		[data-theme=dark] .brand-wordmark-dark{display:block!important}
+		.hero-mark{display:block;width:120px;height:auto;margin:0 0 6px -10px;filter:drop-shadow(0 12px 30px rgba(0,219,255,.35)) drop-shadow(0 4px 14px rgba(0,255,117,.25));animation:pw-float 6s ease-in-out infinite}
+		@keyframes pw-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+		@media (prefers-reduced-motion:reduce){.hero-mark{animation:none}}
+		@media (max-width:640px){.hero-mark{width:88px;margin-bottom:16px}.bxh-brand img.brand-wordmark{height:38px}}
 		.pw-demo{max-width:960px;margin:0 auto}
 		.pw-demo img{display:block;width:100%;height:auto}
 		.pw-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:32px}
@@ -192,7 +202,7 @@
 	<!--- Header: horizontal marketing nav --->
 	<header class="bxh-nav">
 		<div class="bxh-wrap bxh-navrow">
-			<a class="bxh-brand" href="#variables.basePath#">#renderBrandMark()#</a>
+			<a class="bxh-brand" href="#variables.basePath#">#renderWordmark()#</a>
 			<nav class="bxh-navlinks">
 				<a href="#variables.basePath#getting-started/">Docs</a>
 				<a href="#variables.basePath#testing/">Testing</a>
@@ -228,6 +238,7 @@
 	<main class="bxh-wrap bxh-hero">
 		<div class="bxh-hero-grid">
 			<div>
+				<img class="hero-mark" src="#variables.basePath#assets/brand/bxplaywright-icon.svg" alt="" width="120" height="120">
 				<span class="eyebrow">BoxLang module &middot; powered by Microsoft Playwright</span>
 				<h1>Real browsers.<br><span class="grad">Fluent BoxLang.</span></h1>
 				<p class="lead">
@@ -535,7 +546,7 @@
 	<footer class="bxh-footer">
 		<div class="bxh-wrap footer-top">
 			<div class="footer-brand">
-				<a class="bxh-brand" href="#variables.basePath#">#renderBrandMark()#</a>
+				<a class="bxh-brand" href="#variables.basePath#">#renderWordmark()#</a>
 				<p>Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.</p>
 				<bx:if variables.socialLinks.len() gt 0>
 					<div class="social-row">#renderSocialLinks( variables.socialLinks )#</div>

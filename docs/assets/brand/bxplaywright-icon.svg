@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title"><title id="title">BxPlaywright</title><defs><linearGradient id="iconGradient" x1="42" y1="80" x2="186" y2="80" gradientUnits="userSpaceOnUse"><stop stop-color="#00FF75"/><stop offset="1" stop-color="#00DBFF"/></linearGradient><linearGradient id="wordGradient" x1="0" y1="0" x2="557.8000000000001" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#00FF75"/><stop offset="1" stop-color="#00DBFF"/></linearGradient></defs><g transform="translate(-172 17) scale(6)"><g fill="url(#iconGradient)">
+<path d="M150 63 C165 60 172 67 162 79 C156 86 147 91 137 96 L135 91 C146 86 155 80 159 73 C162 68 158 66 150 68 Z"/>
+<path fill-rule="evenodd" d="M80 45H139Q150 45 150 56V88L144 92V63H75V102L69 103V57Q69 45 80 45ZM83 54.5A3.2 3.2 0 1 0 76.6 54.5A3.2 3.2 0 1 0 83 54.5ZM92.7 54.5A3.2 3.2 0 1 0 86.3 54.5A3.2 3.2 0 1 0 92.7 54.5ZM102.4 54.5A3.2 3.2 0 1 0 96 54.5A3.2 3.2 0 1 0 102.4 54.5Z"/>
+<path d="M144 99L150 96V112Q150 123 139 123H80Q72 123 69 116L77 116Q79 117 83 117H138Q144 117 144 111Z"/>
+<path d="M65 74C50 81 41 90 42 98C43 113 70 116 103 109L102 103C76 109 50 108 49 98C48 93 54 86 65 80Z"/>
+<path d="M106 76.5Q103 75.5 103.4 79L109.2 109.5Q109.8 113 112.2 110.5L118.1 103.8L125.5 114Q126.9 116 129 114.5L133 111.5Q135 110 133.4 107.8L125.8 98.1L135 95.8Q138.1 94.9 135.1 93.1Z"/>
+<path d="M167 40L170.1 48.6L179 52L170.1 55.4L167 64L163.9 55.4L155 52L163.9 48.6Z"/>
+<path d="M179 61L181 66L186 68L181 70L179 75L177 70L172 68L177 66Z"/>
+</g></g></svg>
