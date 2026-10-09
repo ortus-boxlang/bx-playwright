@@ -1,10 +1,10 @@
-# BoxLang Playwright
+# BxPlaywright
 
 > Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.
 
 ## Pages
 
-- [BoxLang Playwright](https://bxplaywright.boxlang.io/index.md) ([HTML](https://bxplaywright.boxlang.io/index.html))
+- [Browser automation and testing for BoxLang](https://bxplaywright.boxlang.io/index.md) ([HTML](https://bxplaywright.boxlang.io/index.html))
 - [Getting Started](https://bxplaywright.boxlang.io/getting-started.md) ([HTML](https://bxplaywright.boxlang.io/getting-started/index.html))
 - [Browsing](https://bxplaywright.boxlang.io/browsing.md) ([HTML](https://bxplaywright.boxlang.io/browsing/index.html))
 - [Assertions](https://bxplaywright.boxlang.io/assertions.md) ([HTML](https://bxplaywright.boxlang.io/assertions/index.html))
