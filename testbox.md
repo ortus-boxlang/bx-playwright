@@ -74,14 +74,7 @@ BX_PLAYWRIGHT_HOME=/var/cache/myapp-playwright bxPlaywright install chromium
 
 The web server must then use the same browser cache. For example, configure the deployed module's `home` to `/var/cache/myapp-playwright`, or set the same `browsersPath` in both runtimes. Make sure both processes can access the cache, and use the same bx-playwright/Playwright version in the CLI and web server so they expect the same browser revision. If the server runs as a different OS user, check its filesystem permissions.
 
-When using this preinstall route, disable automatic installation to prevent BrowserSpec from downloading from the web request:
-
-```boxlang
-@browserAutoInstall( false )
-class extends="testbox.system.BrowserSpec" {
-	// Browser specs
-}
-```
+When using this preinstall route, put `@browserAutoInstall( false )` above the BrowserSpec class to prevent a browser download from a web request.
 
 If the cache is not shared with the server or the Playwright versions differ, the preinstalled browser may not be found or may not match the server module. In that case, configure a shared cache or use the deployed-module route above.
 
