@@ -517,6 +517,9 @@ public class PlaywrightHome {
 		Map<String, String>	env		= prepare();
 		List<String>		command	= new ArrayList<>();
 		command.add( env.get( "PLAYWRIGHT_NODEJS_PATH" ) );
+		// Node's plain https client (used by the CLI's browser downloader) has no Happy Eyeballs fallback: a dead
+		// IPv6 route picked over a working IPv4 one hangs every download until the idle timeout. Prefer IPv4.
+		command.add( "--dns-result-order=ipv4first" );
 		command.add( getDriverDir().resolve( "package" ).resolve( "cli.js" ).toString() );
 		command.addAll( args );
 		ProcessBuilder builder = new ProcessBuilder( command );
