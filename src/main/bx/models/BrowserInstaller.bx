@@ -4,6 +4,9 @@ import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
  * Installs Playwright browsers using this module's configured home and runtime.
  */
 class {
+	static {
+		ensuredBrowsers = {}
+	}
 
 	/**
 	 * Install browsers through the bundled Playwright CLI.
@@ -20,10 +23,15 @@ class {
 		var result   = {}
 
 		lock name="bx-playwright-install-#hash( home.getBrowsersPath().toString() )#" type="exclusive" timeout="600" {
-			terminal.progress( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
+			if ( ( arguments.options.force ?: false ) || !home.isDriverInstalled() ) {
+				terminal.progress( "Extracting the Playwright #home.getPlaywrightVersion()# driver into #home.getDriverDir()#" )
+			} else {
+				terminal.progress( "Using the extracted Playwright #home.getPlaywrightVersion()# driver at #home.getDriverDir()#" )
+			}
 			data.driver = home.installDriver( arguments.options.force ?: false ).toString()
 
 			if ( !( arguments.options[ "skip-node" ] ?: false ) ) {
+				terminal.progress( "Checking the Node.js runtime for Playwright..." )
 				var node = terminal.node( home, arguments.config.nodePath() )
 				if ( !node.found ) {
 					new NodeInstaller(
@@ -57,6 +65,7 @@ class {
 				cliArgs.append( "--force" )
 			}
 
+			terminal.progress( "Checking required browser revisions with the Playwright CLI. The first install can take a few minutes." )
 			var exitCode = terminal.runPlaywright( home, cliArgs )
 			data.browsers = home.installedBrowsers()
 			result = {
@@ -88,15 +97,50 @@ class {
 				detail  = "Use chromium, firefox or webkit."
 			)
 		}
-		var result = install( { _positionals : [ browserName ] }, arguments.config )
-		if ( result.exitCode != 0 ) {
-			throw(
-				type    = "Playwright.NotInstalled",
-				message = "Could not install #browserName# (exit code #result.exitCode#).",
-				detail  = "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
-			)
+		var home      = arguments.config.home()
+		var cacheKey  = home.getHome().toString() & "|" & home.getPlaywrightVersion() & "|" & browserName
+		var terminal  = new models.cli.Terminal@playwright()
+		var result    = {}
+		var cached    = false
+		var installed = []
+
+		lock name="bx-playwright-ensure-#hash( cacheKey )#" type="exclusive" timeout="600" {
+			var previous        = static.ensuredBrowsers[ cacheKey ] ?: {}
+			var previousFolders = previous.browserFolders ?: []
+			if ( previousFolders.len() ) {
+				for ( var folder in home.installedBrowsers() ) {
+					if ( arrayFindNoCase( previousFolders, folder ) ) {
+						cached = true
+						result = previous.result
+						break
+					}
+				}
+			}
+
+			if ( !cached ) {
+				terminal.progress( "Ensuring the Playwright #browserName# browser is installed. The first setup may take a few minutes." )
+				result = install( { _positionals : [ browserName ] }, arguments.config )
+				if ( result.exitCode != 0 ) {
+					throw(
+						type    = "Playwright.NotInstalled",
+						message = "Could not install #browserName# (exit code #result.exitCode#).",
+						detail  = "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
+					)
+				}
+				for ( var folder in result.data.browsers ) {
+					if ( folder.startsWith( browserName & "-" ) ) {
+						installed.append( folder )
+					}
+				}
+				if ( installed.len() ) {
+					static.ensuredBrowsers[ cacheKey ] = { result : result, browserFolders : installed }
+				}
+				terminal.progress( "Playwright #browserName# is ready at #home.getBrowsersPath()#." )
+			} else {
+				terminal.progress( "Playwright #browserName# is already installed at #home.getBrowsersPath()#; skipping setup." )
+			}
 		}
-		return { "browser" : browserName, "path" : arguments.config.home().getBrowsersPath().toString(), "installed" : result.data.browsers }
+		return { "browser" : browserName, "path" : home.getBrowsersPath().toString(), "installed" : result.data.browsers }
 	}
 
 }
