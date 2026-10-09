@@ -107,14 +107,16 @@ class {
 		lock name="bx-playwright-ensure-#hash( cacheKey )#" type="exclusive" timeout="600" {
 			var previous        = static.ensuredBrowsers[ cacheKey ] ?: {}
 			var previousFolders = previous.browserFolders ?: []
-			if ( previousFolders.len() ) {
-				for ( var folder in home.installedBrowsers() ) {
-					if ( arrayFindNoCase( previousFolders, folder ) ) {
-						cached = true
-						result = previous.result
-						break
-					}
+			var currentFolders  = home.installedBrowsers()
+			cached = previousFolders.len() > 0
+			for ( var folder in previousFolders ) {
+				if ( !arrayFindNoCase( currentFolders, folder ) ) {
+					cached = false
+					break
 				}
+			}
+			if ( cached ) {
+				result = previous.result
 			}
 
 			if ( !cached ) {
