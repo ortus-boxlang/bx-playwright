@@ -25,7 +25,7 @@ bxPlaywright doctor               # check everything
 
 Deploy bx-playwright to the BoxLang server that hosts the application. Call `playwrightEnsureBrowser( "chromium" )`
 from that web runtime to provision the browser; a separate OS-level BoxLang installation or CLI is not required.
-TestBox `BrowserSpec` uses this API automatically on first use unless `@browserAutoInstall( false )` is set. With
+TestBox browser specs (`@browser`) use this API automatically on first use unless `@browserAutoInstall( false )` is set. With
 auto-install disabled, call `ensureBrowserInstalled()` in the bundle's `beforeAll()` to provision explicitly.
 The first install needs network access; Linux system libraries remain the responsibility of the host or container.
 
