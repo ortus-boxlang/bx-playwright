@@ -107,14 +107,55 @@
 		@keyframes pw-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 		@media (prefers-reduced-motion:reduce){.hero-mark{animation:none}}
 		@media (max-width:640px){.hero-mark{width:88px;margin-bottom:16px}.bxh-brand img.brand-wordmark{height:38px}}
+		.section-link{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-weight:600;color:var(--brand1)}
+		.section-link:hover{text-decoration:underline}
+		.pw-gallery{display:grid;margin-top:28px;grid-template-columns:repeat(var(--bxsites-gallery-cols,3),minmax(0,1fr));gap:22px}
+		.pw-gallery .bxsites-image-gallery__item{margin:0;min-width:0}
+		.pw-gallery .bxsites-image-gallery__image{display:block;width:100%;height:auto;object-fit:cover;transition:transform .2s ease,box-shadow .2s ease}
+		.pw-gallery .bxsites-image-gallery__image:hover{transform:translateY(-3px);box-shadow:0 20px 44px var(--shadow-color-soft)}
+		@media (max-width:900px){.pw-gallery{--bxsites-gallery-cols:2}}
+		@media (max-width:560px){.pw-gallery{--bxsites-gallery-cols:1}}
+		.pw-gallery .bxsites-image-gallery__image{aspect-ratio:16/10;object-position:top center}
+		.pw-gallery .bxsites-image-gallery__image{border-radius:12px;border:1px solid var(--border-strong);box-shadow:0 14px 34px var(--shadow-color-soft);cursor:zoom-in}
+		.pw-gallery .bxsites-image-gallery__caption{text-align:left;font-size:.92rem;color:var(--muted);margin-top:10px}
+		.pw-gallery .bxsites-image-gallery__caption b{display:block;color:var(--text);margin-bottom:2px}
+		.pw-split{display:grid;grid-template-columns:1.05fr 1fr;gap:44px;align-items:center}
+		.pw-split>*{min-width:0}
+		@media (max-width:900px){.pw-split{grid-template-columns:1fr;gap:28px}}
+		.pw-checks{list-style:none;padding:0;margin:20px 0 0;display:grid;gap:12px}
+		.pw-checks li{display:flex;gap:12px;align-items:flex-start;color:var(--muted)}
+		.pw-checks li svg{flex:none;width:20px;height:20px;margin-top:2px;color:var(--brand1)}
+		.pw-checks li b{color:var(--text)}
+		.pw-tb-logos{display:flex;align-items:center;gap:14px;margin-bottom:14px;color:var(--muted);font-size:1.4rem}
+		.pw-tb-logos .icon{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--surface);border:1px solid var(--border-strong)}
+		.pw-tb-logos .icon svg,.pw-tb-logos .icon img{width:28px;height:28px}
+		.pw-term{margin:0;max-width:none}
+		.pw-term .term-body{min-height:0;line-height:1.75;font-size:.82rem;white-space:pre-wrap;overflow-wrap:anywhere}
+		.pw-term .tl{padding-left:2ch;text-indent:-2ch}
+		.pw-term .tl{display:block;color:var(--muted)}
+		.pw-term .tl .ok{color:var(--brand1);font-weight:700}
+		.pw-term .tl .cmd{color:var(--text)}
+		.pw-term .tl .pr{color:var(--brand2)}
+		.pw-term .tl .cm{opacity:.7}
+		@media (prefers-reduced-motion:no-preference){.pw-term .tl{opacity:0;animation:pw-line .35s ease forwards}}
+		@keyframes pw-line{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+		.pw-verbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px}
+		@media (max-width:640px){.pw-verbs{grid-template-columns:1fr}}
+		.pw-verb{padding:14px 16px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface)}
+		.pw-verb h4{margin:0 0 4px;font-size:.95rem}
+		.pw-verb p{margin:0;font-size:.88rem;color:var(--muted)}
+		.pw-verb code{font-size:.82rem}
+		.pw-partner{display:block;height:40px;width:auto;margin:0 auto 18px}
+		.pw-logo-dark{display:none!important}
+		[data-theme=dark] .pw-logo-light{display:none!important}
+		[data-theme=dark] .pw-logo-dark{display:block!important}
+		.madeby a,.builtwith a{display:inline-flex;align-items:center}
+		.madeby img{height:22px;width:auto;margin-left:6px}
+		.builtwith{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+		.builtwith img{height:24px;width:auto}
+		.footlinks{flex-wrap:wrap;row-gap:8px;max-width:100%}
 		.pw-demo{max-width:960px;margin:0 auto}
 		.pw-demo img{display:block;width:100%;height:auto}
-		.pw-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:32px}
-		.pw-shot{margin:0}
-		.pw-shot .preview-card{overflow:hidden}
-		.pw-shot img{display:block;width:100%;height:auto}
-		.pw-shot figcaption{margin-top:12px;font-size:.95rem;opacity:.8}
-		.pw-shot figcaption b{display:block;opacity:1;margin-bottom:2px}
 	</style>
 
 	<!--- Extra CSS --->
@@ -290,6 +331,7 @@
 				<div class="flow-stage"><div class="flow-icon">#homeIcon( "deploy" )#</div><span>Ship</span></div>
 			</div>
 			<p class="orbit-caption">Selectors read like the page: <code>fill( "Email" )</code>, <code>click( "Sign in" )</code>. Assertions wait for the page, so tests do not need sleeps. When something fails you get a typed error that says how to fix it, plus the screenshot, trace and video.</p>
+			<p style="text-align:center;margin:0"><a class="section-link" href="#variables.basePath#getting-started/">Getting started &rarr;</a></p>
 		</div>
 	</section>
 
@@ -305,22 +347,96 @@
 				<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">tests/browser/ShopSpec.bx</span></div>
 				<img src="#variables.basePath#assets/demo-browser-test.gif" alt="A browser test signing in to a demo shop and checking the dashboard" loading="lazy" width="960" height="540">
 			</div>
-			<div class="pw-shots">
-				<figure class="pw-shot">
-					<div class="preview-card"><img src="#variables.basePath#assets/demo-failure-screenshot.png" alt="Failure screenshot of the dashboard with the last order still Processing" loading="lazy" width="1280" height="720"></div>
-					<figcaption><b>The screenshot</b>The page at the moment the assertion gave up: the last order still says Processing.</figcaption>
+			<div class="bxsites-image-gallery bxsites-image-gallery--cols-3 pw-gallery">
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/demo-failure-screenshot.png" alt="Failure screenshot of the dashboard with the last order still Processing" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>The screenshot</b>The page at the moment the assertion gave up: the last order still says Processing.</figcaption>
 				</figure>
-				<figure class="pw-shot">
-					<div class="preview-card"><img src="#variables.basePath#assets/demo-trace-viewer.png" alt="The Playwright trace viewer showing the failed hasText assertion" loading="lazy" width="1280" height="800"></div>
-					<figcaption><b>The trace</b><code>bxPlaywright show-trace</code> replays every action with the DOM, console and network.</figcaption>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/demo-trace-viewer.png" alt="The Playwright trace viewer showing the failed hasText assertion" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>The trace</b><code>bxPlaywright show-trace</code> replays every action with the DOM, console and network.</figcaption>
 				</figure>
-				<figure class="pw-shot">
-					<div class="preview-card"><img src="#variables.basePath#assets/demo-testbox-attachments.png" alt="A failing TestBox spec with its screenshot, trace and video attached" loading="lazy" width="1280" height="420"></div>
-					<figcaption><b>The report</b>TestBox links the screenshot, trace and video right under the failing spec.</figcaption>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" style="object-position:left top" src="#variables.basePath#assets/demo-testbox-attachments.png" alt="A failing TestBox spec with its screenshot, trace and video attached" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>The report</b>TestBox links the screenshot, trace and video right under the failing spec.</figcaption>
 				</figure>
 			</div>
 			<div class="hero-actions" style="justify-content:center;margin-top:28px">
 				<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#testing/">Browser testing guide &rarr;</a>
+				<a class="bxh-btn bxh-btn-ghost" href="#variables.basePath#testing/">Artifacts and the trace viewer</a>
+			</div>
+		</div>
+	</section>
+
+	<!--- Section: TestBox integration --->
+	<section class="comparison-section">
+		<div class="bxh-wrap">
+			<div class="pw-split">
+				<div>
+					<div class="pw-tb-logos"><span class="icon">#homeIcon( "testbox" )#</span>+<span class="icon"><img src="#variables.basePath#assets/brand/bxplaywright-icon.svg" alt=""></span></div>
+					<span class="eyebrow">TestBox integration</span>
+					<h2>Browser tests are just TestBox specs.</h2>
+					<p class="lead" style="font-size:1.05rem">Extend <code>testbox.system.BrowserSpec</code>, call <code>browse()</code> and write <code>describe()</code>, <code>it()</code> and <code>expect()</code> like any other spec. TestBox 7.2 brings the rest.</p>
+					<ul class="pw-checks">
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>One browser per bundle, fresh pages per spec.</b> Set it up with <code>@browserProfile( "ci" )</code> and <code>@baseURL</code>, closed for you after the bundle.</span></li>
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Browser matchers.</b> <code>toSee()</code>, <code>toHaveTitle()</code>, <code>toHavePath()</code>, <code>toHaveText()</code>, <code>toBeVisible()</code> and more, retrying like Playwright's own assertions.</span></li>
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Evidence on every failure.</b> Screenshots, traces and videos attached to the spec, with screenshots shown inline in the HTML reports.</span></li>
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Retries and Run Failed.</b> Retry flaky specs, then rerun only what failed with <code>--failed</code> or the Run Failed button.</span></li>
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Your server, started for you.</b> <code>--web-server</code> starts the app before the tests and stops it after.</span></li>
+					</ul>
+					<div class="hero-actions" style="margin-top:22px">
+						<a class="bxh-btn bxh-btn-primary" href="https://testbox.ortusbooks.com/browser-testing" target="_blank" rel="noopener noreferrer">TestBox browser testing guide &rarr;</a>
+						<a class="bxh-btn bxh-btn-ghost" href="#variables.basePath#testbox/">Deploy it with TestBox</a>
+					</div>
+				</div>
+				<div class="preview-card">
+					<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">tests/specs/ShopSpec.bx</span></div>
+<pre class="pw-code"><span class="c">@browserProfile( "ci" )</span>
+<span class="c">@baseURL( "http://localhost:8080" )</span>
+<span class="k">class</span> extends=<span class="s">"testbox.system.BrowserSpec"</span> {
+
+    <span class="k">function</span> run() {
+        describe( <span class="s">"Shop"</span>, () =&gt; {
+            it( <span class="s">"signs in"</span>, () =&gt; {
+                browse( ( page ) =&gt; {
+                    page.visit( <span class="s">"/"</span> )
+                        .fill( <span class="s">"Email"</span>, <span class="s">"luis@ortus.com"</span> )
+                        .click( <span class="s">"Sign in"</span> )
+                    expect( page ).toHavePath( <span class="s">"/dashboard"</span> )
+                    expect( page ).toSee( <span class="s">"Welcome, Luis"</span> )
+                } )
+            } )
+        } )
+    }
+
+}</pre>
+				</div>
+			</div>
+			<div class="bxsites-image-gallery bxsites-image-gallery--cols-3 pw-gallery" style="margin-top:44px">
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/testbox/report-inline-screenshot.png" alt="The Simple report with the failure screenshot inline on the failed spec" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Screenshots in the report</b>The failure screenshot shows right on the failed spec, embedded so it works anywhere.</figcaption>
+				</figure>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/testbox/report-screenshot-zoom.png" alt="The failure screenshot open full size over the TestBox report" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Full size in one click</b>Open any screenshot full size without leaving the report.</figcaption>
+				</figure>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/testbox/report-dot-drawer.png" alt="The Dot reporter drawer with the failure, the screenshot and the trace" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Every reporter</b>Simple, Dot, Doc and Min all show the evidence, with a Copy show-trace command button.</figcaption>
+				</figure>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/testbox/report-doc.png" alt="The Doc reporter with the failed spec and its screenshot" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Readable as a document</b>The Doc reporter keeps the screenshot next to the failure message.</figcaption>
+				</figure>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/testbox/report-min-run-failed.png" alt="The Min reporter with Run All and Run Failed buttons" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Run Failed</b>Rerun only the specs that failed, from the report or with <code>--failed</code>.</figcaption>
+				</figure>
+				<figure class="bxsites-image-gallery__item">
+					<img class="bxsites-image-gallery__image" style="object-position:left top" src="#variables.basePath#assets/demo-testbox-attachments.png" alt="The Simple reporter listing the screenshot, trace and video of a failed spec" data-bxsites-lightbox loading="lazy">
+					<figcaption class="bxsites-image-gallery__caption"><b>Attachments</b>The trace and the video sit under the spec, ready for the trace viewer.</figcaption>
+				</figure>
 			</div>
 		</div>
 	</section>
@@ -332,6 +448,7 @@
 				<span class="eyebrow">Everything included</span>
 				<h2>The whole Playwright, the BoxLang way.</h2>
 				<p>Browser testing, automation and rendering in one module, with a CLI that installs everything it needs.</p>
+				<a class="section-link" href="#variables.basePath#browsing/">Browse the docs &rarr;</a>
 			</div>
 			<div class="bxh-grid">
 				<div class="bxh-card">
@@ -398,6 +515,25 @@
 		</div>
 	</section>
 
+	<!--- Section: the bxPlaywright CLI --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="pw-split">
+				<div>
+					<span class="eyebrow">The bxPlaywright CLI</span>
+					<h2>One command line for the whole browser toolchain.</h2>
+					<p class="lead" style="font-size:1.05rem">Install browsers and their system libraries, check your setup, record tests, capture pages and serve a browser to your AI agent. No Node.js project, no <code>package.json</code>.</p>
+					<div class="pw-verbs"><div class="pw-verb"><h4>Set up</h4><p><code>install</code>, <code>install-deps</code>, <code>doctor</code> and <code>version</code>: everything a browser needs, checked with fix hints.</p></div><div class="pw-verb"><h4>Record and replay</h4><p><code>codegen</code> writes BoxLang from your clicks, <code>open</code> drives a headed browser and <code>show-trace</code> replays a failure.</p></div><div class="pw-verb"><h4>Capture</h4><p><code>screenshot</code> and <code>pdf</code> grab any URL from the shell, no script needed.</p></div><div class="pw-verb"><h4>Agents and automation</h4><p><code>mcp</code> serves a browser to AI agents. Every verb speaks <code>--json</code>, with bash completions included.</p></div></div>
+					<a class="section-link" href="#variables.basePath#cli/">CLI reference &rarr;</a>
+				</div>
+				<div class="term-panel pw-term">
+					<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">bash</span></div>
+					<div class="term-body"><span class="tl" style="animation-delay:0.00s"><span class="pr">$</span> <span class="cmd">bxPlaywright install chromium --with-deps</span></span><span class="tl" style="animation-delay:0.25s"><span class="cm">  driver, Node.js and Chromium, plus the Linux system libraries</span></span><span class="tl" style="animation-delay:0.50s">&nbsp;</span><span class="tl" style="animation-delay:0.75s"><span class="pr">$</span> <span class="cmd">bxPlaywright doctor</span></span><span class="tl" style="animation-delay:1.00s"><span class="ok">[ok]</span>   module    bx-playwright (small), Playwright 1.63.0, Java 21</span><span class="tl" style="animation-delay:1.25s"><span class="ok">[ok]</span>   driver    Extracted at ~/.boxlang/playwright/driver/1.63.0</span><span class="tl" style="animation-delay:1.50s"><span class="ok">[ok]</span>   node      Node.js 24.21.0 (downloaded)</span><span class="tl" style="animation-delay:1.75s"><span class="ok">[ok]</span>   browsers  chromium-1243, chromium_headless_shell-1243</span><span class="tl" style="animation-delay:2.00s"><span class="ok">[ok]</span>   defaults  profile default, chromium, headless true</span><span class="tl" style="animation-delay:2.25s">&nbsp;</span><span class="tl" style="animation-delay:2.50s"><span class="pr">$</span> <span class="cmd">bxPlaywright codegen http://localhost:8080 -o login.bxs</span></span><span class="tl" style="animation-delay:2.75s"><span class="cm">  records your clicks and writes bx-playwright code</span></span><span class="tl" style="animation-delay:3.00s">&nbsp;</span><span class="tl" style="animation-delay:3.25s"><span class="pr">$</span> <span class="cmd">bxPlaywright mcp --headless</span></span><span class="tl" style="animation-delay:3.50s"><span class="cm">  a browser for Claude, Cursor, VS Code and any MCP client</span></span></div>
+				</div>
+			</div>
+		</div>
+	</section>
+
 	<!--- Section: AI agents --->
 	<section class="comparison-section">
 		<div class="bxh-wrap">
@@ -405,6 +541,7 @@
 				<span class="eyebrow">Built for AI agents</span>
 				<h2>Let your agent see the app it builds.</h2>
 				<p>An agent that writes code but never runs the app is guessing. With bx-playwright it builds a feature, uses it in a real browser, fixes what is broken, and leaves browser tests behind.</p>
+				<a class="section-link" href="#variables.basePath#ai/">AI agents guide &rarr;</a>
 				<div class="stack-strip">
 					<span class="label">Works with</span>
 					<span title="Claude">#homeIcon( "claude" )#</span>
@@ -447,8 +584,8 @@
 				<div class="bxh-card bxh-card-wide">
 					<div class="icon">#homeIcon( "check-shield" )#</div>
 					<div>
-						<h3><a href="https://github.com/ortus-boxlang/skills/tree/main/boxlang-modules/bx-playwright" target="_blank" rel="noopener noreferrer">Official Agent Skills</a></h3>
-						<p><code>npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright</code> teaches Claude Code, Cursor and other coding agents how to browse, assert, mock, render and test with bx-playwright.</p>
+						<h3><a href="https://skills.boxlang.io/skills?search=playwright" target="_blank" rel="noopener noreferrer">Official Agent Skills</a></h3>
+						<p><code>npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright</code> teaches Claude Code, Cursor and other coding agents how to set up, browse, assert, mock, render and test with bx-playwright. Browse all seven skills on <a href="https://skills.boxlang.io/skills?search=playwright" target="_blank" rel="noopener noreferrer">skills.boxlang.io</a>.</p>
 					</div>
 				</div>
 			</div>
@@ -462,6 +599,7 @@
 				<span class="eyebrow">Two distributions</span>
 				<h2>Small and nimble, or everything in the box.</h2>
 				<p>Same module, same API. Pick the one that fits how you deploy.</p>
+				<a class="section-link" href="#variables.basePath#getting-started/">Installation guide &rarr;</a>
 			</div>
 			<div class="pw-dist">
 				<div class="bxh-card">
@@ -506,7 +644,7 @@
 					<div class="icon"><img src="#variables.basePath#assets/commandbox-icon.svg" alt="CommandBox"></div><b>CommandBox</b><span>The package manager and CLI for the BoxLang ecosystem.</span>
 				</a>
 				<a class="eco-card" href="https://bxsites.io" target="_blank" rel="noopener noreferrer">
-					<div class="icon">#bxsitesIcon( "markdown" )#</div><b>bxSites</b><span>The static site generator that builds this site.</span>
+					<div class="icon"><img src="#variables.basePath#assets/logos/bxsites-icon.svg" alt="bxSites"></div><b>bxSites</b><span>The static site generator that builds this site.</span>
 				</a>
 			</div>
 		</div>
@@ -531,6 +669,7 @@
 	<section>
 		<div class="bxh-wrap">
 			<div class="cta">
+				<a href="https://www.ortussolutions.com" target="_blank" rel="noopener noreferrer"><img class="pw-partner pw-logo-light" src="#variables.basePath#assets/logos/ortus-logo-light.svg" alt="Ortus Solutions"><img class="pw-partner pw-logo-dark" src="#variables.basePath#assets/logos/ortus-logo-dark.svg" alt="Ortus Solutions"></a>
 				<span class="eyebrow">Professional open source</span>
 				<h2>Free to use, backed by the team that builds it.</h2>
 				<p><a href="https://www.ortussolutions.com" target="_blank" rel="noopener noreferrer">Ortus Solutions</a> offers support, training and consulting for test automation, browser testing strategy, CI pipelines and BoxLang applications.</p>
@@ -551,7 +690,7 @@
 				<bx:if variables.socialLinks.len() gt 0>
 					<div class="social-row">#renderSocialLinks( variables.socialLinks )#</div>
 				</bx:if>
-				<div class="madeby"><span>Developed by</span> Ortus Solutions</div>
+				<div class="madeby"><span>Developed by</span> <a href="https://www.ortussolutions.com" target="_blank" rel="noopener noreferrer"><img class="pw-logo-light" src="#variables.basePath#assets/logos/ortus-logo-light.svg" alt="Ortus Solutions"><img class="pw-logo-dark" src="#variables.basePath#assets/logos/ortus-logo-dark.svg" alt="Ortus Solutions"></a></div>
 			</div>
 			<div class="footer-col">
 				<h4>Learn</h4>
@@ -591,11 +730,14 @@
 			<div class="footlinks">
 				<a class="footverse" href="https://www.bible.com/bible/59/JHN.14.6.ESV" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">&##10084;&##65039;</span> He is the truth and the life</a>
 				<a class="poweredby" href="https://boxlang.io" target="_blank" rel="noopener noreferrer">Part of the <b>BoxLang</b> ecosystem</a>
+				<a class="builtwith" href="https://bxsites.io" target="_blank" rel="noopener noreferrer"><span>Built with</span><img class="pw-logo-light" src="#variables.basePath#assets/logos/bxsites-logo-light.svg" alt="bxSites"><img class="pw-logo-dark" src="#variables.basePath#assets/logos/bxsites-logo-dark.svg" alt="bxSites"></a>
 			</div>
 		</div>
 	</footer>
 
 	#renderExtraJs( variables.siteConfig.extraJs ?: [] )#
+	<!--- Lightbox for the bxSites image galleries --->
+	<script src="#moduleAssetUrl( 'image-gallery-init.js' )#" defer></script>
 </body>
 </html>
 </bx:output>
