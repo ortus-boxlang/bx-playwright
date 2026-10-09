@@ -97,6 +97,14 @@
 		[data-theme=dark] .pw-code .k{color:##34d399}[data-theme=dark] .pw-code .s{color:##7dd3fc}
 		.eco-card .icon img{width:100%;height:100%;object-fit:contain;display:block}
 		.pw-dist{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+		.pw-demo{max-width:960px;margin:0 auto}
+		.pw-demo img{display:block;width:100%;height:auto}
+		.pw-shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:32px}
+		.pw-shot{margin:0}
+		.pw-shot .preview-card{overflow:hidden}
+		.pw-shot img{display:block;width:100%;height:auto}
+		.pw-shot figcaption{margin-top:12px;font-size:.95rem;opacity:.8}
+		.pw-shot figcaption b{display:block;opacity:1;margin-bottom:2px}
 	</style>
 
 	<!--- Extra CSS --->
@@ -271,6 +279,38 @@
 				<div class="flow-stage"><div class="flow-icon">#homeIcon( "deploy" )#</div><span>Ship</span></div>
 			</div>
 			<p class="orbit-caption">Selectors read like the page: <code>fill( "Email" )</code>, <code>click( "Sign in" )</code>. Assertions wait for the page, so tests do not need sleeps. When something fails you get a typed error that says how to fix it, plus the screenshot, trace and video.</p>
+		</div>
+	</section>
+
+	<!--- Section: see it in action (real captures from a TestBox BrowserSpec run) --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="section-head" style="text-align:center;margin-inline:auto">
+				<span class="eyebrow" style="justify-content:center">See it in action</span>
+				<h2>When a test fails, you see exactly why.</h2>
+				<p>A real run: a TestBox <code>BrowserSpec</code> signs in, checks the dashboard, and fails on purpose. The <code>ci</code> profile keeps the screenshot, the trace and the video, and TestBox attaches them to the failing spec.</p>
+			</div>
+			<div class="preview-card pw-demo">
+				<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">tests/browser/ShopSpec.bx</span></div>
+				<img src="#variables.basePath#assets/demo-browser-test.gif" alt="A browser test signing in to a demo shop and checking the dashboard" loading="lazy" width="960" height="540">
+			</div>
+			<div class="pw-shots">
+				<figure class="pw-shot">
+					<div class="preview-card"><img src="#variables.basePath#assets/demo-failure-screenshot.png" alt="Failure screenshot of the dashboard with the last order still Processing" loading="lazy" width="1280" height="720"></div>
+					<figcaption><b>The screenshot</b>The page at the moment the assertion gave up: the last order still says Processing.</figcaption>
+				</figure>
+				<figure class="pw-shot">
+					<div class="preview-card"><img src="#variables.basePath#assets/demo-trace-viewer.png" alt="The Playwright trace viewer showing the failed hasText assertion" loading="lazy" width="1280" height="800"></div>
+					<figcaption><b>The trace</b><code>bxPlaywright show-trace</code> replays every action with the DOM, console and network.</figcaption>
+				</figure>
+				<figure class="pw-shot">
+					<div class="preview-card"><img src="#variables.basePath#assets/demo-testbox-attachments.png" alt="A failing TestBox spec with its screenshot, trace and video attached" loading="lazy" width="1280" height="420"></div>
+					<figcaption><b>The report</b>TestBox links the screenshot, trace and video right under the failing spec.</figcaption>
+				</figure>
+			</div>
+			<div class="hero-actions" style="justify-content:center;margin-top:28px">
+				<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#testing/">Browser testing guide &rarr;</a>
+			</div>
 		</div>
 	</section>
 
