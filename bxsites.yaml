@@ -18,6 +18,7 @@ theme:
     wordmarkDark: "assets/brand/bxplaywright-logo-horizontal-dark.svg"
     favicon: "assets/favicon.png"
 search: true
+imageGallery: true
 mcp: true
 nav: []
 repo:
