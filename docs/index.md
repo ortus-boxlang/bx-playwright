@@ -1,5 +1,5 @@
 ---
-title: BoxLang Playwright
+title: Browser automation and testing for BoxLang
 order: 1
 summary: Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.
 tags: [overview]
@@ -8,7 +8,7 @@ toc: false
 ogImage: assets/og-image.png
 ---
 
-# BoxLang Playwright
+# BxPlaywright
 
 Drive Chromium, Firefox and WebKit from BoxLang: test web apps, mock the network, test APIs, check accessibility, compare screenshots, and render HTML to PDF or images.
 
