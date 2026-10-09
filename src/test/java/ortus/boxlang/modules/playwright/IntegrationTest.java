@@ -43,13 +43,13 @@ public class IntegrationTest extends BaseIntegrationTest {
 	@Test
 	public void testEnsureBrowserRejectsUnsupportedBrowser() {
 		Object value = run( """
-			try {
-				playwrightEnsureBrowser( "safari" )
-				result = "not rejected"
-			} catch ( any e ) {
-				result = e.type
-			}
-		""" );
+		                    	try {
+		                    		playwrightEnsureBrowser( "safari" )
+		                    		result = "not rejected"
+		                    	} catch ( any e ) {
+		                    		result = e.type
+		                    	}
+		                    """ );
 		assertThat( value ).isEqualTo( "Playwright.InvalidOption" );
 	}
 
