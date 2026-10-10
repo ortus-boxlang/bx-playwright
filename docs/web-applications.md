@@ -1,42 +1,41 @@
 ---
 title: BoxLang Web Applications
-order: 18
+order: 21
 summary: Use bx-playwright from a BoxLang web server without a separate OS-level module installation.
 tags: [web-applications, integration]
 ---
 
 # BoxLang Web Applications
 
-bx-playwright can run inside a BoxLang web application. The module uses the driver and Node.js runtime it manages, then stores Playwright browser downloads in its configured home. You do not need to install BoxLang or bx-playwright separately at the operating-system level just to provision browsers for the web application.
+Use bx-playwright inside a BoxLang web application, for example to render PDFs or capture pages on request. The deployed module manages its own driver, Node.js runtime and browsers: you do not need a separate operating-system BoxLang installation or the CLI.
+
+```js
+playwrightEnsureBrowser( "chromium" )
+
+pageTitle = playwright().browse( ( page ) => page.visit( "https://example.com" ).title() )
+```
 
 ## Deploy the module to the server
 
-Install or declare bx-playwright in the same BoxLang server runtime that hosts the application. If the module is not present in that runtime, the `playwright()` and `playwrightEnsureBrowser()` APIs are not available there.
-
-The CLI is one way to install a browser for a standalone BoxLang installation. A deployed web application does not need to use that separate CLI environment: call the BIF from the web server instead.
+Install or declare bx-playwright in the same BoxLang server runtime that hosts the application. Without it, `playwright()` and `playwrightEnsureBrowser()` are not available there.
 
 ## Provision a browser
 
-Call `playwrightEnsureBrowser()` from server-side BoxLang code before launching the browser:
+`playwrightEnsureBrowser( browser )` installs a missing browser (`chromium` by default, `firefox` or `webkit`) into the module's browser cache, and makes its driver and Node.js runtime available. It is safe to call repeatedly and returns the browser name, the cache path and the installed browser directories.
 
-```boxlang
-playwrightEnsureBrowser( "chromium" )
+- The first call needs network access and takes longer.
+- TestBox browser specs call it for you on first use, see [TestBox Browser Testing](testbox.md).
 
-var browser = playwright( { headless : true } )
-try {
-	var page = browser.newPage()
-	page.visit( "https://example.com" )
-	println( page.title() )
-} finally {
-	browser.close()
-}
-```
+## Use it in requests
 
-The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, browser specs (`@browser`) invoke this API automatically on first browser use; see [TestBox Browser Testing](testbox.md).
+- Prefer `browse()` and the one-shot helpers (`screenshot()`, `pdf()`, `render()`, `content()`): they close the browser even when the code throws.
+- A manager is not thread safe: create one per request or task, never share it in the application scope.
+- On a web runtime, `request`, `url`, `form`, `cookie`, `session` and `cgi` resolve to BoxLang scopes, even as closure arguments: pick other names, such as `address` or `sent`.
+- As a safety net, the module closes every manager still open when it unloads and when the JVM shuts down.
 
 ## Configure the server's home
 
-By default, bx-playwright stores its driver, Node.js runtime, browsers, sessions and artifacts under `~/.boxlang/playwright`, where `~` is the home directory of the **web-server process user**. You can set a dedicated writable location in the BoxLang server's module settings:
+By default, everything is stored under `~/.boxlang/playwright`, where `~` is the home directory of the **web-server process user**. Set a dedicated writable location in the server's module settings:
 
 ```json
 {
@@ -50,10 +49,13 @@ By default, bx-playwright stores its driver, Node.js runtime, browsers, sessions
 }
 ```
 
-`browsersPath` can be configured separately; otherwise it defaults to `{home}/browsers`. Make sure the server user can write to these locations. Provisioning from one runtime or user does not populate a different server runtime's custom home or a different OS user's home.
+`browsersPath` defaults to `{home}/browsers` and can be set separately. The server user must be able to write to both. Provisioning from another runtime or operating-system user does not fill this server's home.
 
 ## Network and Linux dependencies
 
-The BIF downloads browser files only. It does not run package managers or require elevated privileges. On Linux, install the browser's native shared-library dependencies in the server image or host as part of deployment. For an environment where package installation is permitted, the standalone CLI offers `bxPlaywright install chromium --with-deps`; do not invoke that privileged option from an application request.
+The BIF downloads browser files only. It does not run package managers or need elevated privileges.
 
-For offline deployments, provision the same bx-playwright home ahead of time, or disable TestBox's automatic download with `@browserAutoInstall( false )` and ensure a compatible browser is already present. See [Configuration](configuration.md) for all module paths and settings.
+- On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers `bxPlaywright install chromium --with-deps`; never run it from an application request.
+- For offline deployments, provision the same bx-playwright home ahead of time. For TestBox, also add `@browserAutoInstall( false )`.
+
+See [Configuration](configuration.md) for every path and setting.

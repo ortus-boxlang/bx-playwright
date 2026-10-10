@@ -1,13 +1,13 @@
 ---
 title: Configuration
-order: 20
+order: 30
 summary: Module settings, environment variables and resolution order.
 tags: [reference]
 ---
 
 # Configuration
 
-Override any setting in `boxlang.json`:
+Every setting has a sensible default. Override them in `boxlang.json` for the whole runtime, in a [profile](profiles.md), with environment variables, or per call.
 
 ```json
 {
@@ -42,11 +42,13 @@ Override any setting in `boxlang.json`:
 | `ignoreHTTPSErrors` | `false` | |
 | `timeouts` | `{ action : 30000, navigation : 30000, assertion : 5000 }` | Milliseconds |
 | `testIdAttribute` | `data-testid` | Used by `@name` and `byTestId()` |
-| `artifacts` | all `off` | `{ directory, screenshot, trace, video }`, see [Testing](testing.md) |
-| `snapshots` | `{ threshold : 0.2 }` | Visual regression, see [Quality Checks](quality.md). A relative `directory` resolves against the current directory |
+| `artifacts` | all `off` | `{ directory, screenshot, trace, video }`. `directory` defaults to `{home}/artifacts`, see [Testing](testing.md#artifacts) |
+| `snapshots` | `{ threshold : 0.2, maxDiffPixels : 0, maxDiffPixelRatio : 0, update : false }` | Visual regression, see [Quality Checks](quality.md#visual-regression). `directory` defaults to `tests/snapshots`; a relative one resolves against the current directory |
 | `render` | `{ format : A4, printBackground : true, waitUntil : networkidle }` | Rendering defaults |
 | `launchOptions`, `contextOptions` | `{}` | Any Playwright launch or context option |
 | `profiles` | `{}` | Your profiles, see [Profiles](profiles.md) |
+
+Profiles and per-call options also accept `session` (a [saved session](network.md#saved-sessions)), `storageState`, `userAgent`, `deviceScaleFactor`, `reducedMotion`, `forcedColors` and `offline`.
 
 ## Environment variables
 
@@ -57,13 +59,13 @@ Override any setting in `boxlang.json`:
 | `BX_PLAYWRIGHT_UPDATE_SNAPSHOTS` | `true` rewrites visual baselines |
 | `BX_PLAYWRIGHT_HOME` | The home directory |
 | `PLAYWRIGHT_NODEJS_PATH` | Explicit Node.js executable |
-| `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` | Browser-download idle timeout in milliseconds; defaults to `120000` (2 minutes) |
+| `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` | Browser download idle timeout in milliseconds; defaults to `120000` (2 minutes) |
 
 ## Resolution order
 
 Last wins: module settings, profiles, environment variables, then the options passed to `playwright()`, `newContext()` or `newPage()`.
 
 ```js
-playwright( "mobile", { locale : "es-ES" } )
-pw.newPage( { colorScheme : "dark", timeouts : { assertion : 10000 } } )
+pw   = playwright( "mobile", { locale : "es-ES" } )
+page = pw.newPage( { colorScheme : "dark", timeouts : { assertion : 10000 } } )
 ```

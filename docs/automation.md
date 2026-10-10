@@ -10,23 +10,6 @@ tags: [automation, scripts]
 bx-playwright is not only for tests. Any BoxLang script can drive a browser: fill a form every morning, export a report from a site without an API, scrape a table into JSON, check that a page is up, or capture screenshots and PDFs on a schedule.
 
 ```js
-// hello.bxs
-playwright().browse( ( page ) => {
-	page.visit( "https://boxlang.io" )
-	println( page.title() )
-	page.screenshot( "boxlang.png" )
-} )
-```
-
-```bash
-boxlang hello.bxs
-```
-
-## Write a script
-
-A script is a `.bxs` file. Wrap the work in `browse()`: it opens a fresh page, runs your code and closes the browser, also when the code throws.
-
-```js
 // export.bxs
 playwright( { baseURL : "https://app.example.com" } ).browse( ( page ) => {
 	page.visit( "/login" )
@@ -40,20 +23,29 @@ playwright( { baseURL : "https://app.example.com" } ).browse( ( page ) => {
 } )
 ```
 
-* Selectors are the text people see: `fill( "Email", ... )` finds the field by its label, placeholder or name, and `click( "Sign in" )` finds the button or link. See [Browsing](browsing.md).
-* Actions wait for elements on their own, and assertions such as `assertPathIs()` retry until they pass or time out. A step that fails stops the script with a clear error.
-* Read secrets from environment variables with `getSystemSetting()`, never from the script.
+```bash
+APP_USER=bot@example.com APP_PASSWORD=*** boxlang export.bxs
+```
+
+## Write a script
+
+A script is a `.bxs` file. Wrap the work in `browse()`: it opens a fresh page, runs your code and closes the browser, also when the code throws.
+
+- Selectors are the text people see: `fill( "Email", ... )` finds the field by its label, placeholder or name, and `click( "Sign in" )` finds the button or link. See [Browsing](browsing.md).
+- Actions wait for elements on their own, and assertions such as `assertPathIs()` retry until they pass or time out. A step that fails stops the script with a clear error.
+- Read secrets from environment variables with `getSystemSetting()`, never from the script.
 
 ### Arguments
 
-`cliGetArgs()` returns the arguments of the script: `options` for `--name=value` flags and `positionals` for the rest. The first positional is the script itself.
+`cliGetArgs()` returns the arguments of the script: `options` for `--name=value` flags and `positionals` for the rest.
 
 ```js
 // capture.bxs
-args   = cliGetArgs()
-target = args.options.url ?: "https://boxlang.io"
-output = args.options.out ?: "capture.png"
-playwright().screenshot( target, output, { fullPage : true } )
+args    = cliGetArgs()
+address = args.options.url ?: "https://boxlang.io"
+output  = args.options.out ?: "capture.png"
+
+playwright().screenshot( address, output, { fullPage : true } )
 println( "Saved #output#" )
 ```
 
@@ -77,25 +69,7 @@ A browser opens with the Playwright inspector. Click through the job, close the 
 
 ## Log in once with a saved session
 
-Logging in on every run is slow, and some sites challenge frequent logins. A saved session logs in once and reuses the cookies and local storage:
-
-```js
-pw = playwright( { baseURL : "https://app.example.com" } )
-
-pw.session( "app", ( page ) => {
-	page.visit( "/login" )
-		.fill( "Email", getSystemSetting( "APP_USER" ) )
-		.fill( "Password", getSystemSetting( "APP_PASSWORD" ) )
-		.click( "Sign in" )
-		.assertPathIs( "/dashboard" )
-}, { maxAge : 720 } )
-
-pw.browse( ( page ) => {
-	page.visit( "/reports" ).assertSee( "Reports" )
-}, { session : "app" } )
-```
-
-The first run logs in and saves the session; the next runs reuse it until it is `maxAge` minutes old (`0`, the default, never expires), then log in again. `refresh : true` always logs in. Sessions live in `{home}/sessions`, outside your project, because they hold cookies. See [Saved sessions](network.md#saved-sessions).
+Logging in on every run is slow, and some sites challenge frequent logins. A [saved session](network.md#saved-sessions) logs in once and reuses the cookies and local storage until it is `maxAge` minutes old. The [complete job](#a-complete-job) below uses one.
 
 ## Get data out
 
@@ -116,9 +90,9 @@ playwright().browse( ( page ) => {
 } )
 ```
 
-* `locator( sel ).texts()` returns the visible texts of every match; `text( sel )`, `value( sel )` and `attribute( sel, name )` read one element. See [Browsing](browsing.md#reading).
-* Files: `page.screenshot( path )`, `page.pdf( path )` and `page.waitForDownload( () => page.click( "Export" ), path )`.
-* Without a page: `playwright().screenshot( url, path )`, `pdf( url, path )`, `content( url )` (the HTML after JavaScript ran). See [Screenshots, PDFs and Rendering](rendering.md).
+- `locator( sel ).texts()` returns the visible texts of every match; `text( sel )`, `value( sel )` and `attribute( sel, name )` read one element. See [Browsing](browsing.md#reading).
+- Files: `page.screenshot( path )`, `page.pdf( path )` and `page.waitForDownload( () => page.click( "Export" ), path )`.
+- Without a page: `playwright().screenshot( url, path )`, `pdf( url, path )`, `content( url )` (the HTML after JavaScript ran). See [Screenshots, PDFs and Rendering](rendering.md).
 
 ## Handle failures
 
@@ -131,34 +105,23 @@ function runJob() {
 	} )
 }
 
-attempts = 0
-while ( true ) {
-	attempts++
+for ( attempt = 1; attempt <= 3; attempt++ ) {
 	try {
 		runJob()
 		break
 	} catch ( "Playwright.Timeout" e ) {
-		if ( attempts >= 3 ) {
+		if ( attempt == 3 ) {
 			rethrow
 		}
-		println( "Attempt #attempts# timed out, retrying: #e.message#" )
+		println( "Attempt #attempt# timed out, retrying: #e.message#" )
 		sleep( 5000 )
 	}
 }
 ```
 
-The `ci` profile keeps a screenshot, a trace and a video of a failed `browse()`, so you can see what the page looked like when the job broke: open the trace with `bxPlaywright show-trace path/to/trace.zip`. Artifacts go to the `artifacts.directory` setting.
+The `ci` profile keeps a screenshot, a trace and a video of a failed `browse()`, so you can see what the page looked like when the job broke: open the trace with `bxPlaywright show-trace path/to/trace.zip`. Artifacts go to `{home}/artifacts`, or the `artifacts.directory` setting.
 
-### Exit codes
-
-Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, exit explicitly:
-
-```js
-if ( !orders.len() ) {
-	println( "No orders found" )
-	cliExit( 1 )
-}
-```
+Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, call `cliExit( 1 )`, as the [complete job](#a-complete-job) does.
 
 ## Run it on a server
 
@@ -173,9 +136,9 @@ bxPlaywright doctor
 boxlang /jobs/export.bxs
 ```
 
-* Choose a behavior with a profile: `playwright( "ci" )` for headless runs that keep failure artifacts, `playwright( "debug" )` to watch the job in a headed, slowed down browser while you build it. Or set `BX_PLAYWRIGHT_PROFILE` without touching the script.
-* `BX_PLAYWRIGHT_BASEURL`, `BX_PLAYWRIGHT_BROWSER` and `BX_PLAYWRIGHT_HEADLESS` override those settings per environment. See [Configuration](configuration.md#environment-variables).
-* bx-playwright closes every browser it started when the script ends, even when it never called `close()`, so jobs do not leave browser processes behind. A process killed with `kill -9` cannot clean up.
+- Choose a behavior with a profile: `playwright( "ci" )` for headless runs that keep failure artifacts, `playwright( "debug" )` to watch the job in a headed, slowed down browser while you build it. Or set `BX_PLAYWRIGHT_PROFILE` without touching the script.
+- `BX_PLAYWRIGHT_BASEURL`, `BX_PLAYWRIGHT_BROWSER` and `BX_PLAYWRIGHT_HEADLESS` override those settings per environment. See [Configuration](configuration.md#environment-variables).
+- bx-playwright closes every browser it started when the script ends, even when it never called `close()`, so jobs do not leave browser processes behind. A process killed with `kill -9` cannot clean up.
 
 ## Schedule it
 
@@ -194,7 +157,7 @@ To keep the schedule in BoxLang, write a scheduler class and run it with `boxlan
 // schedulers/JobsScheduler.bx
 class {
 
-	property name="scheduler";
+	property name="scheduler"
 
 	function configure() {
 		scheduler.setSchedulerName( "browser-jobs" )
@@ -222,9 +185,9 @@ boxlang schedule schedulers/JobsScheduler.bx
 
 The scheduler runs until you stop it (Ctrl+C). To start it with the runtime, list it in the `schedulers` setting of `boxlang.json`. Inside a ColdBox application, use its scheduler and call the same code from a task. See the [BoxLang scheduled tasks guide](https://boxlang.ortusbooks.com/boxlang-framework/asynchronous-programming/scheduled-tasks).
 
-* Each run starts its own browser inside `browse()`. Playwright is not thread safe: never share a page or a manager between tasks that run at the same time.
-* Use absolute paths for files a scheduled task writes: relative paths do not resolve against the directory you started the scheduler from.
-* Date masks are case sensitive: `yyyy-MM-dd` is the date, `mm` is minutes.
+- Each run starts its own browser inside `browse()`. Playwright is not thread safe: never share a page or a manager between tasks that run at the same time.
+- Use absolute paths for files a scheduled task writes: relative paths do not resolve against the directory you started the scheduler from.
+- Date masks are case sensitive: `yyyy-MM-dd` is the date, `mm` is minutes.
 
 ## A complete job
 
@@ -249,11 +212,13 @@ orders = pw.browse( ( page ) => {
 	} )
 }, { session : "app" } )
 
-fileWrite( "out/orders.json", jsonSerialize( orders ) )
-println( "Exported #orders.len()# orders" )
 if ( !orders.len() ) {
+	println( "No orders found" )
 	cliExit( 1 )
 }
+
+fileWrite( "out/orders.json", jsonSerialize( orders ) )
+println( "Exported #orders.len()# orders" )
 ```
 
 ```bash
