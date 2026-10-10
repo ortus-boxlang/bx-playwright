@@ -1,10 +1,12 @@
 /**
- * playwrightEnsureBrowser( browser )
+ * playwrightEnsureBrowser( browser, channel )
  *
  * Ensure a Playwright-managed browser is installed in the configured module home. Safe to call repeatedly.
+ * With a channel, like chrome or msedge, the browser installed on the machine is used and nothing is downloaded.
  *
  * <pre>
  * playwrightEnsureBrowser( "chromium" )
+ * playwrightEnsureBrowser( "chromium", "chrome" )   // uses the installed Google Chrome
  * </pre>
  */
 @BoxBIF
@@ -14,13 +16,18 @@ class {
 	 * Ensure a browser is installed using this deployed module's runtime and paths.
 	 *
 	 * @browser The browser to ensure: chromium, firefox or webkit
+	 * @channel The browser channel, for example chrome or msedge, empty for the Playwright browser
 	 *
-	 * @return Browser name, cache path and installed browser directories
+	 * @return { browser, channel, path, installed }: the browser name, its channel, the cache path and the installed browser folders
+	 *
+	 * @throws Playwright.InvalidOption when the browser name is unsupported
+	 * @throws Playwright.NotInstalled when installation fails, with the last lines of the Playwright CLI output in its detail
 	 */
-	struct function invoke( string browser = "chromium" ) {
+	struct function invoke( string browser = "chromium", string channel = "" ) {
 		return new models.BrowserInstaller@playwright().ensure(
 			arguments.browser,
-			new models.Config@playwright()
+			new models.Config@playwright(),
+			arguments.channel
 		)
 	}
 
