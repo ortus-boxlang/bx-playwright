@@ -26,8 +26,8 @@
 
 	
 	
-		<meta name="description" content="Use bx-playwright in tests, keep artifacts on failure, debug.">
-		<meta property="og:description" content="Use bx-playwright in tests, keep artifacts on failure, debug.">
+		<meta name="description" content="Use bx-playwright in any test runner, keep artifacts on failure, debug, run in CI.">
+		<meta property="og:description" content="Use bx-playwright in any test runner, keep artifacts on failure, debug, run in CI.">
 	
 
 	
@@ -221,7 +221,7 @@
 		</h1>
 		
 		
-			<p class="page-summary">Use bx-playwright in tests, keep artifacts on failure, debug.</p>
+			<p class="page-summary">Use bx-playwright in any test runner, keep artifacts on failure, debug, run in CI.</p>
 		
 		
 		
@@ -245,20 +245,20 @@
 </symbol>
 </svg>
 <h1 id="testing"><a href="#testing" id="testing" name="testing" class="anchor"></a>Testing</h1>
-<p>bx-playwright works in any test framework. TestBox and ColdBox build their browser testing support on the same public API, described in <a href="/integrations/index.html">Building on bx-playwright</a>.</p>
-<p>For the TestBox browser spec workflow, including in-server browser provisioning, see <a href="/testbox/index.html">TestBox Browser Testing</a>. For direct use from a deployed web application, see <a href="/web-applications/index.html">BoxLang Web Applications</a>.</p>
+<p>Use bx-playwright from any test runner, keep screenshots, traces and videos of failed tests, debug them, and run them in CI.</p>
 <div class="adm-block adm-tip">
 <div class="adm-heading">
 <svg class="adm-icon"><use xlink:href="#adm-tip" /></svg><span>Using TestBox or ColdBox?</span>
 </div>
 <div class="adm-body">
-<p>Add <code>@browser</code> to a spec that extends <code>testbox.system.BaseSpec</code> (TestBox 7.2+) or <code>coldbox.system.testing.BaseTestCase</code> (ColdBox 8.3+). You get <code>browse()</code>, browser matchers such as <code>expect( page ).toSee( &quot;Welcome&quot; )</code>, screenshots and traces attached to failed specs, retries, and for ColdBox named routes with <code>visitRoute()</code> and <code>assertRouteIs()</code>. The browser closes after the bundle, even when <code>afterAll()</code> throws. For logged-in tests, use <a href="/network/index.html#saved-sessions">saved sessions</a>: log in once through your login page and pass <code>{ session : &quot;name&quot; }</code> to <code>browse()</code>. See the <a href="https://testbox.ortusbooks.com/browser-testing">TestBox Browser Testing guide</a> and the <a href="https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing">ColdBox Browser Testing guide</a>.</p>
+<p>Add <code>@browser</code> to the spec and the framework manages the browser, adds browser matchers such as <code>expect( page ).toSee( &quot;Welcome&quot; )</code> and attaches failure artifacts to the report. See <a href="/testbox/index.html">TestBox Browser Testing</a>. This page covers what works everywhere, including inside those specs.</p>
 </div>
 </div>
+<p>Without framework support, call <code>browse()</code> in each test:</p>
 <pre><code class="language-js">describe( &quot;Login&quot;, () =&gt; {
 	it( &quot;signs in&quot;, () =&gt; {
-		playwright( &quot;ci&quot; ).browse( ( page ) =&gt; {
-			page.visit( &quot;http://localhost:8080/login&quot; )
+		playwright( &quot;ci&quot;, { baseURL : &quot;http://localhost:8080&quot; } ).browse( ( page ) =&gt; {
+			page.visit( &quot;/login&quot; )
 				.fill( &quot;Email&quot;, &quot;luis@ortus.com&quot; )
 				.fill( &quot;Password&quot;, &quot;secret&quot; )
 				.click( &quot;Sign in&quot; )
@@ -267,7 +267,7 @@
 	} )
 } )
 </code></pre>
-<p><code>browse()</code> closes the context with <code>failed = true</code> when the callback throws, so failure artifacts are kept.</p>
+<p>When the callback throws, <code>browse()</code> closes the context with <code>failed = true</code>, so the <code>ci</code> profile keeps the failure artifacts. For logged-in tests, log in once with a <a href="/network/index.html#saved-sessions">saved session</a> and pass <code>{ session : &quot;name&quot; }</code> to <code>browse()</code>.</p>
 <h2 id="artifacts"><a href="#artifacts" id="artifacts" name="artifacts" class="anchor"></a>Artifacts</h2>
 <p>The <code>artifacts</code> setting (or a profile such as <code>ci</code>, <code>record</code>, <code>debug</code>) records screenshots, traces and videos:</p>
 <div class="bxsites-table-wrap"><table class="table">
@@ -280,16 +280,17 @@
 <tr><td><code>only-on-failure</code> / <code>retain-on-failure</code></td><td>only when the context closes with <code>failed = true</code></td></tr>
 </tbody>
 </table></div>
-<pre><code class="language-js">context = pw.newContext( { artifacts : { trace : &quot;retain-on-failure&quot;, screenshot : &quot;only-on-failure&quot; } } )
-// ...
+<p><code>browse()</code> applies the policies for you. When you manage a context yourself, tell <code>close()</code> whether the work failed:</p>
+<pre><code class="language-js">context = playwright().newContext( { artifacts : { trace : &quot;retain-on-failure&quot;, screenshot : &quot;only-on-failure&quot; } } )
+// ... run the test with context.newPage()
 kept = context.close( failed = true )   // { screenshots, trace, videos, directory }
 </code></pre>
-<p>Open a trace with <code>bxPlaywright show-trace path/to/trace.zip</code>.</p>
+<p>Artifacts go to <code>{home}/artifacts</code> unless you set <code>artifacts.directory</code>. Open a trace with <code>bxPlaywright show-trace path/to/trace.zip</code>.</p>
 <h2 id="debugging"><a href="#debugging" id="debugging" name="debugging" class="anchor"></a>Debugging</h2>
 <ul>
 <li><code>playwright( &quot;debug&quot; )</code>: headed, slowed down, every artifact on.</li>
 <li><code>playwright( &quot;headed&quot; )</code> or <code>BX_PLAYWRIGHT_HEADLESS=false</code>.</li>
-<li><code>page.snapshot()</code> prints the accessibility tree.</li>
+<li><code>println( page.snapshot() )</code> prints the accessibility tree: what the page exposes to selectors.</li>
 <li><code>bxPlaywright codegen http://localhost:8080</code> records your clicks as BoxLang code.</li>
 </ul>
 <h2 id="ci"><a href="#ci" id="ci" name="ci" class="anchor"></a>CI</h2>
@@ -352,13 +353,14 @@ jobs:
           path: ~/.boxlang/playwright/artifacts
           if-no-files-found: ignore
 </code></pre>
-<p>Replace <code>boxlang run-tests.bxs</code> with your test command. If your tests need the application running, start it in an earlier step, for example <code>boxlang-miniserver --port 8080 &amp;</code>, and set <code>BX_PLAYWRIGHT_BASEURL</code>. Artifacts go to <code>~/.boxlang/playwright/artifacts</code> unless you set <code>artifacts.directory</code>. Open a downloaded trace with <code>bxPlaywright show-trace trace.zip</code>.</p>
+<p>Replace <code>boxlang run-tests.bxs</code> with your test command. If your tests need the application running, start it in an earlier step, for example <code>boxlang-miniserver --port 8080 &amp;</code>, and set <code>BX_PLAYWRIGHT_BASEURL</code>. Open a downloaded trace with <code>bxPlaywright show-trace trace.zip</code>.</p>
+<p>For TestBox specs that run inside a web server, the server provisions its own browser: see <a href="/testbox/index.html#provision-the-browser">TestBox Browser Testing</a>.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 

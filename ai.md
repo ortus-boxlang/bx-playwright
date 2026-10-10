@@ -7,6 +7,8 @@ tags: [ai]
 
 # AI Agents
 
+Let an AI agent drive a browser: compact page snapshots with element refs, ready-made browser tools for bx-ai and other frameworks, and Playwright's MCP server for Claude, Cursor and VS Code.
+
 ## Snapshots with refs
 
 ```js
@@ -16,7 +18,7 @@ println( page.snapshot( options = { mode : "ai" } ) )
 page.fill( "ref=e5", "luis@ortus.com" ).click( "ref=e7" )
 ```
 
-The accessibility tree is compact and token efficient. Refs point at elements precisely.
+The accessibility tree is compact and token efficient. Every element gets a ref that works as a selector until the page changes. `snapshot( selector )` limits the tree to one element.
 
 ## Browser tools for bx-ai
 
@@ -68,8 +70,8 @@ Useful options, passed straight to Playwright: `--headless` (the browser is head
 
 ## Codegen to BoxLang
 
-`bxPlaywright codegen http://localhost:8080 --output=login.bxs` records your actions and writes bx-playwright code. `--target=java` (or javascript, python) keeps Playwright's own output.
+`bxPlaywright codegen http://localhost:8080 --output=login.bxs` records your actions and writes bx-playwright code, see [Automation Scripts](automation.md#record-a-script-with-codegen). `--target=java` (or javascript, python) keeps Playwright's own output.
 
 ## Self description
 
-`page.help()`, `page.help( "fill" )` and `bxPlaywright help --json` describe the API for agents and humans. Errors always carry a `type` and a `detail` with the fix.
+`page.help()`, `page.help( "fill" )` and `bxPlaywright help --json` describe the API for agents and humans. Errors always carry a `type` and a `detail` with the fix, see [Errors](errors.md).

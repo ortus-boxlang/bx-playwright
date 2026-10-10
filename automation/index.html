@@ -233,23 +233,12 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#write-a-script">Write a script</a></li><li class="toc-level-3"><a href="#arguments">Arguments</a></li><li class="toc-level-2"><a href="#record-a-script-with-codegen">Record a script with codegen</a></li><li class="toc-level-2"><a href="#log-in-once-with-a-saved-session">Log in once with a saved session</a></li><li class="toc-level-2"><a href="#get-data-out">Get data out</a></li><li class="toc-level-2"><a href="#handle-failures">Handle failures</a></li><li class="toc-level-3"><a href="#exit-codes">Exit codes</a></li><li class="toc-level-2"><a href="#run-it-on-a-server">Run it on a server</a></li><li class="toc-level-2"><a href="#schedule-it">Schedule it</a></li><li class="toc-level-3"><a href="#cron">cron</a></li><li class="toc-level-3"><a href="#a-boxlang-scheduler">A BoxLang scheduler</a></li><li class="toc-level-2"><a href="#a-complete-job">A complete job</a></li><li class="toc-level-2"><a href="#let-an-ai-agent-do-it">Let an AI agent do it</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#write-a-script">Write a script</a></li><li class="toc-level-3"><a href="#arguments">Arguments</a></li><li class="toc-level-2"><a href="#record-a-script-with-codegen">Record a script with codegen</a></li><li class="toc-level-2"><a href="#log-in-once-with-a-saved-session">Log in once with a saved session</a></li><li class="toc-level-2"><a href="#get-data-out">Get data out</a></li><li class="toc-level-2"><a href="#handle-failures">Handle failures</a></li><li class="toc-level-2"><a href="#run-it-on-a-server">Run it on a server</a></li><li class="toc-level-2"><a href="#schedule-it">Schedule it</a></li><li class="toc-level-3"><a href="#cron">cron</a></li><li class="toc-level-3"><a href="#a-boxlang-scheduler">A BoxLang scheduler</a></li><li class="toc-level-2"><a href="#a-complete-job">A complete job</a></li><li class="toc-level-2"><a href="#let-an-ai-agent-do-it">Let an AI agent do it</a></li></ul></details>
 		
 
 		
 		<h1 id="automation-scripts"><a href="#automation-scripts" id="automation-scripts" name="automation-scripts" class="anchor"></a>Automation Scripts</h1>
 <p>bx-playwright is not only for tests. Any BoxLang script can drive a browser: fill a form every morning, export a report from a site without an API, scrape a table into JSON, check that a page is up, or capture screenshots and PDFs on a schedule.</p>
-<pre><code class="language-js">// hello.bxs
-playwright().browse( ( page ) =&gt; {
-	page.visit( &quot;https://boxlang.io&quot; )
-	println( page.title() )
-	page.screenshot( &quot;boxlang.png&quot; )
-} )
-</code></pre>
-<pre><code class="language-bash">boxlang hello.bxs
-</code></pre>
-<h2 id="write-a-script"><a href="#write-a-script" id="write-a-script" name="write-a-script" class="anchor"></a>Write a script</h2>
-<p>A script is a <code>.bxs</code> file. Wrap the work in <code>browse()</code>: it opens a fresh page, runs your code and closes the browser, also when the code throws.</p>
 <pre><code class="language-js">// export.bxs
 playwright( { baseURL : &quot;https://app.example.com&quot; } ).browse( ( page ) =&gt; {
 	page.visit( &quot;/login&quot; )
@@ -262,18 +251,23 @@ playwright( { baseURL : &quot;https://app.example.com&quot; } ).browse( ( page )
 	page.waitForDownload( () =&gt; page.click( &quot;Export CSV&quot; ), &quot;reports/orders.csv&quot; )
 } )
 </code></pre>
+<pre><code class="language-bash">APP_USER=bot@example.com APP_PASSWORD=*** boxlang export.bxs
+</code></pre>
+<h2 id="write-a-script"><a href="#write-a-script" id="write-a-script" name="write-a-script" class="anchor"></a>Write a script</h2>
+<p>A script is a <code>.bxs</code> file. Wrap the work in <code>browse()</code>: it opens a fresh page, runs your code and closes the browser, also when the code throws.</p>
 <ul>
 <li>Selectors are the text people see: <code>fill( &quot;Email&quot;, ... )</code> finds the field by its label, placeholder or name, and <code>click( &quot;Sign in&quot; )</code> finds the button or link. See <a href="/browsing/index.html">Browsing</a>.</li>
 <li>Actions wait for elements on their own, and assertions such as <code>assertPathIs()</code> retry until they pass or time out. A step that fails stops the script with a clear error.</li>
 <li>Read secrets from environment variables with <code>getSystemSetting()</code>, never from the script.</li>
 </ul>
 <h3 id="arguments"><a href="#arguments" id="arguments" name="arguments" class="anchor"></a>Arguments</h3>
-<p><code>cliGetArgs()</code> returns the arguments of the script: <code>options</code> for <code>--name=value</code> flags and <code>positionals</code> for the rest. The first positional is the script itself.</p>
+<p><code>cliGetArgs()</code> returns the arguments of the script: <code>options</code> for <code>--name=value</code> flags and <code>positionals</code> for the rest.</p>
 <pre><code class="language-js">// capture.bxs
-args   = cliGetArgs()
-target = args.options.url ?: &quot;https://boxlang.io&quot;
-output = args.options.out ?: &quot;capture.png&quot;
-playwright().screenshot( target, output, { fullPage : true } )
+args    = cliGetArgs()
+address = args.options.url ?: &quot;https://boxlang.io&quot;
+output  = args.options.out ?: &quot;capture.png&quot;
+
+playwright().screenshot( address, output, { fullPage : true } )
 println( &quot;Saved #output#&quot; )
 </code></pre>
 <pre><code class="language-bash">boxlang capture.bxs --url=https://ortussolutions.com --out=ortus.png
@@ -289,22 +283,7 @@ println( &quot;Saved #output#&quot; )
 <li>Wrap the steps in <code>browse()</code> if they are not, and add an assertion after each important step so a broken job fails where it breaks.</li>
 </ol>
 <h2 id="log-in-once-with-a-saved-session"><a href="#log-in-once-with-a-saved-session" id="log-in-once-with-a-saved-session" name="log-in-once-with-a-saved-session" class="anchor"></a>Log in once with a saved session</h2>
-<p>Logging in on every run is slow, and some sites challenge frequent logins. A saved session logs in once and reuses the cookies and local storage:</p>
-<pre><code class="language-js">pw = playwright( { baseURL : &quot;https://app.example.com&quot; } )
-
-pw.session( &quot;app&quot;, ( page ) =&gt; {
-	page.visit( &quot;/login&quot; )
-		.fill( &quot;Email&quot;, getSystemSetting( &quot;APP_USER&quot; ) )
-		.fill( &quot;Password&quot;, getSystemSetting( &quot;APP_PASSWORD&quot; ) )
-		.click( &quot;Sign in&quot; )
-		.assertPathIs( &quot;/dashboard&quot; )
-}, { maxAge : 720 } )
-
-pw.browse( ( page ) =&gt; {
-	page.visit( &quot;/reports&quot; ).assertSee( &quot;Reports&quot; )
-}, { session : &quot;app&quot; } )
-</code></pre>
-<p>The first run logs in and saves the session; the next runs reuse it until it is <code>maxAge</code> minutes old (<code>0</code>, the default, never expires), then log in again. <code>refresh : true</code> always logs in. Sessions live in <code>{home}/sessions</code>, outside your project, because they hold cookies. See <a href="/network/index.html#saved-sessions">Saved sessions</a>.</p>
+<p>Logging in on every run is slow, and some sites challenge frequent logins. A <a href="/network/index.html#saved-sessions">saved session</a> logs in once and reuses the cookies and local storage until it is <code>maxAge</code> minutes old. The <a href="#a-complete-job">complete job</a> below uses one.</p>
 <h2 id="get-data-out"><a href="#get-data-out" id="get-data-out" name="get-data-out" class="anchor"></a>Get data out</h2>
 <pre><code class="language-js">playwright().browse( ( page ) =&gt; {
 	page.visit( &quot;https://app.example.com/orders&quot; )
@@ -334,29 +313,21 @@ pw.browse( ( page ) =&gt; {
 	} )
 }
 
-attempts = 0
-while ( true ) {
-	attempts++
+for ( attempt = 1; attempt &lt;= 3; attempt++ ) {
 	try {
 		runJob()
 		break
 	} catch ( &quot;Playwright.Timeout&quot; e ) {
-		if ( attempts &gt;= 3 ) {
+		if ( attempt == 3 ) {
 			rethrow
 		}
-		println( &quot;Attempt #attempts# timed out, retrying: #e.message#&quot; )
+		println( &quot;Attempt #attempt# timed out, retrying: #e.message#&quot; )
 		sleep( 5000 )
 	}
 }
 </code></pre>
-<p>The <code>ci</code> profile keeps a screenshot, a trace and a video of a failed <code>browse()</code>, so you can see what the page looked like when the job broke: open the trace with <code>bxPlaywright show-trace path/to/trace.zip</code>. Artifacts go to the <code>artifacts.directory</code> setting.</p>
-<h3 id="exit-codes"><a href="#exit-codes" id="exit-codes" name="exit-codes" class="anchor"></a>Exit codes</h3>
-<p>Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, exit explicitly:</p>
-<pre><code class="language-js">if ( !orders.len() ) {
-	println( &quot;No orders found&quot; )
-	cliExit( 1 )
-}
-</code></pre>
+<p>The <code>ci</code> profile keeps a screenshot, a trace and a video of a failed <code>browse()</code>, so you can see what the page looked like when the job broke: open the trace with <code>bxPlaywright show-trace path/to/trace.zip</code>. Artifacts go to <code>{home}/artifacts</code>, or the <code>artifacts.directory</code> setting.</p>
+<p>Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, call <code>cliExit( 1 )</code>, as the <a href="#a-complete-job">complete job</a> does.</p>
 <h2 id="run-it-on-a-server"><a href="#run-it-on-a-server" id="run-it-on-a-server" name="run-it-on-a-server" class="anchor"></a>Run it on a server</h2>
 <p>Scripts run headless by default. On a server or in a container:</p>
 <pre><code class="language-bash"># Once: Chromium plus the Linux libraries it needs
@@ -381,7 +352,7 @@ boxlang /jobs/export.bxs
 <pre><code class="language-js">// schedulers/JobsScheduler.bx
 class {
 
-	property name=&quot;scheduler&quot;;
+	property name=&quot;scheduler&quot;
 
 	function configure() {
 		scheduler.setSchedulerName( &quot;browser-jobs&quot; )
@@ -431,11 +402,13 @@ orders = pw.browse( ( page ) =&gt; {
 	} )
 }, { session : &quot;app&quot; } )
 
-fileWrite( &quot;out/orders.json&quot;, jsonSerialize( orders ) )
-println( &quot;Exported #orders.len()# orders&quot; )
 if ( !orders.len() ) {
+	println( &quot;No orders found&quot; )
 	cliExit( 1 )
 }
+
+fileWrite( &quot;out/orders.json&quot;, jsonSerialize( orders ) )
+println( &quot;Exported #orders.len()# orders&quot; )
 </code></pre>
 <pre><code class="language-bash">APP_URL=https://app.example.com APP_USER=bot@example.com APP_PASSWORD=*** boxlang jobs/daily-orders.bxs
 </code></pre>
@@ -446,7 +419,7 @@ if ( !orders.len() ) {
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/automation.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/automation.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/automation.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/automation.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -478,7 +451,7 @@ if ( !orders.len() ) {
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#write-a-script">Write a script</a></li><li class="toc-level-3"><a href="#arguments">Arguments</a></li><li class="toc-level-2"><a href="#record-a-script-with-codegen">Record a script with codegen</a></li><li class="toc-level-2"><a href="#log-in-once-with-a-saved-session">Log in once with a saved session</a></li><li class="toc-level-2"><a href="#get-data-out">Get data out</a></li><li class="toc-level-2"><a href="#handle-failures">Handle failures</a></li><li class="toc-level-3"><a href="#exit-codes">Exit codes</a></li><li class="toc-level-2"><a href="#run-it-on-a-server">Run it on a server</a></li><li class="toc-level-2"><a href="#schedule-it">Schedule it</a></li><li class="toc-level-3"><a href="#cron">cron</a></li><li class="toc-level-3"><a href="#a-boxlang-scheduler">A BoxLang scheduler</a></li><li class="toc-level-2"><a href="#a-complete-job">A complete job</a></li><li class="toc-level-2"><a href="#let-an-ai-agent-do-it">Let an AI agent do it</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#write-a-script">Write a script</a></li><li class="toc-level-3"><a href="#arguments">Arguments</a></li><li class="toc-level-2"><a href="#record-a-script-with-codegen">Record a script with codegen</a></li><li class="toc-level-2"><a href="#log-in-once-with-a-saved-session">Log in once with a saved session</a></li><li class="toc-level-2"><a href="#get-data-out">Get data out</a></li><li class="toc-level-2"><a href="#handle-failures">Handle failures</a></li><li class="toc-level-2"><a href="#run-it-on-a-server">Run it on a server</a></li><li class="toc-level-2"><a href="#schedule-it">Schedule it</a></li><li class="toc-level-3"><a href="#cron">cron</a></li><li class="toc-level-3"><a href="#a-boxlang-scheduler">A BoxLang scheduler</a></li><li class="toc-level-2"><a href="#a-complete-job">A complete job</a></li><li class="toc-level-2"><a href="#let-an-ai-agent-do-it">Let an AI agent do it</a></li></ul></nav>
 				</aside>
 			
 		</div>

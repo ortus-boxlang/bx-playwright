@@ -233,12 +233,13 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#inline-style">Inline style</a></li><li class="toc-level-2"><a href="#expect-style">Expect style</a></li><li class="toc-level-2"><a href="#soft-assertions">Soft assertions</a></li><li class="toc-level-2"><a href="#failures">Failures</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#inline-style">Inline style</a></li><li class="toc-level-2"><a href="#expect-style">Expect style</a></li><li class="toc-level-2"><a href="#regular-expressions">Regular expressions</a></li><li class="toc-level-2"><a href="#soft-assertions">Soft assertions</a></li><li class="toc-level-2"><a href="#failures">Failures</a></li></ul></details>
 		
 
 		
 		<h1 id="assertions"><a href="#assertions" id="assertions" name="assertions" class="anchor"></a>Assertions</h1>
-<p>Assertions retry until they pass or the assertion timeout (5 s by default) expires. No sleeps needed.</p>
+<p>Check what the page shows. Assertions are web-first: they retry until they pass or the assertion timeout (5 s by default) expires, so you never need sleeps.</p>
+<p>There are two equivalent styles. Use the inline style for readable chains, and <code>expect()</code> for the full matcher set.</p>
 <h2 id="inline-style"><a href="#inline-style" id="inline-style" name="inline-style" class="anchor"></a>Inline style</h2>
 <pre><code class="language-js">page.assertTitle( &quot;Dashboard&quot; )
 	.assertSee( &quot;Welcome&quot; )
@@ -268,20 +269,30 @@ page.expect().toHaveTitle( &quot;Dashboard&quot; ).toHaveURL( page.regex( &quot;
 page.expect( &quot;@error&quot; ).not().toBeVisible()
 </code></pre>
 <p><code>toBeVisible</code>, <code>toBeHidden</code>, <code>toBeEnabled</code>, <code>toBeDisabled</code>, <code>toBeChecked</code>, <code>toBeEditable</code>, <code>toBeEmpty</code>, <code>toBeFocused</code>, <code>toBeAttached</code>, <code>toBeInViewport</code>, <code>toHaveText</code>, <code>toContainText</code>, <code>toHaveValue</code>, <code>toHaveCount</code>, <code>toHaveAttribute</code>, <code>toHaveClass</code>, <code>toContainClass</code>, <code>toHaveId</code>, <code>toHaveCSS</code>, <code>toHaveAccessibleName</code>, <code>toHaveRole</code>, <code>toMatchAriaSnapshot</code>, <code>toHaveTitle</code>, <code>toHaveURL</code>, <code>toBeOK</code> (API responses). <code>not()</code> negates the next one. <code>toHaveCount</code> counts every match of the selector, visible text included; the other matchers check the first match.</p>
+<h2 id="regular-expressions"><a href="#regular-expressions" id="regular-expressions" name="regular-expressions" class="anchor"></a>Regular expressions</h2>
+<p>Expected texts, titles, URLs, values and attributes can be a regex built with <code>regex( pattern, flags )</code>, where flags are any of <code>i</code>, <code>m</code> and <code>s</code>:</p>
+<pre><code class="language-js">page.assertSee( page.regex( &quot;welcome, \w+&quot;, &quot;i&quot; ) )
+page.expect().toHaveURL( page.regex( &quot;/orders/\d+$&quot; ) )
+</code></pre>
 <h2 id="soft-assertions"><a href="#soft-assertions" id="soft-assertions" name="soft-assertions" class="anchor"></a>Soft assertions</h2>
 <p>Run everything, fail once with all the failures (a nested <code>soft()</code> adds its failures to the outer one):</p>
-<pre><code class="language-js">page.soft( ( p ) =&gt; {
-	p.assertTitle( &quot;Store&quot; ).assertSee( &quot;Buy&quot; ).assertVisible( &quot;h1&quot; )
+<pre><code class="language-js">page.soft( ( page ) =&gt; {
+	page.assertTitle( &quot;Store&quot; )
+		.assertSee( &quot;Buy&quot; )
+		.assertVisible( &quot;h1&quot; )
 } )
 </code></pre>
 <h2 id="failures"><a href="#failures" id="failures" name="failures" class="anchor"></a>Failures</h2>
-<p>A failure throws <code>Playwright.AssertionFailed</code> with Playwright's message: expected value, received value and the call log. Change the timeout with the <code>timeouts.assertion</code> setting or per page: <code>pw.newPage( { timeouts : { assertion : 10000 } } )</code>.</p>
+<p>A failure throws <code>Playwright.AssertionFailed</code> with Playwright's message: expected value, received value and the call log. See <a href="/errors/index.html">Errors</a>.</p>
+<p>Change the timeout with the <code>timeouts.assertion</code> setting, or per page:</p>
+<pre><code class="language-js">page = playwright().newPage( { timeouts : { assertion : 10000 } } )
+</code></pre>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/assertions.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/assertions.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/assertions.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/assertions.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -313,7 +324,7 @@ page.expect( &quot;@error&quot; ).not().toBeVisible()
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#inline-style">Inline style</a></li><li class="toc-level-2"><a href="#expect-style">Expect style</a></li><li class="toc-level-2"><a href="#soft-assertions">Soft assertions</a></li><li class="toc-level-2"><a href="#failures">Failures</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#inline-style">Inline style</a></li><li class="toc-level-2"><a href="#expect-style">Expect style</a></li><li class="toc-level-2"><a href="#regular-expressions">Regular expressions</a></li><li class="toc-level-2"><a href="#soft-assertions">Soft assertions</a></li><li class="toc-level-2"><a href="#failures">Failures</a></li></ul></nav>
 				</aside>
 			
 		</div>

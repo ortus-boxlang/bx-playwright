@@ -233,31 +233,35 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#deploy-the-module-to-the-server">Deploy the module to the server</a></li><li class="toc-level-2"><a href="#provision-a-browser">Provision a browser</a></li><li class="toc-level-2"><a href="#configure-the-servers-home">Configure the server&#x27;s home</a></li><li class="toc-level-2"><a href="#network-and-linux-dependencies">Network and Linux dependencies</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#deploy-the-module-to-the-server">Deploy the module to the server</a></li><li class="toc-level-2"><a href="#provision-a-browser">Provision a browser</a></li><li class="toc-level-2"><a href="#use-it-in-requests">Use it in requests</a></li><li class="toc-level-2"><a href="#configure-the-servers-home">Configure the server&#x27;s home</a></li><li class="toc-level-2"><a href="#network-and-linux-dependencies">Network and Linux dependencies</a></li></ul></details>
 		
 
 		
 		<h1 id="boxlang-web-applications"><a href="#boxlang-web-applications" id="boxlang-web-applications" name="boxlang-web-applications" class="anchor"></a>BoxLang Web Applications</h1>
-<p>bx-playwright can run inside a BoxLang web application. The module uses the driver and Node.js runtime it manages, then stores Playwright browser downloads in its configured home. You do not need to install BoxLang or bx-playwright separately at the operating-system level just to provision browsers for the web application.</p>
-<h2 id="deploy-the-module-to-the-server"><a href="#deploy-the-module-to-the-server" id="deploy-the-module-to-the-server" name="deploy-the-module-to-the-server" class="anchor"></a>Deploy the module to the server</h2>
-<p>Install or declare bx-playwright in the same BoxLang server runtime that hosts the application. If the module is not present in that runtime, the <code>playwright()</code> and <code>playwrightEnsureBrowser()</code> APIs are not available there.</p>
-<p>The CLI is one way to install a browser for a standalone BoxLang installation. A deployed web application does not need to use that separate CLI environment: call the BIF from the web server instead.</p>
-<h2 id="provision-a-browser"><a href="#provision-a-browser" id="provision-a-browser" name="provision-a-browser" class="anchor"></a>Provision a browser</h2>
-<p>Call <code>playwrightEnsureBrowser()</code> from server-side BoxLang code before launching the browser:</p>
-<pre><code class="language-boxlang">playwrightEnsureBrowser( &quot;chromium&quot; )
+<p>Use bx-playwright inside a BoxLang web application, for example to render PDFs or capture pages on request. The deployed module manages its own driver, Node.js runtime and browsers: you do not need a separate operating-system BoxLang installation or the CLI.</p>
+<pre><code class="language-js">playwrightEnsureBrowser( &quot;chromium&quot; )
 
-var browser = playwright( { headless : true } )
-try {
-	var page = browser.newPage()
-	page.visit( &quot;https://example.com&quot; )
-	println( page.title() )
-} finally {
-	browser.close()
-}
+pageTitle = playwright().browse( ( page ) =&gt; page.visit( &quot;https://example.com&quot; ).title() )
 </code></pre>
-<p>The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. With a channel, such as <code>playwrightEnsureBrowser( &quot;chromium&quot;, &quot;chrome&quot; )</code>, it uses the browser installed on the machine and downloads nothing. When an install fails, the <code>Playwright.NotInstalled</code> error carries the last lines of the Playwright CLI output in its <code>detail</code>. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, browser specs (<code>@browser</code>) invoke this API automatically on first browser use; see <a href="/testbox/index.html">TestBox Browser Testing</a>.</p>
+<h2 id="deploy-the-module-to-the-server"><a href="#deploy-the-module-to-the-server" id="deploy-the-module-to-the-server" name="deploy-the-module-to-the-server" class="anchor"></a>Deploy the module to the server</h2>
+<p>Install or declare bx-playwright in the same BoxLang server runtime that hosts the application. Without it, <code>playwright()</code> and <code>playwrightEnsureBrowser()</code> are not available there.</p>
+<h2 id="provision-a-browser"><a href="#provision-a-browser" id="provision-a-browser" name="provision-a-browser" class="anchor"></a>Provision a browser</h2>
+<p><code>playwrightEnsureBrowser( browser, [channel] )</code> installs a missing browser (<code>chromium</code> by default, <code>firefox</code> or <code>webkit</code>) into the module's browser cache, and makes its driver and Node.js runtime available. It is safe to call repeatedly and returns the browser name, the cache path and the installed browser directories.</p>
+<ul>
+<li>The first call needs network access and takes longer.</li>
+<li>With a channel, such as <code>playwrightEnsureBrowser( &quot;chromium&quot;, &quot;chrome&quot; )</code>, it uses the browser installed on the machine and downloads nothing.</li>
+<li>When an install fails, the <code>Playwright.NotInstalled</code> error carries the last lines of the Playwright CLI output in its <code>detail</code>.</li>
+<li>TestBox browser specs call it for you on first use, see <a href="/testbox/index.html">TestBox Browser Testing</a>.</li>
+</ul>
+<h2 id="use-it-in-requests"><a href="#use-it-in-requests" id="use-it-in-requests" name="use-it-in-requests" class="anchor"></a>Use it in requests</h2>
+<ul>
+<li>Prefer <code>browse()</code> and the one-shot helpers (<code>screenshot()</code>, <code>pdf()</code>, <code>render()</code>, <code>content()</code>): they close the browser even when the code throws.</li>
+<li>A manager is not thread safe: create one per request or task, never share it in the application scope.</li>
+<li>On a web runtime, <code>request</code>, <code>url</code>, <code>form</code>, <code>cookie</code>, <code>session</code> and <code>cgi</code> resolve to BoxLang scopes, even as closure arguments: pick other names, such as <code>address</code> or <code>sent</code>.</li>
+<li>As a safety net, the module closes every manager still open when it unloads and when the JVM shuts down.</li>
+</ul>
 <h2 id="configure-the-servers-home"><a href="#configure-the-servers-home" id="configure-the-servers-home" name="configure-the-servers-home" class="anchor"></a>Configure the server's home</h2>
-<p>By default, bx-playwright stores its driver, Node.js runtime, browsers, sessions and artifacts under <code>~/.boxlang/playwright</code>, where <code>~</code> is the home directory of the <strong>web-server process user</strong>. You can set a dedicated writable location in the BoxLang server's module settings:</p>
+<p>By default, everything is stored under <code>~/.boxlang/playwright</code>, where <code>~</code> is the home directory of the <strong>web-server process user</strong>. Set a dedicated writable location in the server's module settings:</p>
 <pre><code class="language-json">{
 	&quot;modules&quot;: {
 		&quot;playwright&quot;: {
@@ -268,16 +272,20 @@ try {
 	}
 }
 </code></pre>
-<p><code>browsersPath</code> can be configured separately; otherwise it defaults to <code>{home}/browsers</code>. Make sure the server user can write to these locations. Provisioning from one runtime or user does not populate a different server runtime's custom home or a different OS user's home.</p>
+<p><code>browsersPath</code> defaults to <code>{home}/browsers</code> and can be set separately. The server user must be able to write to both. Provisioning from another runtime or operating-system user does not fill this server's home.</p>
 <h2 id="network-and-linux-dependencies"><a href="#network-and-linux-dependencies" id="network-and-linux-dependencies" name="network-and-linux-dependencies" class="anchor"></a>Network and Linux dependencies</h2>
-<p>The BIF downloads browser files only. It does not run package managers or require elevated privileges. On Linux, install the browser's native shared-library dependencies in the server image or host as part of deployment. For an environment where package installation is permitted, the standalone CLI offers <code>bxPlaywright install chromium --with-deps</code>; do not invoke that privileged option from an application request.</p>
-<p>For offline deployments, provision the same bx-playwright home ahead of time, or disable TestBox's automatic download with <code>@browserAutoInstall( false )</code> and ensure a compatible browser is already present. See <a href="/configuration/index.html">Configuration</a> for all module paths and settings.</p>
+<p>The BIF downloads browser files only. It does not run package managers or need elevated privileges.</p>
+<ul>
+<li>On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers <code>bxPlaywright install chromium --with-deps</code>; never run it from an application request.</li>
+<li>For offline deployments, provision the same bx-playwright home ahead of time. For TestBox, also add <code>@browserAutoInstall( false )</code>.</li>
+</ul>
+<p>See <a href="/configuration/index.html">Configuration</a> for every path and setting.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/web-applications.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/web-applications.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/web-applications.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/web-applications.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -309,7 +317,7 @@ try {
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#deploy-the-module-to-the-server">Deploy the module to the server</a></li><li class="toc-level-2"><a href="#provision-a-browser">Provision a browser</a></li><li class="toc-level-2"><a href="#configure-the-servers-home">Configure the server&#x27;s home</a></li><li class="toc-level-2"><a href="#network-and-linux-dependencies">Network and Linux dependencies</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#deploy-the-module-to-the-server">Deploy the module to the server</a></li><li class="toc-level-2"><a href="#provision-a-browser">Provision a browser</a></li><li class="toc-level-2"><a href="#use-it-in-requests">Use it in requests</a></li><li class="toc-level-2"><a href="#configure-the-servers-home">Configure the server&#x27;s home</a></li><li class="toc-level-2"><a href="#network-and-linux-dependencies">Network and Linux dependencies</a></li></ul></nav>
 				</aside>
 			
 		</div>

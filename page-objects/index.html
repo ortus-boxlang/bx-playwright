@@ -238,58 +238,91 @@
 
 		
 		<h1 id="page-objects-components-and-macros"><a href="#page-objects-components-and-macros" id="page-objects-components-and-macros" name="page-objects-components-and-macros" class="anchor"></a>Page Objects, Components and Macros</h1>
+<p>When the same selectors and steps appear in many scripts or tests, move them into classes:</p>
+<ul>
+<li>A <strong>page object</strong> is one page: its URL, its element aliases and its flows.</li>
+<li>A <strong>component</strong> is a widget used on many pages, such as a menu or a date picker.</li>
+<li>A <strong>macro</strong> adds your own method to every page or locator.</li>
+</ul>
 <h2 id="page-objects"><a href="#page-objects" id="page-objects" name="page-objects" class="anchor"></a>Page objects</h2>
 <pre><code class="language-js">// pages/LoginPage.bx
 class extends=&quot;models.PageObject@playwright&quot; {
+
 	url      = &quot;/login&quot;
-	elements = { email : &quot;#email&quot;, password : &quot;input[type=password]&quot;, submit : &quot;button&quot; }
+	elements = {
+		email    : &quot;input[name=email]&quot;,
+		password : &quot;input[type=password]&quot;,
+		submit   : &quot;button[type=submit]&quot;
+	}
 
 	function at() {
 		page.assertTitle( &quot;Login&quot; )
 	}
 
 	function loginAs( required string email, string password = &quot;secret&quot; ) {
-		page.fill( &quot;@email&quot;, email ).fill( &quot;@password&quot;, password ).click( &quot;@submit&quot; )
+		page.fill( &quot;@email&quot;, arguments.email )
+			.fill( &quot;@password&quot;, arguments.password )
+			.click( &quot;@submit&quot; )
 		return page.on( new pages.DashboardPage() )
 	}
+
 }
 </code></pre>
-<pre><code class="language-js">home = page.visit( new pages.LoginPage() ).loginAs( &quot;luis@ortus.com&quot; )
-home.assertSee( &quot;Dashboard&quot; )
+<pre><code class="language-js">playwright( { baseURL : &quot;http://localhost:8080&quot; } ).browse( ( page ) =&gt; {
+	page.visit( new pages.LoginPage() )
+		.loginAs( &quot;luis@ortus.com&quot; )
+		.assertSee( &quot;Dashboard&quot; )
+} )
 </code></pre>
 <ul>
-<li><code>page.visit( pageObject )</code> goes to its <code>url</code>, binds it and runs <code>at()</code>. <code>page.on( pageObject )</code> binds without navigating.</li>
-<li><code>elements</code> become <code>@name</code> selectors. Inside the class, <code>page</code> is the bound page.</li>
-<li>Page methods work on the page object too and keep returning it.</li>
+<li><code>page.visit( pageObject )</code> goes to its <code>url</code>, binds it and runs <code>at()</code>. <code>page.on( pageObject )</code> binds without navigating, so a flow can return the next page (<code>DashboardPage</code> is another page object).</li>
+<li><code>elements</code> become <code>@name</code> selectors. <code>element( &quot;email&quot; )</code> returns the locator of an alias.</li>
+<li>Inside the class, <code>page</code> is the bound page.</li>
+<li>Page methods work on the page object too and keep returning it, so chains continue.</li>
 </ul>
 <h2 id="components"><a href="#components" id="components" name="components" class="anchor"></a>Components</h2>
 <pre><code class="language-js">// pages/UserMenu.bx
 class extends=&quot;models.PageComponent@playwright&quot; {
+
 	selector = &quot;nav.user&quot;
 	elements = { logout : &quot;a.logout&quot; }
 
-	function name() {
+	function userName() {
 		return text( &quot;span&quot; )
 	}
+
 }
 </code></pre>
 <pre><code class="language-js">page.within( new pages.UserMenu(), ( menu ) =&gt; menu.click( &quot;@logout&quot; ) )
+
 menu = page.component( new pages.UserMenu() )
+println( menu.userName() )
 </code></pre>
-<p>Every page action is available on a component, scoped to its root.</p>
+<p>Every page action and assertion is available on a component, scoped to its <code>selector</code>.</p>
 <h2 id="macros"><a href="#macros" id="macros" name="macros" class="anchor"></a>Macros</h2>
-<pre><code class="language-js">playwright().macro( &quot;loginAs&quot;, ( page, email ) =&gt; page.visit( &quot;/login&quot; ).fill( &quot;Email&quot;, email ).click( &quot;Sign in&quot; ) )
-page.loginAs( &quot;luis@ortus.com&quot; ).assertSee( &quot;Welcome&quot; )
+<pre><code class="language-js">pw = playwright( { baseURL : &quot;http://localhost:8080&quot; } )
 
-playwright().macro( &quot;shout&quot;, ( locator ) =&gt; uCase( locator.text() ), &quot;locator&quot; )
+pw.macro( &quot;loginAs&quot;, ( page, email ) =&gt; {
+	page.visit( &quot;/login&quot; ).fill( &quot;Email&quot;, email ).click( &quot;Sign in&quot; )
+} )
+pw.macro( &quot;shout&quot;, ( locator ) =&gt; uCase( locator.text() ), &quot;locator&quot; )
+
+pw.browse( ( page ) =&gt; {
+	page.loginAs( &quot;luis@ortus.com&quot; ).assertSee( &quot;Welcome&quot; )
+	println( page.locator( &quot;h1&quot; ).shout() )
+} )
 </code></pre>
-<p>Macros are global. Remove them with <code>removeMacro( name, target )</code>.</p>
+<ul>
+<li>The handler receives the page (or locator) first, then the call arguments. Return nothing to keep chaining.</li>
+<li>The third argument is the target: <code>page</code> (default) or <code>locator</code>.</li>
+<li>Macros are global to the runtime: register them once, for example in <code>beforeAll()</code>. Remove them with <code>removeMacro( name, target )</code>, or every macro of a target with <code>removeMacro( target = &quot;page&quot; )</code>.</li>
+</ul>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/page-objects.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/page-objects.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/page-objects.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/page-objects.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 

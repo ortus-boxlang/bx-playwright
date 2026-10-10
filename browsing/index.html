@@ -233,11 +233,19 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#smart-selectors">Smart selectors</a></li><li class="toc-level-2"><a href="#actions">Actions</a></li><li class="toc-level-2"><a href="#locators">Locators</a></li><li class="toc-level-2"><a href="#reading">Reading</a></li><li class="toc-level-2"><a href="#discover-the-api">Discover the API</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#smart-selectors">Smart selectors</a></li><li class="toc-level-2"><a href="#actions">Actions</a></li><li class="toc-level-2"><a href="#locators">Locators</a></li><li class="toc-level-2"><a href="#reading">Reading</a></li><li class="toc-level-2"><a href="#waiting">Waiting</a></li><li class="toc-level-2"><a href="#popups-and-downloads">Popups and downloads</a></li><li class="toc-level-2"><a href="#viewport-media-and-time">Viewport, media and time</a></li><li class="toc-level-2"><a href="#discover-the-api">Discover the API</a></li></ul></details>
 		
 
 		
-		<h1 id="browsing"><a href="#browsing" id="browsing" name="browsing" class="anchor"></a>Browsing</h1>
+		<svg xmlns="http://www.w3.org/2000/svg" class="adm-hidden">
+<symbol id="adm-tip">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="m12.3 10c2.8-.7 4.2-3.8 2.1-7.4 8.1 3.2 7.5 18.1-2.6 18.4-8.1.2-9.8-11.4-4.4-14.8.2 3.3 2.8 4.3 4.9 3.8zm-3.2 5.8c.2 1.6 2.5 1.9 3.6 1.5 2.8-1 2.5-4 2.1-5.1-.8 1.4-1.3 1.7-2.2 2s-3.7-.7-3.5 1.6z" fill="currentColor"/>
+</svg>
+</symbol>
+</svg>
+<h1 id="browsing"><a href="#browsing" id="browsing" name="browsing" class="anchor"></a>Browsing</h1>
+<p>Open pages, find elements and act on them. Every action waits for its element, and every action returns the page, so calls chain.</p>
 <pre><code class="language-js">playwright( { baseURL : &quot;http://localhost:8080&quot; } ).browse( ( page ) =&gt; {
 	page.visit( &quot;/login&quot; )
 		.fill( &quot;Email&quot;, &quot;luis@ortus.com&quot; )     // by label, placeholder or name
@@ -255,45 +263,67 @@
 <tr><th>Selector</th><th>Finds</th></tr>
 </thead>
 <tbody>
-<tr><td><code>@name</code></td><td><code>data-testid=&quot;name&quot;</code> (see the <code>testIdAttribute</code> setting), or a page object alias</td></tr>
+<tr><td>Visible text</td><td><code>fill()</code> looks for a label, placeholder or name; <code>click()</code> for a button or link</td></tr>
+<tr><td><code>@name</code></td><td><code>data-testid=&quot;name&quot;</code> (see the <code>testIdAttribute</code> setting), or a <a href="/page-objects/index.html">page object</a> alias</td></tr>
 <tr><td><code>#id</code>, <code>.class</code>, <code>input[name=email]</code>, <code>ul li</code>, <code>h1</code></td><td>CSS (lowercase tag names)</td></tr>
 <tr><td><code>//div</code>, <code>xpath=...</code>, <code>css=...</code>, <code>text=...</code>, <code>role=button[name=&quot;Save&quot;]</code></td><td>Playwright selectors</td></tr>
-<tr><td><code>ref=e12</code></td><td>An element ref from an AI snapshot</td></tr>
-<tr><td>Anything else</td><td>Visible text. <code>fill()</code> looks for a label, placeholder or name; <code>click()</code> for a button or link</td></tr>
+<tr><td><code>ref=e12</code></td><td>An element ref from an <a href="/ai/index.html">AI snapshot</a></td></tr>
 </tbody>
 </table></div>
-<p>Explicit finders return a Locator: <code>locator()</code>, <code>byRole( &quot;button&quot;, { name : &quot;Save&quot; } )</code>, <code>byText()</code>, <code>byLabel()</code>, <code>byPlaceholder()</code>, <code>byTestId()</code>, <code>byAltText()</code>, <code>byTitle()</code>, <code>frame( &quot;#iframe&quot; )</code>.</p>
+<p>Explicit finders return a <a href="#locators">locator</a>: <code>locator()</code>, <code>byRole( &quot;button&quot;, { name : &quot;Save&quot; } )</code>, <code>byText()</code>, <code>byLabel()</code>, <code>byPlaceholder()</code>, <code>byTestId()</code>, <code>byAltText()</code>, <code>byTitle()</code>, <code>frame( &quot;iframe.preview&quot; )</code>.</p>
+<div class="adm-block adm-tip">
+<div class="adm-heading">
+<svg class="adm-icon"><use xlink:href="#adm-tip" /></svg><span>Id selectors in BoxLang strings</span>
+</div>
+<div class="adm-body">
+<p><code>#</code> starts interpolation in a BoxLang string, so write an id selector as <code>&quot;##email&quot;</code>, or use <code>&quot;input[name=email]&quot;</code> or a test id.</p>
+</div>
+</div>
 <h2 id="actions"><a href="#actions" id="actions" name="actions" class="anchor"></a>Actions</h2>
-<p>All return the page (or locator), so they chain.</p>
-<div class="bxsites-table-wrap" x-data="{ q: '' }"><input type="search" class="bxsites-table-filter" x-model="q" placeholder="Filter table..." aria-label="Filter table"><table class="table">
+<div class="bxsites-table-wrap"><table class="table">
 <thead>
 <tr><th>Method</th><th>Does</th></tr>
 </thead>
 <tbody>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>visit( url, options )</code></td><td>Navigate (relative to <code>baseURL</code>), or visit a page object</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>click( sel )</code>, <code>dblclick( sel )</code>, <code>hover( sel )</code>, <code>focus( sel )</code></td><td>Mouse and focus</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>fill( sel, value )</code>, <code>type( sel, text )</code>, <code>clear( sel )</code></td><td>Inputs</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>press( key )</code>, <code>press( sel, key )</code></td><td>Keys: <code>Enter</code>, <code>Tab</code>, <code>Control+A</code>, <code>ControlOrMeta+S</code></td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>check( sel )</code>, <code>uncheck( sel )</code>, <code>select( sel, values )</code>, <code>upload( sel, files )</code></td><td>Forms</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>drag( from, to )</code>, <code>scrollTo( sel )</code></td><td>Other</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>back()</code>, <code>forward()</code>, <code>reload()</code>, <code>setContent( html )</code></td><td>Navigation</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>wait( ms )</code>, <code>waitFor( sel, state )</code>, <code>waitForText( text )</code>, <code>waitForUrl( url )</code>, <code>waitForLoadState()</code></td><td>Waiting (actions already auto-wait)</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>waitForPopup( fn )</code>, <code>waitForDownload( fn, path )</code></td><td>New tabs and downloads</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>within( sel, fn )</code></td><td>Scope actions to an element</td></tr>
+<tr><td><code>visit( url, options )</code></td><td>Navigate (relative to <code>baseURL</code>), or visit a <a href="/page-objects/index.html">page object</a></td></tr>
+<tr><td><code>click( sel )</code>, <code>dblclick( sel )</code>, <code>hover( sel )</code>, <code>focus( sel )</code></td><td>Mouse and focus</td></tr>
+<tr><td><code>fill( sel, value )</code>, <code>type( sel, text )</code>, <code>clear( sel )</code></td><td>Inputs</td></tr>
+<tr><td><code>press( key )</code>, <code>press( sel, key )</code></td><td>Keys: <code>Enter</code>, <code>Tab</code>, <code>Control+A</code>, <code>ControlOrMeta+S</code></td></tr>
+<tr><td><code>check( sel )</code>, <code>uncheck( sel )</code>, <code>select( sel, values )</code>, <code>upload( sel, files )</code></td><td>Forms</td></tr>
+<tr><td><code>drag( from, to )</code>, <code>scrollTo( sel )</code></td><td>Other</td></tr>
+<tr><td><code>back()</code>, <code>forward()</code>, <code>reload()</code>, <code>setContent( html )</code></td><td>Navigation</td></tr>
+<tr><td><code>within( sel, callback )</code></td><td>Scope actions to an element</td></tr>
 </tbody>
 </table></div>
 <p>On a locator, actions without a selector act on the locator: <code>page.byLabel( &quot;Email&quot; ).fill( &quot;a@b.com&quot; )</code>, <code>page.byLabel( &quot;Resume&quot; ).upload( &quot;cv.pdf&quot; )</code>.</p>
 <h2 id="locators"><a href="#locators" id="locators" name="locators" class="anchor"></a>Locators</h2>
 <pre><code class="language-js">todos = page.locator( &quot;.todos li&quot; )
-todos.count()                  // 3
-todos.texts()                  // [ &quot;Write specs&quot;, ... ] (visible elements only)
-todos.nth( 2 ).text()          // 1-based: nth( 0 ) throws
+todos.count()                                  // 3
+todos.texts()                                  // [ &quot;Write specs&quot;, ... ] (visible elements only)
+todos.first().text()
+todos.nth( 2 ).text()                          // 1-based: nth( 0 ) throws
 todos.filter( { hasText : &quot;Ship&quot; } ).click()
 todos.filter( { has : page.locator( &quot;.done&quot; ) } ).count()
-todos.all().each( ( item ) =&gt; println( item.text() ) )
+todos.all().each( ( todo ) =&gt; println( todo.text() ) )
 </code></pre>
+<p>Also <code>last()</code>, <code>visible()</code>, <code>isChecked()</code> and <code>isEnabled()</code>. <code>filter()</code> takes <code>hasText</code>, <code>hasNotText</code>, <code>has</code>, <code>hasNot</code> and <code>visible</code>.</p>
 <h2 id="reading"><a href="#reading" id="reading" name="reading" class="anchor"></a>Reading</h2>
 <p><code>url()</code>, <code>title()</code>, <code>content()</code>, <code>text( sel )</code>, <code>html( sel )</code>, <code>value( sel )</code>, <code>attribute( sel, name )</code>, <code>count( sel )</code> (every match), <code>isVisible( sel )</code> (true when any match is visible), <code>evaluate( js, arg )</code>, <code>snapshot()</code>.</p>
+<h2 id="waiting"><a href="#waiting" id="waiting" name="waiting" class="anchor"></a>Waiting</h2>
+<p>Actions and <a href="/assertions/index.html">assertions</a> already wait, so you rarely need these:</p>
+<p><code>waitFor( sel, state )</code>, <code>waitForText( text )</code>, <code>waitForUrl( url )</code>, <code>waitForLoadState( state )</code>, <code>wait( ms )</code>.</p>
+<h2 id="popups-and-downloads"><a href="#popups-and-downloads" id="popups-and-downloads" name="popups-and-downloads" class="anchor"></a>Popups and downloads</h2>
+<pre><code class="language-js">popup    = page.waitForPopup( () =&gt; page.click( &quot;Open preview&quot; ) )
+download = page.waitForDownload( () =&gt; page.click( &quot;Export CSV&quot; ), &quot;exports/orders.csv&quot; )
+println( download.path )     // also suggestedFilename and url
+</code></pre>
+<p>Dialogs (<code>alert</code>, <code>confirm</code>, <code>prompt</code>) are dismissed unless you listen with <code>onDialog()</code>, see <a href="/network/index.html#listen">Network and APIs</a>.</p>
+<h2 id="viewport-media-and-time"><a href="#viewport-media-and-time" id="viewport-media-and-time" name="viewport-media-and-time" class="anchor"></a>Viewport, media and time</h2>
+<pre><code class="language-js">page.setViewport( 375, 812 )
+page.emulate( { media : &quot;print&quot;, colorScheme : &quot;dark&quot; } )
+page.freezeTime( &quot;2026-01-01T09:00:00&quot; )     // Date.now() is fixed, timers keep running
+</code></pre>
+<p><code>page.clock()</code> returns Playwright's clock for full control of timers. To start a page with a device, locale or color scheme, use a <a href="/profiles/index.html">profile</a> or <a href="/configuration/index.html">settings</a>.</p>
 <h2 id="discover-the-api"><a href="#discover-the-api" id="discover-the-api" name="discover-the-api" class="anchor"></a>Discover the API</h2>
 <p>Every object describes itself from its docblocks: <code>page.help()</code>, <code>page.help( &quot;fill&quot; )</code>, <code>playwright().help()</code>.</p>
 
@@ -301,7 +331,7 @@ todos.all().each( ( item ) =&gt; println( item.text() ) )
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/browsing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/browsing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/browsing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/browsing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -333,7 +363,7 @@ todos.all().each( ( item ) =&gt; println( item.text() ) )
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#smart-selectors">Smart selectors</a></li><li class="toc-level-2"><a href="#actions">Actions</a></li><li class="toc-level-2"><a href="#locators">Locators</a></li><li class="toc-level-2"><a href="#reading">Reading</a></li><li class="toc-level-2"><a href="#discover-the-api">Discover the API</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#smart-selectors">Smart selectors</a></li><li class="toc-level-2"><a href="#actions">Actions</a></li><li class="toc-level-2"><a href="#locators">Locators</a></li><li class="toc-level-2"><a href="#reading">Reading</a></li><li class="toc-level-2"><a href="#waiting">Waiting</a></li><li class="toc-level-2"><a href="#popups-and-downloads">Popups and downloads</a></li><li class="toc-level-2"><a href="#viewport-media-and-time">Viewport, media and time</a></li><li class="toc-level-2"><a href="#discover-the-api">Discover the API</a></li></ul></nav>
 				</aside>
 			
 		</div>

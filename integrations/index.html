@@ -274,22 +274,24 @@
 <h2 id="owning-the-lifecycle"><a href="#owning-the-lifecycle" id="owning-the-lifecycle" name="owning-the-lifecycle" class="anchor"></a>Owning the lifecycle</h2>
 <p><code>browse()</code> is the simplest contract for a test runner: it creates the pages, runs the callback, and closes everything even when the callback throws. When it throws, contexts close with <code>failed = true</code>, so failure artifacts are kept.</p>
 <p>When the runner owns the lifecycle, for example one browser per test bundle and one context per test, use the manager and the context directly:</p>
-<pre><code class="language-js">// beforeAll
-pw = playwright( [ &quot;ci&quot; ], { baseURL : &quot;http://localhost:8080&quot; } )
+<pre><code class="language-js">// beforeAll: one manager per bundle
+variables.pw = playwright( &quot;ci&quot;, { baseURL : &quot;http://localhost:8080&quot; } )
 
-// each test
-context = pw.newContext()
-page    = context.newPage()
-failed  = true
-try {
-	runTest( page )
-	failed = false
-} finally {
-	kept = context.close( failed = failed )   // { screenshots, trace, videos, directory }
+// each test: one context
+function runInBrowser( required function test ) {
+	var context = variables.pw.newContext()
+	var failed  = true
+	try {
+		arguments.test( context.newPage() )
+		failed = false
+	} finally {
+		var kept = context.close( failed = failed )   // { screenshots, trace, videos, directory }
+		// attach kept.screenshots, kept.trace and kept.videos to the test result
+	}
 }
 
 // afterAll
-pw.close()
+variables.pw.close()
 </code></pre>
 <p><code>context.close()</code> returns the artifacts it kept, ready to attach to the test result.</p>
 <p>Always close what you start. As a safety net, bx-playwright closes every manager that is still open, with its driver and browsers, when the module unloads and when the JVM shuts down, so an aborted request or a crashed run does not leave browser processes behind.</p>
@@ -319,7 +321,7 @@ pw.close()
 <tr><td><code>onContextCreate</code></td><td><code>playwright</code>, <code>context</code></td></tr>
 <tr><td><code>onPageCreate</code></td><td><code>page</code></td></tr>
 <tr><td><code>onPageClose</code></td><td><code>page</code></td></tr>
-<tr><td><code>onPlaywrightAssertionFailure</code></td><td><code>message</code>, <code>action</code></td></tr>
+<tr><td><code>onPlaywrightAssertionFailure</code></td><td><code>message</code>, and <code>action</code> (the assertion) when Playwright raised it</td></tr>
 <tr><td><code>onPlaywrightArtifact</code></td><td><code>type</code> (<code>screenshot</code>, <code>pdf</code>, <code>trace</code>, <code>video</code>, <code>baseline</code>), <code>path</code>, and <code>page</code> for <code>page.screenshot()</code> and <code>page.pdf()</code></td></tr>
 </tbody>
 </table></div>
@@ -335,7 +337,7 @@ pw.close()
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/integrations.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/integrations.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/integrations.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/integrations.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 

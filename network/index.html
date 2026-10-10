@@ -233,49 +233,119 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#mock-and-block-requests">Mock and block requests</a></li><li class="toc-level-2"><a href="#listen">Listen</a></li><li class="toc-level-2"><a href="#api-testing">API testing</a></li><li class="toc-level-2"><a href="#saved-sessions">Saved sessions</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#mock-and-block-requests">Mock and block requests</a></li><li class="toc-level-2"><a href="#listen">Listen</a></li><li class="toc-level-2"><a href="#api-testing">API testing</a></li><li class="toc-level-2"><a href="#cookies-permissions-and-offline">Cookies, permissions and offline</a></li><li class="toc-level-2"><a href="#saved-sessions">Saved sessions</a></li></ul></details>
 		
 
 		
-		<h1 id="network-and-apis"><a href="#network-and-apis" id="network-and-apis" name="network-and-apis" class="anchor"></a>Network and APIs</h1>
+		<svg xmlns="http://www.w3.org/2000/svg" class="adm-hidden">
+<symbol id="adm-warning">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="m3.1 18.5 8.1-14c.4-.7 1.4-.7 1.8 0l8.1 14c.4.7-.1 1.6-.9 1.6h-16.1c-.9 0-1.4-.9-1-1.6zm10.6-4.3c0-.1 0-.2 0-.2v-4.6c0-.4 0-.6 0-.6-.1-.1-.3-.2-.7-.3s-.7-.1-1-.1c-.1 0-.2 0-.3 0-.3.1-.5.2-.5.4v4.2s-.1.1-.2.4-.1.4 0 .5c.3.2.7.4 1.2.6s.9.3 1.2.3h.2c.2 0 .3-.2.3-.5-.2 0-.2-.1-.2-.1zm-.8 1.4c-.5-.2-.9-.2-1.2-.2s-.4.1-.5.4v.9c0 .2 0 .3-.1.4-.1.2-.2.3-.1.4s.5.3 1.2.5c.6.2 1 .2 1.1.2.2 0 .4-.1.4-.3s.1-.4.1-.7c0-.1 0-.3.1-.7 0-.3 0-.5 0-.5-.2-.1-.5-.2-1-.4z" fill="currentColor"/>
+</svg>
+</symbol>
+</svg>
+<h1 id="network-and-apis"><a href="#network-and-apis" id="network-and-apis" name="network-and-apis" class="anchor"></a>Network and APIs</h1>
+<p>Control what the browser sends and receives: mock or block requests, watch traffic, call HTTP APIs without a browser, and log in once for many tests.</p>
+<pre><code class="language-js">playwright().browse( ( page ) =&gt; {
+	page.intercept( &quot;**/api/users&quot; ).respondJson( [ &quot;Luis&quot;, &quot;Brad&quot; ] )
+	page.visit( &quot;http://localhost:8080/users&quot; ).assertSee( &quot;Brad&quot; )
+} )
+</code></pre>
 <h2 id="mock-and-block-requests"><a href="#mock-and-block-requests" id="mock-and-block-requests" name="mock-and-block-requests" class="anchor"></a>Mock and block requests</h2>
+<p>Register an intercept before the request happens, usually before <code>visit()</code>:</p>
 <pre><code class="language-js">page.intercept( &quot;**/api/users&quot; ).respondJson( [ &quot;Luis&quot;, &quot;Brad&quot; ] )
 page.intercept( &quot;**/api/fail&quot; ).respond( 500, &quot;Boom&quot; )
 page.intercept( &quot;**/*.{png,jpg}&quot; ).abort()
 page.intercept( &quot;**/api/**&quot; ).resume( { headers : { &quot;X-Test&quot; : &quot;1&quot; } } )
 page.intercept( &quot;**/api/**&quot; ).handle( ( route ) =&gt; route.fallback() )
 </code></pre>
-<p><code>context.intercept()</code> applies to every page of a context. Patterns are globs, full URLs or <code>page.regex()</code>.</p>
+<ul>
+<li>Patterns are globs, full URLs or <code>page.regex()</code>.</li>
+<li><code>respondJson( data, status, headers )</code> and <code>respond( status, body, headers )</code> answer the request; <code>abort()</code> blocks it; <code>resume( overrides )</code> lets it through, optionally changing <code>url</code>, <code>method</code>, <code>headers</code> or <code>postData</code>.</li>
+<li><code>handle()</code> receives Playwright's <code>Route</code> for anything else: <code>fulfill()</code>, <code>abort()</code>, <code>resume()</code>, <code>fallback()</code>, <code>request()</code>.</li>
+<li><code>context.intercept()</code> applies to every page of a context.</li>
+</ul>
 <h2 id="listen"><a href="#listen" id="listen" name="listen" class="anchor"></a>Listen</h2>
 <pre><code class="language-js">page.onConsole( ( message ) =&gt; println( message.type &amp; &quot;: &quot; &amp; message.text ) )
-	.onRequest( ( request ) =&gt; println( request.method &amp; &quot; &quot; &amp; request.url ) )
-	.onResponse( ( response ) =&gt; println( response.status &amp; &quot; &quot; &amp; response.url ) )
+	.onRequest( ( sent ) =&gt; println( sent.method &amp; &quot; &quot; &amp; sent.url ) )
+	.onResponse( ( received ) =&gt; println( received.status &amp; &quot; &quot; &amp; received.url ) )
 	.onPageError( ( error ) =&gt; println( error.message ) )
 	.onDialog( ( dialog ) =&gt; dialog.accept() )
 </code></pre>
+<div class="bxsites-table-wrap"><table class="table">
+<thead>
+<tr><th>Listener</th><th>Receives</th></tr>
+</thead>
+<tbody>
+<tr><td><code>onConsole</code></td><td><code>{ type, text, location }</code></td></tr>
+<tr><td><code>onRequest</code></td><td><code>{ url, method, resourceType }</code></td></tr>
+<tr><td><code>onResponse</code></td><td><code>{ url, status, ok }</code></td></tr>
+<tr><td><code>onPageError</code></td><td><code>{ message, stack }</code></td></tr>
+<tr><td><code>onDialog</code></td><td>Playwright's <code>Dialog</code>: <code>accept()</code>, <code>accept( text )</code> or <code>dismiss()</code>. Without a listener, dialogs are dismissed</td></tr>
+</tbody>
+</table></div>
+<div class="adm-block adm-warning">
+<div class="adm-heading">
+<svg class="adm-icon"><use xlink:href="#adm-warning" /></svg><span>Avoid scope names for arguments</span>
+</div>
+<div class="adm-body">
+<p>On a web runtime, <code>request</code>, <code>url</code>, <code>form</code>, <code>cookie</code>, <code>session</code> and <code>cgi</code> resolve to BoxLang scopes, even as closure arguments. Name them <code>sent</code>, <code>received</code>, <code>address</code> and so on.</p>
+</div>
+</div>
 <h2 id="api-testing"><a href="#api-testing" id="api-testing" name="api-testing" class="anchor"></a>API testing</h2>
 <pre><code class="language-js">api = playwright().request( { baseURL : &quot;http://localhost:8080&quot; } )
-response = api.post( &quot;/api/login&quot;, { json : { user : &quot;luis&quot; }, headers : { &quot;X-Token&quot; : &quot;abc&quot; } } )
-api.expect( response ).toBeOK()
-users = api.get( &quot;/api/users&quot;, { params : { page : 2 } } ).json()
-api.close()
+try {
+	login = api.post( &quot;/api/login&quot;, { json : { user : &quot;luis&quot; }, headers : { &quot;X-Token&quot; : &quot;abc&quot; } } )
+	api.expect( login ).toBeOK()
+
+	users = api.get( &quot;/api/users&quot;, { params : { page : 2 } } ).json()
+} finally {
+	api.close()
+}
 </code></pre>
-<p>Options: <code>json</code>, <code>form</code>, <code>data</code>, <code>params</code>, <code>headers</code>, <code>timeout</code>, <code>failOnStatusCode</code>, <code>maxRedirects</code>. Responses have <code>status()</code>, <code>ok()</code>, <code>headers()</code>, <code>text()</code>, <code>json()</code>. <code>context.request()</code> shares the context cookies.</p>
+<ul>
+<li>Methods: <code>get()</code>, <code>post()</code>, <code>put()</code>, <code>patch()</code>, <code>delete()</code>.</li>
+<li>Options: <code>json</code>, <code>form</code>, <code>data</code>, <code>params</code>, <code>headers</code>, <code>timeout</code>, <code>failOnStatusCode</code>, <code>maxRedirects</code>.</li>
+<li>Responses have <code>status()</code>, <code>ok()</code>, <code>url()</code>, <code>headers()</code>, <code>text()</code> and <code>json()</code>.</li>
+<li><code>context.request()</code> shares the cookies of a browser context: log in through the API, then browse.</li>
+</ul>
+<h2 id="cookies-permissions-and-offline"><a href="#cookies-permissions-and-offline" id="cookies-permissions-and-offline" name="cookies-permissions-and-offline" class="anchor"></a>Cookies, permissions and offline</h2>
+<p>The context of a page holds its cookies and browser state:</p>
+<pre><code class="language-js">context = page.context()
+context.addCookies( [ { name : &quot;consent&quot;, value : &quot;yes&quot;, url : &quot;http://localhost:8080&quot; } ] )
+context.grantPermissions( [ &quot;geolocation&quot;, &quot;clipboard-read&quot; ] )
+context.setOffline( true )
+println( context.cookies() )
+</code></pre>
+<p>Also <code>clearCookies()</code> and <code>saveStorageState( path )</code>.</p>
 <h2 id="saved-sessions"><a href="#saved-sessions" id="saved-sessions" name="saved-sessions" class="anchor"></a>Saved sessions</h2>
-<p>Log in once, reuse the cookies everywhere:</p>
+<p>Log in once, reuse the cookies and local storage everywhere:</p>
 <pre><code class="language-js">pw = playwright( { baseURL : &quot;http://localhost:8080&quot; } )
+
 pw.session( &quot;admin&quot;, ( page ) =&gt; {
-	page.visit( &quot;/login&quot; ).fill( &quot;Email&quot;, &quot;admin@site.com&quot; ).fill( &quot;Password&quot;, &quot;secret&quot; ).click( &quot;Sign in&quot; )
-} )
-pw.newPage( { session : &quot;admin&quot; } ).visit( &quot;/admin&quot; ).assertSee( &quot;Dashboard&quot; )
+	page.visit( &quot;/login&quot; )
+		.fill( &quot;Email&quot;, &quot;admin@site.com&quot; )
+		.fill( &quot;Password&quot;, &quot;secret&quot; )
+		.click( &quot;Sign in&quot; )
+		.assertPathIs( &quot;/dashboard&quot; )
+}, { maxAge : 720 } )
+
+pw.browse( ( page ) =&gt; {
+	page.visit( &quot;/admin&quot; ).assertSee( &quot;Dashboard&quot; )
+}, { session : &quot;admin&quot; } )
 </code></pre>
-<p>Options: <code>maxAge</code> (minutes, 0 = never expires), <code>refresh</code>, <code>context</code>. The setup page always starts clean, even on a manager configured with <code>session</code>. Sessions are stored in <code>{home}/sessions</code>, outside your project, because they hold cookies.</p>
+<ul>
+<li>The setup runs only when the session is missing, older than <code>maxAge</code> minutes (<code>0</code>, the default, never expires) or <code>refresh : true</code> is passed. <code>context</code> passes context overrides to the setup page.</li>
+<li>Use a session with <code>{ session : &quot;admin&quot; }</code> in <code>browse()</code>, <code>newPage()</code>, <code>newContext()</code>, <code>playwright()</code> or a <a href="/profiles/index.html">profile</a>.</li>
+<li>The setup page always starts clean, even on a manager configured with <code>session</code>.</li>
+<li>Sessions are stored in <code>{home}/sessions</code>, outside your project, because they hold cookies.</li>
+</ul>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/network.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/network.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/network.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/network.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -307,7 +377,7 @@ pw.newPage( { session : &quot;admin&quot; } ).visit( &quot;/admin&quot; ).assert
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#mock-and-block-requests">Mock and block requests</a></li><li class="toc-level-2"><a href="#listen">Listen</a></li><li class="toc-level-2"><a href="#api-testing">API testing</a></li><li class="toc-level-2"><a href="#saved-sessions">Saved sessions</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#mock-and-block-requests">Mock and block requests</a></li><li class="toc-level-2"><a href="#listen">Listen</a></li><li class="toc-level-2"><a href="#api-testing">API testing</a></li><li class="toc-level-2"><a href="#cookies-permissions-and-offline">Cookies, permissions and offline</a></li><li class="toc-level-2"><a href="#saved-sessions">Saved sessions</a></li></ul></nav>
 				</aside>
 			
 		</div>

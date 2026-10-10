@@ -26,8 +26,8 @@
 
 	
 	
-		<meta name="description" content="Run TestBox browser specs with the bx-playwright module deployed in a BoxLang server.">
-		<meta property="og:description" content="Run TestBox browser specs with the bx-playwright module deployed in a BoxLang server.">
+		<meta name="description" content="Run TestBox and ColdBox browser specs with the bx-playwright module deployed in a BoxLang server.">
+		<meta property="og:description" content="Run TestBox and ColdBox browser specs with the bx-playwright module deployed in a BoxLang server.">
 	
 
 	
@@ -221,7 +221,7 @@
 		</h1>
 		
 		
-			<p class="page-summary">Run TestBox browser specs with the bx-playwright module deployed in a BoxLang server.</p>
+			<p class="page-summary">Run TestBox and ColdBox browser specs with the bx-playwright module deployed in a BoxLang server.</p>
 		
 		
 		
@@ -233,22 +233,12 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#install-the-module-in-the-server">Install the module in the server</a></li><li class="toc-level-2"><a href="#write-a-browser-spec">Write a browser spec</a></li><li class="toc-level-3"><a href="#coldbox">ColdBox</a></li><li class="toc-level-3"><a href="#profiles-and-first-use">Profiles and first use</a></li><li class="toc-level-2"><a href="#choose-how-to-provision-the-browser">Choose how to provision the browser</a></li><li class="toc-level-3"><a href="#let-the-deployed-web-server-module-install-it">Let the deployed web-server module install it</a></li><li class="toc-level-3"><a href="#preinstall-from-an-os-level-boxlang-cli">Preinstall from an OS-level BoxLang CLI</a></li><li class="toc-level-2"><a href="#provision-explicitly-or-disable-downloads">Provision explicitly or disable downloads</a></li><li class="toc-level-2"><a href="#runtime-requirements">Runtime requirements</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#install-the-module-in-the-server">Install the module in the server</a></li><li class="toc-level-2"><a href="#browser-specs">Browser specs</a></li><li class="toc-level-2"><a href="#coldbox">ColdBox</a></li><li class="toc-level-2"><a href="#provision-the-browser">Provision the browser</a></li><li class="toc-level-3"><a href="#automatic-default">Automatic &#x28;default&#x29;</a></li><li class="toc-level-3"><a href="#before-the-first-spec">Before the first spec</a></li><li class="toc-level-3"><a href="#preinstalled-from-the-cli">Preinstalled from the CLI</a></li><li class="toc-level-2"><a href="#runtime-requirements">Runtime requirements</a></li></ul></details>
 		
 
 		
 		<h1 id="testbox-browser-testing"><a href="#testbox-browser-testing" id="testbox-browser-testing" name="testbox-browser-testing" class="anchor"></a>TestBox Browser Testing</h1>
-<p>TestBox 7.2+ integrates with bx-playwright to run real browser tests from BoxLang specs. Add the <code>@browser</code> annotation to any spec and TestBox gives it a browser. The browser runs on the server that executes TestBox, not on the developer's browser.</p>
-<h2 id="install-the-module-in-the-server"><a href="#install-the-module-in-the-server" id="install-the-module-in-the-server" name="install-the-module-in-the-server" class="anchor"></a>Install the module in the server</h2>
-<p>Deploy bx-playwright to the BoxLang runtime that runs the TestBox web application. For a CommandBox-managed server, the server configuration can install the module during initial setup:</p>
-<pre><code class="language-json">{
-	&quot;scripts&quot;: {
-		&quot;onServerInitialInstall&quot;: &quot;install bx-playwright --nosave&quot;
-	}
-}
-</code></pre>
-<p>This deploys the module for that server. For the normal web-app workflow, no separate OS-level BoxLang installation is needed: TestBox asks this deployed module to provision its browser.</p>
-<h2 id="write-a-browser-spec"><a href="#write-a-browser-spec" id="write-a-browser-spec" name="write-a-browser-spec" class="anchor"></a>Write a browser spec</h2>
+<p>TestBox 7.2+ and ColdBox 8.3+ run real browser tests from BoxLang specs. Add <code>@browser</code> to a spec and TestBox gives it a browser, browser matchers and failure artifacts. The browser runs on the server that executes TestBox, not in your own browser.</p>
 <pre><code class="language-boxlang">@browser
 @browserProfile( &quot;ci&quot; )
 @baseURL( &quot;http://localhost:8080&quot; )
@@ -272,13 +262,35 @@ class extends=&quot;testbox.system.BaseSpec&quot; {
 
 }
 </code></pre>
-<p>Any spec whose class, or a class it extends, has <code>@browser</code>, <code>@browserProfile</code> or <code>@baseURL</code> gets browser support, so <code>@browser</code> is optional when one of the others is present. On BoxLang, TestBox mixes these methods into the spec, which calls them unqualified:</p>
+<h2 id="install-the-module-in-the-server"><a href="#install-the-module-in-the-server" id="install-the-module-in-the-server" name="install-the-module-in-the-server" class="anchor"></a>Install the module in the server</h2>
+<p>Deploy bx-playwright to the BoxLang runtime that runs the TestBox web application. For a CommandBox server, install it when the server is first set up:</p>
+<pre><code class="language-json">{
+	&quot;scripts&quot;: {
+		&quot;onServerInitialInstall&quot;: &quot;install bx-playwright --nosave&quot;
+	}
+}
+</code></pre>
+<p>No separate operating-system BoxLang installation is needed: TestBox asks the deployed module to download its browser on first use, see <a href="#provision-the-browser">Provision the browser</a>.</p>
+<h2 id="browser-specs"><a href="#browser-specs" id="browser-specs" name="browser-specs" class="anchor"></a>Browser specs</h2>
+<p>A spec gets browser support when its class, or a class it extends, has any of these annotations, so <code>@browser</code> is optional when another one is present:</p>
+<div class="bxsites-table-wrap"><table class="table">
+<thead>
+<tr><th>Annotation</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>@browser</code></td><td>Turn on browser support</td></tr>
+<tr><td><code>@browserProfile( &quot;ci&quot; )</code></td><td>The bx-playwright <a href="/profiles/index.html">profile</a> for the bundle</td></tr>
+<tr><td><code>@baseURL( &quot;http://localhost:8080&quot; )</code></td><td>Relative URLs in <code>visit()</code> resolve against it</td></tr>
+<tr><td><code>@browserAutoInstall( false )</code></td><td>Never download a missing browser, see <a href="#provision-the-browser">below</a></td></tr>
+</tbody>
+</table></div>
+<p>TestBox mixes these methods into the spec, which calls them unqualified:</p>
 <div class="bxsites-table-wrap"><table class="table">
 <thead>
 <tr><th>Method</th><th>What it does</th></tr>
 </thead>
 <tbody>
-<tr><td><code>browse( callback, options )</code></td><td>Runs the callback with fresh, isolated browser pages</td></tr>
+<tr><td><code>browse( callback, options )</code></td><td>Runs the callback with fresh, isolated pages, closes them, and attaches failure artifacts to the spec</td></tr>
 <tr><td><code>browserAvailable()</code></td><td>True when browser specs can run here, handy for <code>skip = !browserAvailable()</code></td></tr>
 <tr><td><code>ensureBrowserInstalled()</code></td><td>Installs the profile's browser, for example from <code>beforeAll()</code></td></tr>
 <tr><td><code>getBrowserSupport()</code></td><td>The bundle's <code>testbox.system.browser.BrowserSupport</code></td></tr>
@@ -286,11 +298,16 @@ class extends=&quot;testbox.system.BaseSpec&quot; {
 <tr><td><code>this.playwright()</code></td><td>The bundle's bx-playwright manager. An unqualified <code>playwright()</code> is still the bx-playwright BIF, which returns a new manager the bundle does not close</td></tr>
 </tbody>
 </table></div>
-<p>Methods the spec declares itself are kept. TestBox also registers the browser matchers for every spec of the bundle.</p>
-<p><code>testbox.system.BrowserSpec</code> still exists as an optional base class: it is <code>testbox.system.BaseSpec</code> with <code>@browser</code>, so <code>class extends=&quot;testbox.system.BrowserSpec&quot;</code> works the same. Use the annotation when the spec already extends another base class, such as ColdBox's <code>coldbox.system.testing.BaseTestCase</code>.</p>
-<p>The bundle shares one browser, started on first use. The runner closes it after the bundle, even when <code>afterAll()</code> throws, so your own <code>beforeAll()</code> and <code>afterAll()</code> need no cleanup or <code>super</code> calls.</p>
-<h3 id="coldbox"><a href="#coldbox" id="coldbox" name="coldbox" class="anchor"></a>ColdBox</h3>
-<p>ColdBox 8.3+ browser tests use the same annotation on <code>coldbox.system.testing.BaseTestCase</code>, which adds <code>routeURL()</code>, <code>visitRoute()</code> and <code>assertRouteIs()</code> for named routes:</p>
+<ul>
+<li>Methods the spec declares itself are kept.</li>
+<li>Browser matchers include <code>toSee()</code>, <code>toHaveTitle()</code>, <code>toHavePath()</code>, <code>toHaveText()</code>, <code>toBeVisible()</code> and <code>toHaveCount()</code>. Every bx-playwright <a href="/assertions/index.html">assertion</a> works too: <code>page.assertSee( &quot;Welcome&quot; )</code>.</li>
+<li>The bundle shares one browser, started on first use. The runner closes it after the bundle, even when <code>afterAll()</code> throws, so your <code>beforeAll()</code> and <code>afterAll()</code> need no cleanup or <code>super</code> calls.</li>
+<li><code>testbox.system.BrowserSpec</code> is an optional base class: <code>testbox.system.BaseSpec</code> with <code>@browser</code>. Use the annotation when the spec already extends another base class.</li>
+<li>For logged-in specs, log in once with a <a href="/network/index.html#saved-sessions">saved session</a> and pass <code>{ session : &quot;name&quot; }</code> to <code>browse()</code>.</li>
+<li>Artifact policies come from the profile, see <a href="/testing/index.html#artifacts">Testing</a>.</li>
+</ul>
+<h2 id="coldbox"><a href="#coldbox" id="coldbox" name="coldbox" class="anchor"></a>ColdBox</h2>
+<p>ColdBox 8.3+ uses the same annotation on <code>coldbox.system.testing.BaseTestCase</code>, which adds <code>routeURL()</code>, <code>visitRoute()</code> and <code>assertRouteIs()</code> for named routes:</p>
 <pre><code class="language-boxlang">@appMapping( &quot;/root&quot; )
 @browser
 @baseURL( &quot;http://localhost:8080&quot; )
@@ -310,24 +327,12 @@ class extends=&quot;coldbox.system.testing.BaseTestCase&quot; {
 
 }
 </code></pre>
-<h3 id="profiles-and-first-use"><a href="#profiles-and-first-use" id="profiles-and-first-use" name="profiles-and-first-use" class="anchor"></a>Profiles and first use</h3>
-<p><code>@browserProfile</code> selects the bx-playwright profile for the bundle. The selected browser is installed automatically the first time the spec needs it. The deployed module downloads it into its configured browser cache; later runs reuse it. The first use can take longer and needs network access.</p>
-<p><code>browse()</code> creates isolated contexts and pages, closes them after each callback, and attaches configured failure artifacts to the spec. The bundle's browser matchers include <code>toSee()</code>, <code>toHaveTitle()</code>, <code>toHavePath()</code>, <code>toHaveText()</code>, <code>toBeVisible()</code> and <code>toHaveCount()</code>. See <a href="/testing/index.html">Testing</a> for artifact policies and <a href="/assertions/index.html">Assertions</a> for the full matcher surface.</p>
-<h2 id="choose-how-to-provision-the-browser"><a href="#choose-how-to-provision-the-browser" id="choose-how-to-provision-the-browser" name="choose-how-to-provision-the-browser" class="anchor"></a>Choose how to provision the browser</h2>
-<p>There are two supported setup paths. The first is the simplest for most developers; the second is useful when browser downloads must happen before the web app runs, or the server cannot reach the download host.</p>
-<h3 id="let-the-deployed-web-server-module-install-it"><a href="#let-the-deployed-web-server-module-install-it" id="let-the-deployed-web-server-module-install-it" name="let-the-deployed-web-server-module-install-it" class="anchor"></a>Let the deployed web-server module install it</h3>
-<p>This is the default. When a spec first uses <code>browse()</code> or <code>this.playwright()</code>, TestBox asks the bx-playwright module loaded in that web server to ensure the profile's browser is installed. The module uses its own Node.js runtime and browser cache. No OS-level BoxLang or CLI installation is involved.</p>
-<p>The first use needs network access and may take longer while the browser downloads. Subsequent runs reuse the browser cache.</p>
-<h3 id="preinstall-from-an-os-level-boxlang-cli"><a href="#preinstall-from-an-os-level-boxlang-cli" id="preinstall-from-an-os-level-boxlang-cli" name="preinstall-from-an-os-level-boxlang-cli" class="anchor"></a>Preinstall from an OS-level BoxLang CLI</h3>
-<p>If you prefer to provision before starting the web app, you can install BoxLang and bx-playwright in a standalone OS-level BoxLang environment and run the CLI there:</p>
-<pre><code class="language-bash">install-bx-module bx-playwright
-BX_PLAYWRIGHT_HOME=/var/cache/myapp-playwright bxPlaywright install chromium
-</code></pre>
-<p>The web server must then use the same browser cache. For example, configure the deployed module's <code>home</code> to <code>/var/cache/myapp-playwright</code>, or set the same <code>browsersPath</code> in both runtimes. Make sure both processes can access the cache, and use the same bx-playwright/Playwright version in the CLI and web server so they expect the same browser revision. If the server runs as a different OS user, check its filesystem permissions.</p>
-<p>When using this preinstall route, put <code>@browserAutoInstall( false )</code> above the spec's <code>class</code> to prevent a browser download from a web request.</p>
-<p>If the cache is not shared with the server or the Playwright versions differ, the preinstalled browser may not be found or may not match the server module. In that case, configure a shared cache or use the deployed-module route above.</p>
-<h2 id="provision-explicitly-or-disable-downloads"><a href="#provision-explicitly-or-disable-downloads" id="provision-explicitly-or-disable-downloads" name="provision-explicitly-or-disable-downloads" class="anchor"></a>Provision explicitly or disable downloads</h2>
-<p>Use the public <code>ensureBrowserInstalled()</code> method to provision from a bundle lifecycle hook. This is useful when you want installation to happen before the first spec, or when automatic installation is disabled:</p>
+<p>See the <a href="https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing">ColdBox Browser Testing guide</a>.</p>
+<h2 id="provision-the-browser"><a href="#provision-the-browser" id="provision-the-browser" name="provision-the-browser" class="anchor"></a>Provision the browser</h2>
+<h3 id="automatic-default"><a href="#automatic-default" id="automatic-default" name="automatic-default" class="anchor"></a>Automatic (default)</h3>
+<p>When a spec first uses <code>browse()</code> or <code>this.playwright()</code>, TestBox asks the bx-playwright module loaded in the web server to install the profile's browser, using the module's own Node.js runtime and browser cache. The first run needs network access and takes longer; later runs reuse the cache.</p>
+<h3 id="before-the-first-spec"><a href="#before-the-first-spec" id="before-the-first-spec" name="before-the-first-spec" class="anchor"></a>Before the first spec</h3>
+<p>Install from a lifecycle hook, for example when automatic installation is disabled:</p>
 <pre><code class="language-boxlang">@browser
 @browserAutoInstall( false )
 @browserProfile( &quot;ci&quot; )
@@ -343,25 +348,32 @@ class extends=&quot;testbox.system.BaseSpec&quot; {
 
 }
 </code></pre>
-<p>By default, <code>browserAutoInstall</code> is true. Set <code>@browserAutoInstall( false )</code> to prevent TestBox from downloading a missing browser. If it is disabled and no browser is provisioned, launch fails with setup guidance.</p>
-<p>The underlying BIF is also available directly to server-side BoxLang code:</p>
-<pre><code class="language-boxlang">playwrightEnsureBrowser( &quot;chromium&quot; )
+<p>With <code>@browserAutoInstall( false )</code> and no browser installed, launching fails with setup guidance. Server code can call the underlying BIF directly: <code>playwrightEnsureBrowser( &quot;chromium&quot; )</code>.</p>
+<h3 id="preinstalled-from-the-cli"><a href="#preinstalled-from-the-cli" id="preinstalled-from-the-cli" name="preinstalled-from-the-cli" class="anchor"></a>Preinstalled from the CLI</h3>
+<p>To download browsers before the web app starts, or when the server cannot reach the download host, install them from a standalone BoxLang installation into a shared cache:</p>
+<pre><code class="language-bash">install-bx-module bx-playwright
+BX_PLAYWRIGHT_HOME=/var/cache/myapp-playwright bxPlaywright install chromium
 </code></pre>
-<p>See <a href="/web-applications/index.html">BoxLang Web Applications</a> for server runtime, cache permissions, and direct application usage.</p>
+<ul>
+<li>Point the server's module at the same cache: set its <code>home</code> to <code>/var/cache/myapp-playwright</code>, or the same <code>browsersPath</code> in both runtimes.</li>
+<li>Use the same bx-playwright version in the CLI and the server, so both expect the same browser revision.</li>
+<li>Make sure the server's operating-system user can read and write the cache.</li>
+<li>Add <code>@browserAutoInstall( false )</code> above the spec's <code>class</code> so a web request never downloads a browser.</li>
+</ul>
 <h2 id="runtime-requirements"><a href="#runtime-requirements" id="runtime-requirements" name="runtime-requirements" class="anchor"></a>Runtime requirements</h2>
 <ul>
-<li>The BoxLang web server must load the module under the <code>playwright</code> mapping.</li>
-<li>The server process must be able to write to the configured bx-playwright home and browser cache.</li>
+<li>The BoxLang web server loads the module under the <code>playwright</code> mapping.</li>
+<li>The server process can write to the bx-playwright home and browser cache.</li>
 <li>The first browser installation needs outbound network access unless the cache is already provisioned.</li>
 <li>On Linux, native browser libraries are a host or container dependency. TestBox does not install operating-system packages from a web request.</li>
 </ul>
-<p>For CI, either cache the server's bx-playwright home or preinstall into the shared cache before the server starts. The standalone CLI workflow is documented in <a href="/testing/index.html#ci">Testing and CI</a>.</p>
+<p>For CI, cache the server's bx-playwright home, or preinstall into the shared cache before the server starts. See <a href="/web-applications/index.html">BoxLang Web Applications</a> for server paths and permissions, and <a href="/testing/index.html#ci">Testing</a> for the standalone CLI workflow.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testbox.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testbox.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testbox.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testbox.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -393,7 +405,7 @@ class extends=&quot;testbox.system.BaseSpec&quot; {
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#install-the-module-in-the-server">Install the module in the server</a></li><li class="toc-level-2"><a href="#write-a-browser-spec">Write a browser spec</a></li><li class="toc-level-3"><a href="#coldbox">ColdBox</a></li><li class="toc-level-3"><a href="#profiles-and-first-use">Profiles and first use</a></li><li class="toc-level-2"><a href="#choose-how-to-provision-the-browser">Choose how to provision the browser</a></li><li class="toc-level-3"><a href="#let-the-deployed-web-server-module-install-it">Let the deployed web-server module install it</a></li><li class="toc-level-3"><a href="#preinstall-from-an-os-level-boxlang-cli">Preinstall from an OS-level BoxLang CLI</a></li><li class="toc-level-2"><a href="#provision-explicitly-or-disable-downloads">Provision explicitly or disable downloads</a></li><li class="toc-level-2"><a href="#runtime-requirements">Runtime requirements</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#install-the-module-in-the-server">Install the module in the server</a></li><li class="toc-level-2"><a href="#browser-specs">Browser specs</a></li><li class="toc-level-2"><a href="#coldbox">ColdBox</a></li><li class="toc-level-2"><a href="#provision-the-browser">Provision the browser</a></li><li class="toc-level-3"><a href="#automatic-default">Automatic &#x28;default&#x29;</a></li><li class="toc-level-3"><a href="#before-the-first-spec">Before the first spec</a></li><li class="toc-level-3"><a href="#preinstalled-from-the-cli">Preinstalled from the CLI</a></li><li class="toc-level-2"><a href="#runtime-requirements">Runtime requirements</a></li></ul></nav>
 				</aside>
 			
 		</div>

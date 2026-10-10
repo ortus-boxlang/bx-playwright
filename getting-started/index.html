@@ -233,58 +233,84 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#install">Install</a></li><li class="toc-level-3"><a href="#standalone-boxlang-runtime">Standalone BoxLang runtime</a></li><li class="toc-level-3"><a href="#boxlang-web-application">BoxLang web application</a></li><li class="toc-level-2"><a href="#first-script">First script</a></li><li class="toc-level-2"><a href="#clean-up">Clean up</a></li><li class="toc-level-2"><a href="#next">Next</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#install">Install</a></li><li class="toc-level-3"><a href="#browser-download-problems">Browser download problems</a></li><li class="toc-level-2"><a href="#first-script">First script</a></li><li class="toc-level-2"><a href="#clean-up">Clean up</a></li><li class="toc-level-2"><a href="#next">Next</a></li></ul></details>
 		
 
 		
-		<h1 id="getting-started"><a href="#getting-started" id="getting-started" name="getting-started" class="anchor"></a>Getting Started</h1>
+		<svg xmlns="http://www.w3.org/2000/svg" class="adm-hidden">
+<symbol id="adm-tip">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="m12.3 10c2.8-.7 4.2-3.8 2.1-7.4 8.1 3.2 7.5 18.1-2.6 18.4-8.1.2-9.8-11.4-4.4-14.8.2 3.3 2.8 4.3 4.9 3.8zm-3.2 5.8c.2 1.6 2.5 1.9 3.6 1.5 2.8-1 2.5-4 2.1-5.1-.8 1.4-1.3 1.7-2.2 2s-3.7-.7-3.5 1.6z" fill="currentColor"/>
+</svg>
+</symbol>
+</svg>
+<h1 id="getting-started"><a href="#getting-started" id="getting-started" name="getting-started" class="anchor"></a>Getting Started</h1>
+<p>Install the module, download a browser and run a first script. Requires BoxLang 1.17+ and Java 21+.</p>
 <h2 id="install"><a href="#install" id="install" name="install" class="anchor"></a>Install</h2>
-<p>Requires BoxLang 1.17+ and Java 21+.</p>
-<h3 id="standalone-boxlang-runtime"><a href="#standalone-boxlang-runtime" id="standalone-boxlang-runtime" name="standalone-boxlang-runtime" class="anchor"></a>Standalone BoxLang runtime</h3>
-<p>Use the CLI when you are installing bx-playwright for a standalone BoxLang installation:</p>
 <pre><code class="language-bash">install-bx-module bx-playwright
 bxPlaywright install              # driver + Node.js + Chromium
 bxPlaywright doctor               # check everything
 </code></pre>
-<h3 id="boxlang-web-application"><a href="#boxlang-web-application" id="boxlang-web-application" name="boxlang-web-application" class="anchor"></a>BoxLang web application</h3>
-<p>Deploy bx-playwright to the BoxLang server that hosts the application. Call <code>playwrightEnsureBrowser( &quot;chromium&quot; )</code>
-from that web runtime to provision the browser; a separate OS-level BoxLang installation or CLI is not required.
-TestBox browser specs (<code>@browser</code>) use this API automatically on first use unless <code>@browserAutoInstall( false )</code> is set. With
-auto-install disabled, call <code>ensureBrowserInstalled()</code> in the bundle's <code>beforeAll()</code> to provision explicitly.
-The first install needs network access; Linux system libraries remain the responsibility of the host or container.</p>
-<p>See <a href="/web-applications/index.html">BoxLang Web Applications</a> for server deployment and <a href="/testbox/index.html">TestBox Browser Testing</a> for specs, profiles and failure artifacts.</p>
-<p>More browsers: <code>bxPlaywright install firefox webkit</code>. On Linux CI, add <code>--with-deps</code> to install the system libraries browsers need.</p>
-<p>Everything is stored in <code>~/.boxlang/playwright</code> (change it with the <code>home</code> setting or <code>BX_PLAYWRIGHT_HOME</code>).</p>
+<ul>
+<li>More browsers: <code>bxPlaywright install firefox webkit</code>.</li>
+<li>On Linux CI, add <code>--with-deps</code> to also install the system libraries browsers need.</li>
+<li>Everything is stored in <code>~/.boxlang/playwright</code>. Change it with the <code>home</code> setting or <code>BX_PLAYWRIGHT_HOME</code>.</li>
+<li><code>bx-playwright-full</code> bundles Node.js for every platform, so <code>install</code> skips the Node.js download. Browsers are still downloaded unless they are already installed.</li>
+</ul>
+<div class="adm-block adm-tip">
+<div class="adm-heading">
+<svg class="adm-icon"><use xlink:href="#adm-tip" /></svg><span>Running inside a BoxLang web server?</span>
+</div>
+<div class="adm-body">
+<p>Deploy the module to that server and call <code>playwrightEnsureBrowser( &quot;chromium&quot; )</code> from server code: no separate CLI install is needed. TestBox browser specs do this for you on first use. See <a href="/web-applications/index.html">BoxLang Web Applications</a> and <a href="/testbox/index.html">TestBox Browser Testing</a>.</p>
+</div>
+</div>
+<h3 id="browser-download-problems"><a href="#browser-download-problems" id="browser-download-problems" name="browser-download-problems" class="anchor"></a>Browser download problems</h3>
+<ul>
+<li>Browsers download from Playwright's CDN (<code>https://cdn.playwright.dev</code>). Behind a proxy, set <code>HTTPS_PROXY</code> before running <code>bxPlaywright install</code>.</li>
+<li>On a slow network, raise <code>PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT</code> (milliseconds, <code>120000</code> by default), see <a href="/configuration/index.html#environment-variables">Configuration</a>.</li>
+<li>To skip the Chromium download, use an installed Google Chrome with the <code>chrome</code> <a href="/profiles/index.html">profile</a>: <code>playwright( &quot;chrome&quot; )</code>.</li>
+<li>Run <code>bxPlaywright doctor</code> to see what is installed and how to fix what is missing.</li>
+</ul>
 <h2 id="first-script"><a href="#first-script" id="first-script" name="first-script" class="anchor"></a>First script</h2>
 <pre><code class="language-js">// hello.bxs
-page = playwright().visit( &quot;https://boxlang.io&quot; )
-println( page.title() )
-page.screenshot( &quot;boxlang.png&quot; ).quit()
+playwright().browse( ( page ) =&gt; {
+	page.visit( &quot;https://boxlang.io&quot; )
+	println( page.title() )
+	page.screenshot( &quot;boxlang.png&quot; )
+} )
 </code></pre>
 <pre><code class="language-bash">boxlang hello.bxs
 </code></pre>
+<p><code>playwright()</code> returns a manager and starts nothing until you use it. <code>browse()</code> opens a fresh page, runs your code and closes everything, even when the code throws.</p>
 <h2 id="clean-up"><a href="#clean-up" id="clean-up" name="clean-up" class="anchor"></a>Clean up</h2>
-<p><code>playwright()</code> starts nothing until you use it. When you are done:</p>
-<ul>
-<li><code>browse()</code> and the one-shot helpers (<code>screenshot()</code>, <code>pdf()</code>, <code>content()</code>, <code>render()</code>) close everything for you.</li>
-<li><code>page.close()</code> closes the page and its context; <code>page.quit()</code> or <code>manager.close()</code> closes everything.</li>
-</ul>
-<pre><code class="language-js">playwright().browse( ( page ) =&gt; {
+<p>Prefer <code>browse()</code> and the one-shot helpers (<code>screenshot()</code>, <code>pdf()</code>, <code>content()</code>, <code>render()</code>): they close the browser for you. When you manage pages yourself, close them:</p>
+<pre><code class="language-js">pw   = playwright()
+page = pw.newPage()
+try {
 	page.visit( &quot;https://boxlang.io&quot; ).assertSee( &quot;BoxLang&quot; )
-} )
+} finally {
+	pw.close()
+}
 </code></pre>
-<p>A manager is not thread safe: use it from the thread that created it.</p>
+<ul>
+<li><code>page.close()</code> closes the page and its context; the manager stays open.</li>
+<li><code>page.quit()</code> or <code>pw.close()</code> closes everything: pages, contexts, browser and driver.</li>
+<li>A manager is not thread safe: use it from the thread that created it.</li>
+</ul>
 <h2 id="next"><a href="#next" id="next" name="next" class="anchor"></a>Next</h2>
 <ul>
+<li><a href="/browsing/index.html">Browsing</a>: selectors, actions and locators.</li>
+<li><a href="/assertions/index.html">Assertions</a>: checks that wait for the page.</li>
+<li><a href="/testbox/index.html">TestBox Browser Testing</a>: browser specs with <code>@browser</code>.</li>
 <li><a href="/automation/index.html">Automation Scripts</a>: turn a script into a recorded, scheduled job.</li>
-<li><a href="/testing/index.html">Testing</a>: browser tests with TestBox and ColdBox.</li>
 </ul>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/getting-started.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/getting-started.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/getting-started.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/getting-started.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
@@ -316,7 +342,7 @@ page.screenshot( &quot;boxlang.png&quot; ).quit()
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#install">Install</a></li><li class="toc-level-3"><a href="#standalone-boxlang-runtime">Standalone BoxLang runtime</a></li><li class="toc-level-3"><a href="#boxlang-web-application">BoxLang web application</a></li><li class="toc-level-2"><a href="#first-script">First script</a></li><li class="toc-level-2"><a href="#clean-up">Clean up</a></li><li class="toc-level-2"><a href="#next">Next</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#install">Install</a></li><li class="toc-level-3"><a href="#browser-download-problems">Browser download problems</a></li><li class="toc-level-2"><a href="#first-script">First script</a></li><li class="toc-level-2"><a href="#clean-up">Clean up</a></li><li class="toc-level-2"><a href="#next">Next</a></li></ul></nav>
 				</aside>
 			
 		</div>

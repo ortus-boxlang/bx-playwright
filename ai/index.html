@@ -238,13 +238,14 @@
 
 		
 		<h1 id="ai-agents"><a href="#ai-agents" id="ai-agents" name="ai-agents" class="anchor"></a>AI Agents</h1>
+<p>Let an AI agent drive a browser: compact page snapshots with element refs, ready-made browser tools for bx-ai and other frameworks, and Playwright's MCP server for Claude, Cursor and VS Code.</p>
 <h2 id="snapshots-with-refs"><a href="#snapshots-with-refs" id="snapshots-with-refs" name="snapshots-with-refs" class="anchor"></a>Snapshots with refs</h2>
 <pre><code class="language-js">println( page.snapshot( options = { mode : &quot;ai&quot; } ) )
 // - textbox &quot;Email&quot; [ref=e5]
 // - button &quot;Sign in&quot; [ref=e7]
 page.fill( &quot;ref=e5&quot;, &quot;luis@ortus.com&quot; ).click( &quot;ref=e7&quot; )
 </code></pre>
-<p>The accessibility tree is compact and token efficient. Refs point at elements precisely.</p>
+<p>The accessibility tree is compact and token efficient. Every element gets a ref that works as a selector until the page changes. <code>snapshot( selector )</code> limits the tree to one element.</p>
 <h2 id="browser-tools-for-bx-ai"><a href="#browser-tools-for-bx-ai" id="browser-tools-for-bx-ai" name="browser-tools-for-bx-ai" class="anchor"></a>Browser tools for bx-ai</h2>
 <pre><code class="language-js">agent = aiAgent(
 	name         : &quot;Browser&quot;,
@@ -277,15 +278,15 @@ claude mcp add playwright -- bxPlaywright mcp --headless
 </code></pre>
 <p>Useful options, passed straight to Playwright: <code>--headless</code> (the browser is headed by default), <code>--browser</code>, <code>--port</code>, <code>--isolated</code> (keep the browser profile in memory), <code>--device &quot;iPhone 15&quot;</code>, <code>--viewport-size 1280x720</code> and <code>--output-dir</code>. Run <code>bxPlaywright mcp --help</code> for the full list.</p>
 <h2 id="codegen-to-boxlang"><a href="#codegen-to-boxlang" id="codegen-to-boxlang" name="codegen-to-boxlang" class="anchor"></a>Codegen to BoxLang</h2>
-<p><code>bxPlaywright codegen http://localhost:8080 --output=login.bxs</code> records your actions and writes bx-playwright code. <code>--target=java</code> (or javascript, python) keeps Playwright's own output.</p>
+<p><code>bxPlaywright codegen http://localhost:8080 --output=login.bxs</code> records your actions and writes bx-playwright code, see <a href="/automation/index.html#record-a-script-with-codegen">Automation Scripts</a>. <code>--target=java</code> (or javascript, python) keeps Playwright's own output.</p>
 <h2 id="self-description"><a href="#self-description" id="self-description" name="self-description" class="anchor"></a>Self description</h2>
-<p><code>page.help()</code>, <code>page.help( &quot;fill&quot; )</code> and <code>bxPlaywright help --json</code> describe the API for agents and humans. Errors always carry a <code>type</code> and a <code>detail</code> with the fix.</p>
+<p><code>page.help()</code>, <code>page.help( &quot;fill&quot; )</code> and <code>bxPlaywright help --json</code> describe the API for agents and humans. Errors always carry a <code>type</code> and a <code>detail</code> with the fix, see <a href="/errors/index.html">Errors</a>.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;11&#x3a;03 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
 	
 </article>
 
