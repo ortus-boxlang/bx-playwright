@@ -13,12 +13,15 @@ ogImage: assets/og-image.png
 Drive Chromium, Firefox and WebKit from BoxLang: test web apps, mock the network, test APIs, check accessibility, compare screenshots, and render HTML to PDF or images.
 
 ```js
-playwright().visit( "https://boxlang.io" )
-	.assertTitleContains( "BoxLang" )
-	.click( "Docs" )
-	.screenshot( "docs.png" )
-	.quit()
+playwright().browse( ( page ) => {
+	page.visit( "https://boxlang.io" )
+		.assertTitleContains( "BoxLang" )
+		.click( "Docs" )
+		.screenshot( "docs.png" )
+} )
 ```
+
+`browse()` opens a fresh page, runs your code and closes the browser, even when the code throws.
 
 ## See it in action
 
@@ -52,10 +55,17 @@ TestBox attaches all three to the failing spec in its report:
 | Module | Size | Node.js |
 |---|---|---|
 | `bx-playwright` | ~4 MB | downloaded by `bxPlaywright install` |
-| `bx-playwright-full` | ~206 MB | bundled for every platform, works offline |
+| `bx-playwright-full` | ~206 MB | bundled for every platform (browsers are still downloaded by `bxPlaywright install`) |
 
 Same module name (`playwright`), same API. Install one of them.
 
-Next: [Getting Started](getting-started.md).
+## Where to start
 
-Framework guides: [TestBox Browser Testing](testbox.md) and [BoxLang Web Applications](web-applications.md).
+| You want to | Read |
+|---|---|
+| Install the module and run a first script | [Getting Started](getting-started.md) |
+| Click, fill and read pages | [Browsing](browsing.md), then [Assertions](assertions.md) |
+| Write browser tests in TestBox or ColdBox | [TestBox Browser Testing](testbox.md) |
+| Automate a site on a schedule | [Automation Scripts](automation.md) |
+| Produce PDFs and images | [Screenshots, PDFs and Rendering](rendering.md) |
+| Give an AI agent a browser | [AI Agents](ai.md) |

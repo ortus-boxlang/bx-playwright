@@ -1,11 +1,13 @@
 ---
 title: Profiles
-order: 21
+order: 31
 summary: Built-in and custom profiles for browsers, devices, screens and modes.
 tags: [reference]
 ---
 
 # Profiles
+
+A profile is a named set of [settings](configuration.md): a browser, a device, a screen size or a mode such as `ci`. Pass one or more to `playwright()`.
 
 ```js
 playwright( "mobile" )
@@ -28,6 +30,8 @@ The `default` profile is empty: `playwright()` uses your module settings (`brows
 Profiles and options apply in order and the last one wins, also between devices and viewports: `playwright( [ "android", "desktop" ] )` and `playwright( "android", { viewport : { width : 500, height : 500 } } )` keep the Pixel 7 user agent and touch with the later viewport, while `playwright( [ "desktop", "android" ] )` uses the Pixel 7 screen.
 
 ## Your own profiles
+
+Add them to the `profiles` setting in `boxlang.json`:
 
 ```json
 "profiles": {

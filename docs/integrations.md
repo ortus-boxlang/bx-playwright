@@ -1,6 +1,6 @@
 ---
 title: Building on bx-playwright
-order: 24
+order: 22
 summary: The public contract that TestBox, ColdBox and other libraries build on.
 tags: [reference, testing]
 ---
@@ -48,22 +48,24 @@ The module is registered as `playwright`, and its classes are available as `mode
 When the runner owns the lifecycle, for example one browser per test bundle and one context per test, use the manager and the context directly:
 
 ```js
-// beforeAll
-pw = playwright( [ "ci" ], { baseURL : "http://localhost:8080" } )
+// beforeAll: one manager per bundle
+variables.pw = playwright( "ci", { baseURL : "http://localhost:8080" } )
 
-// each test
-context = pw.newContext()
-page    = context.newPage()
-failed  = true
-try {
-	runTest( page )
-	failed = false
-} finally {
-	kept = context.close( failed = failed )   // { screenshots, trace, videos, directory }
+// each test: one context
+function runInBrowser( required function test ) {
+	var context = variables.pw.newContext()
+	var failed  = true
+	try {
+		arguments.test( context.newPage() )
+		failed = false
+	} finally {
+		var kept = context.close( failed = failed )   // { screenshots, trace, videos, directory }
+		// attach kept.screenshots, kept.trace and kept.videos to the test result
+	}
 }
 
 // afterAll
-pw.close()
+variables.pw.close()
 ```
 
 `context.close()` returns the artifacts it kept, ready to attach to the test result.
@@ -94,7 +96,7 @@ bx-playwright announces these events. Register a listener with `boxRegisterInter
 | `onContextCreate` | `playwright`, `context` |
 | `onPageCreate` | `page` |
 | `onPageClose` | `page` |
-| `onPlaywrightAssertionFailure` | `message`, `action` |
+| `onPlaywrightAssertionFailure` | `message`, and `action` (the assertion) when Playwright raised it |
 | `onPlaywrightArtifact` | `type` (`screenshot`, `pdf`, `trace`, `video`, `baseline`), `path`, and `page` for `page.screenshot()` and `page.pdf()` |
 
 ```js

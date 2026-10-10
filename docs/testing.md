@@ -1,24 +1,24 @@
 ---
 title: Testing
 order: 16
-summary: Use bx-playwright in tests, keep artifacts on failure, debug.
+summary: Use bx-playwright in any test runner, keep artifacts on failure, debug, run in CI.
 tags: [testing]
 ---
 
 # Testing
 
-bx-playwright works in any test framework. TestBox and ColdBox build their browser testing support on the same public API, described in [Building on bx-playwright](integrations.md).
-
-For the TestBox browser spec workflow, including in-server browser provisioning, see [TestBox Browser Testing](testbox.md). For direct use from a deployed web application, see [BoxLang Web Applications](web-applications.md).
+Use bx-playwright from any test runner, keep screenshots, traces and videos of failed tests, debug them, and run them in CI.
 
 !!! tip "Using TestBox or ColdBox?"
-    Add `@browser` to a spec that extends `testbox.system.BaseSpec` (TestBox 7.2+) or `coldbox.system.testing.BaseTestCase` (ColdBox 8.3+). You get `browse()`, browser matchers such as `expect( page ).toSee( "Welcome" )`, screenshots and traces attached to failed specs, retries, and for ColdBox named routes with `visitRoute()` and `assertRouteIs()`. The browser closes after the bundle, even when `afterAll()` throws. For logged-in tests, use [saved sessions](network.md#saved-sessions): log in once through your login page and pass `{ session : "name" }` to `browse()`. See the [TestBox Browser Testing guide](https://testbox.ortusbooks.com/browser-testing) and the [ColdBox Browser Testing guide](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing).
+    Add `@browser` to the spec and the framework manages the browser, adds browser matchers such as `expect( page ).toSee( "Welcome" )` and attaches failure artifacts to the report. See [TestBox Browser Testing](testbox.md). This page covers what works everywhere, including inside those specs.
+
+Without framework support, call `browse()` in each test:
 
 ```js
 describe( "Login", () => {
 	it( "signs in", () => {
-		playwright( "ci" ).browse( ( page ) => {
-			page.visit( "http://localhost:8080/login" )
+		playwright( "ci", { baseURL : "http://localhost:8080" } ).browse( ( page ) => {
+			page.visit( "/login" )
 				.fill( "Email", "luis@ortus.com" )
 				.fill( "Password", "secret" )
 				.click( "Sign in" )
@@ -28,7 +28,7 @@ describe( "Login", () => {
 } )
 ```
 
-`browse()` closes the context with `failed = true` when the callback throws, so failure artifacts are kept.
+When the callback throws, `browse()` closes the context with `failed = true`, so the `ci` profile keeps the failure artifacts. For logged-in tests, log in once with a [saved session](network.md#saved-sessions) and pass `{ session : "name" }` to `browse()`.
 
 ## Artifacts
 
@@ -40,19 +40,21 @@ The `artifacts` setting (or a profile such as `ci`, `record`, `debug`) records s
 | `on` | always |
 | `only-on-failure` / `retain-on-failure` | only when the context closes with `failed = true` |
 
+`browse()` applies the policies for you. When you manage a context yourself, tell `close()` whether the work failed:
+
 ```js
-context = pw.newContext( { artifacts : { trace : "retain-on-failure", screenshot : "only-on-failure" } } )
-// ...
+context = playwright().newContext( { artifacts : { trace : "retain-on-failure", screenshot : "only-on-failure" } } )
+// ... run the test with context.newPage()
 kept = context.close( failed = true )   // { screenshots, trace, videos, directory }
 ```
 
-Open a trace with `bxPlaywright show-trace path/to/trace.zip`.
+Artifacts go to `{home}/artifacts` unless you set `artifacts.directory`. Open a trace with `bxPlaywright show-trace path/to/trace.zip`.
 
 ## Debugging
 
 - `playwright( "debug" )`: headed, slowed down, every artifact on.
 - `playwright( "headed" )` or `BX_PLAYWRIGHT_HEADLESS=false`.
-- `page.snapshot()` prints the accessibility tree.
+- `println( page.snapshot() )` prints the accessibility tree: what the page exposes to selectors.
 - `bxPlaywright codegen http://localhost:8080` records your clicks as BoxLang code.
 
 ## CI
@@ -123,4 +125,6 @@ jobs:
           if-no-files-found: ignore
 ```
 
-Replace `boxlang run-tests.bxs` with your test command. If your tests need the application running, start it in an earlier step, for example `boxlang-miniserver --port 8080 &`, and set `BX_PLAYWRIGHT_BASEURL`. Artifacts go to `~/.boxlang/playwright/artifacts` unless you set `artifacts.directory`. Open a downloaded trace with `bxPlaywright show-trace trace.zip`.
+Replace `boxlang run-tests.bxs` with your test command. If your tests need the application running, start it in an earlier step, for example `boxlang-miniserver --port 8080 &`, and set `BX_PLAYWRIGHT_BASEURL`. Open a downloaded trace with `bxPlaywright show-trace trace.zip`.
+
+For TestBox specs that run inside a web server, the server provisions its own browser: see [TestBox Browser Testing](testbox.md#provision-the-browser).
