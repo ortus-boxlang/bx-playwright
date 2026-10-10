@@ -11,10 +11,10 @@ Test frameworks, application frameworks and your own libraries build on `bx-play
 
 Ready-made integrations built on this contract:
 
-| Framework | Base class | Guide |
+| Framework | How | Guide |
 |---|---|---|
-| TestBox 7.2+ | `testbox.system.BrowserSpec`, matchers in `testbox.system.browser.BrowserMatchers` | [TestBox Browser Testing](testbox.md) |
-| ColdBox 8.3+ | `coldbox.system.testing.BrowserTestCase` | [ColdBox Browser Testing](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing) |
+| TestBox 7.2+ | `@browser` on any spec (`testbox.system.BrowserSpec` is an optional base class), support in `testbox.system.browser.BrowserSupport`, matchers in `testbox.system.browser.BrowserMatchers` | [TestBox Browser Testing](testbox.md) |
+| ColdBox 8.3+ | `@browser` on `coldbox.system.testing.BaseTestCase`, with `routeURL()`, `visitRoute()` and `assertRouteIs()` | [ColdBox Browser Testing](https://coldbox.ortusbooks.com/the-basics/testing-quick-start/browser-testing) |
 
 ## The contract
 

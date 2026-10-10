@@ -32,7 +32,7 @@ try {
 }
 ```
 
-The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, `BrowserSpec` invokes this API automatically on first browser use; see [TestBox Browser Testing](testbox.md).
+The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, browser specs (`@browser`) invoke this API automatically on first browser use; see [TestBox Browser Testing](testbox.md).
 
 ## Configure the server's home
 

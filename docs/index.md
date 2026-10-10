@@ -22,7 +22,7 @@ playwright().visit( "https://boxlang.io" )
 
 ## See it in action
 
-A TestBox `BrowserSpec` signing in to a demo shop and checking the dashboard:
+A TestBox browser spec signing in to a demo shop and checking the dashboard:
 
 ![A browser test signing in to a demo shop and checking the dashboard](assets/demo-browser-test.gif)
 
