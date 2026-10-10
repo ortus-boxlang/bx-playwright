@@ -305,7 +305,7 @@
 			<div class="section-head" style="text-align:center;margin-inline:auto">
 				<span class="eyebrow" style="justify-content:center">See it in action</span>
 				<h2>When a test fails, you see exactly why.</h2>
-				<p>A real run: a TestBox <code>BrowserSpec</code> signs in, checks the dashboard, and fails on purpose. The <code>ci</code> profile keeps the screenshot, the trace and the video, and TestBox attaches them to the failing spec.</p>
+				<p>A real run: a TestBox browser spec signs in, checks the dashboard, and fails on purpose. The <code>ci</code> profile keeps the screenshot, the trace and the video, and TestBox attaches them to the failing spec.</p>
 			</div>
 			<div class="preview-card pw-demo">
 				<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">tests/browser/ShopSpec.bx</span></div>
@@ -340,9 +340,9 @@
 					<div class="pw-tb-logos"><span class="icon"><svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#bxhTestboxClip)"><path d="M500.011 253.749L420.595 144.895V192.95H376.113L376.167 177.035L305.149 135.576V81.0649H352.211L245.601 0L144.863 81.0649H186.053V139.057L119.864 178.663V197.441H79.4156V149.386L0 258.268L79.4156 356.624V314.576H119.864V328.835L191.926 371.894V418.938H150.736L251.474 500.003L358.084 418.938H311.021V367.627L375.728 328.835V310.056H420.595V356.596L500.011 253.749ZM241.979 377.171L139.32 316.288L139.128 195.112L242.061 255.826L241.979 377.171ZM249.059 245.777L146.126 185.091L249.031 124.713L351.992 185.063L249.086 245.777H249.059ZM357.26 317.635L254.629 378.518L254.547 257.173L357.48 196.459L357.26 317.635Z" fill="url(#bxhTestboxGrad)"/></g><defs><linearGradient id="bxhTestboxGrad" x1="396.619" y1="117.64" x2="90.7572" y2="477.285" gradientUnits="userSpaceOnUse"><stop offset="0.278846" stop-color="#33CFFF"/><stop offset="1" stop-color="#0D87C5"/></linearGradient><clipPath id="bxhTestboxClip"><rect width="500" height="500" fill="white"/></clipPath></defs></svg></span>+<span class="icon"><img src="/assets/brand/bxplaywright-icon.svg" alt=""></span></div>
 					<span class="eyebrow">TestBox integration</span>
 					<h2>Browser tests are just TestBox specs.</h2>
-					<p class="lead" style="font-size:1.05rem">Extend <code>testbox.system.BrowserSpec</code>, call <code>browse()</code> and write <code>describe()</code>, <code>it()</code> and <code>expect()</code> like any other spec. TestBox 7.2 brings the rest.</p>
+					<p class="lead" style="font-size:1.05rem">Add <code>@browser</code> to any spec, call <code>browse()</code> and write <code>describe()</code>, <code>it()</code> and <code>expect()</code> like any other spec. TestBox 7.2 brings the rest.</p>
 					<ul class="pw-checks">
-						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>One browser per bundle, fresh pages per spec.</b> Set it up with <code>@browserProfile( "ci" )</code> and <code>@baseURL</code>, closed for you after the bundle.</span></li>
+						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>One browser per bundle, fresh pages per spec.</b> Set it up with <code>@browserProfile( "ci" )</code> and <code>@baseURL</code>, closed for you after the bundle, even when <code>afterAll()</code> throws.</span></li>
 						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Browser matchers.</b> <code>toSee()</code>, <code>toHaveTitle()</code>, <code>toHavePath()</code>, <code>toHaveText()</code>, <code>toBeVisible()</code> and more, retrying like Playwright's own assertions.</span></li>
 						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Evidence on every failure.</b> Screenshots, traces and videos attached to the spec, with screenshots shown inline in the HTML reports.</span></li>
 						<li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="8.2" stroke-width="1.6" opacity=".35"/><path d="M6.4 10.3l2.4 2.4 4.8-5.2"/></svg><span><b>Retries and Run Failed.</b> Retry flaky specs, then rerun only what failed with <code>--failed</code> or the Run Failed button.</span></li>
@@ -355,9 +355,10 @@
 				</div>
 				<div class="preview-card">
 					<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">tests/specs/ShopSpec.bx</span></div>
-<pre class="pw-code"><span class="c">@browserProfile( "ci" )</span>
+<pre class="pw-code"><span class="c">@browser</span>
+<span class="c">@browserProfile( "ci" )</span>
 <span class="c">@baseURL( "http://localhost:8080" )</span>
-<span class="k">class</span> extends=<span class="s">"testbox.system.BrowserSpec"</span> {
+<span class="k">class</span> extends=<span class="s">"testbox.system.BaseSpec"</span> {
 
     <span class="k">function</span> run() {
         describe( <span class="s">"Shop"</span>, () =&gt; {
