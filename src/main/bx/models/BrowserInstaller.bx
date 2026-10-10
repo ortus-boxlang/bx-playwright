@@ -14,7 +14,7 @@ class {
 	 * @options CLI options, including _positionals (browser names)
 	 * @config  The module configuration
 	 *
-	 * @return { exitCode, message, data }
+	 * @return { exitCode, message, output, data }: output is the last lines the Playwright CLI printed
 	 */
 	struct function install( required struct options, required any config ) {
 		var home     = arguments.config.home()
@@ -66,11 +66,13 @@ class {
 			}
 
 			terminal.progress( "Checking required browser revisions with the Playwright CLI. The first install can take a few minutes." )
-			var exitCode = terminal.runPlaywright( home, cliArgs )
+			var run      = terminal.installBrowsers( home, cliArgs )
+			var exitCode = run.exitCode
 			data.browsers = home.installedBrowsers()
 			result = {
 				exitCode : exitCode,
 				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
+				output   : run.output,
 				data     : data
 			}
 		}
@@ -78,17 +80,19 @@ class {
 	}
 
 	/**
-	 * Ensure one supported browser is installed for use by an application.
+	 * Ensure one supported browser is installed for use by an application. A branded browser channel, like
+	 * `chrome` or `msedge`, runs the browser installed on the machine, so nothing is downloaded for it.
 	 *
 	 * @browser The browser name: chromium, firefox or webkit
 	 * @config  The module configuration
+	 * @channel The browser channel, for example chrome or msedge, empty for the Playwright browser
 	 *
-	 * @return Installation details for the browser
+	 * @return { browser, channel, path, installed }: installed lists the browser folders in the cache
 	 *
 	 * @throws Playwright.InvalidOption when the browser name is unsupported
-	 * @throws Playwright.NotInstalled when installation fails
+	 * @throws Playwright.NotInstalled when installation fails, with the last lines of the Playwright CLI output in its detail
 	 */
-	struct function ensure( required string browser, required any config ) {
+	struct function ensure( required string browser, required any config, string channel = "" ) {
 		var browserName = arguments.browser.lCase().trim()
 		if ( ![ "chromium", "firefox", "webkit" ].findNoCase( browserName ) ) {
 			throw(
@@ -98,6 +102,10 @@ class {
 			)
 		}
 		var home      = arguments.config.home()
+		var channel   = arguments.channel.trim()
+		if ( len( channel ) ) {
+			return { "browser" : browserName, "channel" : channel, "path" : home.getBrowsersPath().toString(), "installed" : [] }
+		}
 		var cacheKey  = home.getHome().toString() & "|" & home.getPlaywrightVersion() & "|" & browserName
 		var terminal  = new models.cli.Terminal@playwright()
 		var result    = {}
@@ -126,7 +134,8 @@ class {
 					throw(
 						type    = "Playwright.NotInstalled",
 						message = "Could not install #browserName# (exit code #result.exitCode#).",
-						detail  = "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
+						detail  = ( len( result.output ) ? "Playwright CLI output:#char( 10 )##result.output##char( 10 )##char( 10 )#" : "" )
+						& "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
 					)
 				}
 				for ( var folder in result.data.browsers ) {
@@ -142,7 +151,7 @@ class {
 				terminal.progress( "Playwright #browserName# is already installed at #home.getBrowsersPath()#; skipping setup." )
 			}
 		}
-		return { "browser" : browserName, "path" : home.getBrowsersPath().toString(), "installed" : result.data.browsers }
+		return { "browser" : browserName, "channel" : "", "path" : home.getBrowsersPath().toString(), "installed" : result.data.browsers }
 	}
 
 }

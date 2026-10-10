@@ -21,9 +21,11 @@ Install or declare bx-playwright in the same BoxLang server runtime that hosts t
 
 ## Provision a browser
 
-`playwrightEnsureBrowser( browser )` installs a missing browser (`chromium` by default, `firefox` or `webkit`) into the module's browser cache, and makes its driver and Node.js runtime available. It is safe to call repeatedly and returns the browser name, the cache path and the installed browser directories.
+`playwrightEnsureBrowser( browser, [channel] )` installs a missing browser (`chromium` by default, `firefox` or `webkit`) into the module's browser cache, and makes its driver and Node.js runtime available. It is safe to call repeatedly and returns the browser name, the cache path and the installed browser directories.
 
 - The first call needs network access and takes longer.
+- With a channel, such as `playwrightEnsureBrowser( "chromium", "chrome" )`, it uses the browser installed on the machine and downloads nothing.
+- When an install fails, the `Playwright.NotInstalled` error carries the last lines of the Playwright CLI output in its `detail`.
 - TestBox browser specs call it for you on first use, see [TestBox Browser Testing](testbox.md).
 
 ## Use it in requests

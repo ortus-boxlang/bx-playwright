@@ -59,7 +59,7 @@ Profiles and per-call options also accept `session` (a [saved session](network.m
 | `BX_PLAYWRIGHT_UPDATE_SNAPSHOTS` | `true` rewrites visual baselines |
 | `BX_PLAYWRIGHT_HOME` | The home directory |
 | `PLAYWRIGHT_NODEJS_PATH` | Explicit Node.js executable |
-| `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` | Browser download idle timeout in milliseconds; defaults to `120000` (2 minutes) |
+| `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` | Browser-download idle timeout in milliseconds; Playwright's default is `30000`. Each download is tried 5 times, so raise it only for a slow network |
 
 ## Resolution order
 

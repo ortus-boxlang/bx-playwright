@@ -67,6 +67,22 @@ class {
 	}
 
 	/**
+	 * Run the Playwright CLI to install browsers and wait for it. Its output (standard output and error) is printed
+	 * as it comes, to standard error with `--json`, and its last lines are kept, so a failed install can say why.
+	 *
+	 * @home The PlaywrightHome
+	 * @args The Playwright CLI arguments
+	 *
+	 * @return { exitCode, output }: output is the last lines the CLI printed
+	 *
+	 * @throws Playwright.NotInstalled when the Playwright CLI cannot be started
+	 */
+	struct function installBrowsers( required any home, required array args ) {
+		var run = arguments.home.runCliTee( arguments.args, variables.json ? System.err : System.out, 20 )
+		return { "exitCode" : run.exitCode(), "output" : run.tail() }
+	}
+
+	/**
 	 * Describe the Node.js runtime Playwright would use, flagging one that cannot run. An explicit Node.js path
 	 * (`nodePath` setting or PLAYWRIGHT_NODEJS_PATH) that is missing or does not run is reported as such and is
 	 * never replaced by another runtime, whether the home reports it with an empty version, as no runtime, or
