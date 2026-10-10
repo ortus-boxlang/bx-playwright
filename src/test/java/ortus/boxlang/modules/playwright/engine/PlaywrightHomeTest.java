@@ -17,7 +17,10 @@ package ortus.boxlang.modules.playwright.engine;
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -223,7 +226,6 @@ public class PlaywrightHomeTest {
 			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME" );
 			assertThat( builder.environment() ).doesNotContainKey( "PW_LANG_NAME_VERSION" );
 			assertThat( builder.environment() ).containsKey( "PLAYWRIGHT_BROWSERS_PATH" );
-			assertThat( builder.environment() ).containsKey( "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT" );
 			assertThat( builder.command() ).contains( "--dns-result-order=ipv4first" );
 		} finally {
 			if ( previous == null ) {
@@ -232,6 +234,28 @@ public class PlaywrightHomeTest {
 				System.setProperty( "playwright.cli.dir", previous );
 			}
 		}
+	}
+
+	/**
+	 * The install runner prints the CLI output as it comes and keeps its last lines, stderr included, so a failed
+	 * install can say why.
+	 */
+	@DisplayName( "runCliTee prints the output and keeps its tail" )
+	@Test
+	public void testRunCliTee() throws IOException {
+		Assumptions.assumeFalse( Platform.current().isWindows(), "Uses shell scripts" );
+		Path					node	= script(
+		    "fake-node",
+		    "if [ \"$1\" = \"--version\" ]; then echo v24.21.0; exit 0; fi\n"
+		        + "i=1; while [ $i -le 30 ]; do echo \"line $i\"; i=$((i+1)); done\n"
+		        + "printf \"\\033[2mError: Download failure\\033[22m\\n\" >&2\nexit 3"
+		);
+		ByteArrayOutputStream	printed	= new ByteArrayOutputStream();
+		PlaywrightHome.CliRun	run		= home( node ).runCliTee( List.of( "install", "chromium" ), new PrintStream( printed, true, StandardCharsets.UTF_8 ),
+		    5 );
+		assertThat( run.exitCode() ).isEqualTo( 3 );
+		assertThat( run.tail().lines().toList() ).containsExactly( "line 27", "line 28", "line 29", "line 30", "Error: Download failure" ).inOrder();
+		assertThat( printed.toString( StandardCharsets.UTF_8 ) ).contains( "line 1" + System.lineSeparator() );
 	}
 
 	/**

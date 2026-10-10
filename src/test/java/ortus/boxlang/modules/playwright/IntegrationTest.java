@@ -53,4 +53,17 @@ public class IntegrationTest extends BaseIntegrationTest {
 		assertThat( value ).isEqualTo( "Playwright.InvalidOption" );
 	}
 
+	/**
+	 * A browser channel runs the browser installed on the machine, so the BIF downloads nothing for it.
+	 */
+	@DisplayName( "The browser installer BIF skips the download for a channel" )
+	@Test
+	public void testEnsureBrowserSkipsChannels() {
+		Object value = run( """
+		                    	ensured = playwrightEnsureBrowser( "chromium", "chrome" )
+		                    	result = ensured.channel & "|" & ensured.installed.len()
+		                    """ );
+		assertThat( value ).isEqualTo( "chrome|0" );
+	}
+
 }

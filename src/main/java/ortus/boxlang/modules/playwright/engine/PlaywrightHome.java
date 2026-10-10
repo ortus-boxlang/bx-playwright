@@ -14,8 +14,11 @@
  */
 package ortus.boxlang.modules.playwright.engine;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.net.JarURLConnection;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -24,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -525,8 +529,9 @@ public class PlaywrightHome {
 		ProcessBuilder builder = new ProcessBuilder( command );
 		// PW_LANG_NAME is deliberately not set: Playwright would then print Java/Maven commands ("mvn exec:java ...") in
 		// its help and hints. The driver used by the Java API gets it from Playwright Java itself, and codegen passes --target.
+		// PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT keeps Playwright's 30 second default: it tries each download 5 times,
+		// so a blocked network fails in about 2.5 minutes. Set the variable to wait longer on a slow network.
 		builder.environment().putAll( env );
-		builder.environment().putIfAbsent( "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT", "120000" );
 		return builder;
 	}
 
@@ -546,6 +551,60 @@ public class PlaywrightHome {
 		} catch ( InterruptedException e ) {
 			Thread.currentThread().interrupt();
 			return 130;
+		}
+	}
+
+	/**
+	 * ANSI color and style codes, removed from the lines {@link #runCliTee(List, PrintStream, int)} keeps.
+	 */
+	private static final Pattern ANSI_ESCAPE = Pattern.compile( "\u001B\\[[0-9;]*[A-Za-z]" );
+
+	/**
+	 * The result of {@link #runCliTee(List, PrintStream, int)}.
+	 *
+	 * @param exitCode The process exit code
+	 * @param tail     The last lines the process printed, stdout and stderr merged
+	 */
+	public record CliRun( int exitCode, String tail ) {
+	}
+
+	/**
+	 * Run the Playwright CLI, print its output (stdout and stderr merged) to a stream as it comes, and keep its last
+	 * lines, so a failure can report why.
+	 *
+	 * @param args      The CLI arguments
+	 * @param out       Where to print the output
+	 * @param tailLines How many of the last lines to keep
+	 *
+	 * @return The exit code and the last lines
+	 */
+	public CliRun runCliTee( List<String> args, PrintStream out, int tailLines ) {
+		ArrayDeque<String> tail = new ArrayDeque<>();
+		try {
+			Process process = cliProcess( args )
+			    .redirectInput( ProcessBuilder.Redirect.INHERIT )
+			    .redirectErrorStream( true )
+			    .start();
+			try ( BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream(), StandardCharsets.UTF_8 ) ) ) {
+				String line;
+				while ( ( line = reader.readLine() ) != null ) {
+					out.println( line );
+					out.flush();
+					String plain = ANSI_ESCAPE.matcher( line ).replaceAll( "" );
+					if ( !plain.isBlank() ) {
+						tail.addLast( plain );
+						if ( tail.size() > tailLines ) {
+							tail.removeFirst();
+						}
+					}
+				}
+			}
+			return new CliRun( process.waitFor(), String.join( System.lineSeparator(), tail ) );
+		} catch ( IOException e ) {
+			throw PlaywrightErrors.of( PlaywrightErrors.NOT_INSTALLED, "Failed to run the Playwright CLI: " + e.getMessage(), "Run [bxPlaywright doctor].", e );
+		} catch ( InterruptedException e ) {
+			Thread.currentThread().interrupt();
+			return new CliRun( 130, String.join( System.lineSeparator(), tail ) );
 		}
 	}
 

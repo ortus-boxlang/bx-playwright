@@ -32,7 +32,7 @@ try {
 }
 ```
 
-The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, browser specs (`@browser`) invoke this API automatically on first browser use; see [TestBox Browser Testing](testbox.md).
+The BIF uses the deployed module's settings, downloads a missing browser into that module's browser cache, and can be called repeatedly. With a channel, such as `playwrightEnsureBrowser( "chromium", "chrome" )`, it uses the browser installed on the machine and downloads nothing. When an install fails, the `Playwright.NotInstalled` error carries the last lines of the Playwright CLI output in its `detail`. It also makes the module's driver and Node.js runtime available as needed. The first call can take longer and requires network access. For TestBox, browser specs (`@browser`) invoke this API automatically on first browser use; see [TestBox Browser Testing](testbox.md).
 
 ## Configure the server's home
 
