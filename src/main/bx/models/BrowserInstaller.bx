@@ -71,7 +71,7 @@ class {
 			data.browsers = home.installedBrowsers()
 			result = {
 				exitCode : exitCode,
-				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
+				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxplaywright doctor].",
 				output   : run.output,
 				data     : data
 			}

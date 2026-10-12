@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright profiles [name]`: list profiles, or show one fully resolved with the module settings.
+ * `bxplaywright profiles [name]`: list profiles, or show one fully resolved with the module settings.
  */
 class {
 

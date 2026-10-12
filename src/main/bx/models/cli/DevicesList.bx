@@ -1,7 +1,7 @@
 import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
 
 /**
- * `bxPlaywright devices`: list the device descriptors shipped with Playwright.
+ * `bxplaywright devices`: list the device descriptors shipped with Playwright.
  */
 class {
 

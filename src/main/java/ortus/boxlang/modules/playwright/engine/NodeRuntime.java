@@ -32,7 +32,7 @@ public class NodeRuntime {
 		EXPLICIT,
 		/** Extracted from the jars of bx-playwright-full */
 		BUNDLED,
-		/** Downloaded by {@code bxPlaywright install} */
+		/** Downloaded by {@code bxplaywright install} */
 		DOWNLOADED,
 		/** {@code node} found on the system PATH */
 		SYSTEM

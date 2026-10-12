@@ -33,7 +33,7 @@ public class CliTest extends BaseIntegrationTest {
 	public void testNoVerb() {
 		String output = capture( "result = new models.cli.Cli@playwright().run( [] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
-		assertThat( output ).contains( "Usage: bxPlaywright <verb>" );
+		assertThat( output ).contains( "Usage: bxplaywright <verb>" );
 		assertThat( output ).contains( "install" );
 	}
 
@@ -55,12 +55,12 @@ public class CliTest extends BaseIntegrationTest {
 	@Test
 	public void testHelp() {
 		String verbHelp = capture( "result = new models.cli.Cli@playwright().run( [ \"help\", \"install\" ] )" );
-		assertThat( verbHelp ).contains( "bxPlaywright install [browsers...]" );
+		assertThat( verbHelp ).contains( "bxplaywright install [browsers...]" );
 		String json = capture( "result = new models.cli.Cli@playwright().run( [ \"help\", \"--json\" ] )" );
 		assertThat( json ).contains( "\"doctor\"" );
 		assertThat( json ).contains( "\"usage\"" );
 		String dashHelp = capture( "result = new models.cli.Cli@playwright().run( [ \"install\", \"--help\" ] )" );
-		assertThat( dashHelp ).contains( "bxPlaywright install [browsers...]" );
+		assertThat( dashHelp ).contains( "bxplaywright install [browsers...]" );
 	}
 
 	/**
@@ -126,7 +126,7 @@ public class CliTest extends BaseIntegrationTest {
 	@Test
 	public void testCompletionsInSync() throws IOException {
 		Object	generated	= run( "result = new models.cli.Cli@playwright().completionScript()" );
-		Path	file		= Path.of( "src/main/bx/completions/bxPlaywright.bash" );
+		Path	file		= Path.of( "src/main/bx/completions/bxplaywright.bash" );
 		if ( "true".equalsIgnoreCase( System.getenv( "UPDATE_COMPLETIONS" ) ) ) {
 			Files.createDirectories( file.getParent() );
 			Files.writeString( file, generated.toString() );

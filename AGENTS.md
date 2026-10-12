@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A BoxLang module (registered as `playwright`) wrapping Microsoft Playwright Java: a fluent DSL (`playwright()` BIF), a component (`bx:playwrightRender`) and a CLI (`bxPlaywright`). Published as two ForgeBox modules from one source tree: `bx-playwright` (small, downloads Node.js) and `bx-playwright-full` (bundles Node.js). See `PLAN.md` for the design and roadmap.
+A BoxLang module (registered as `playwright`) wrapping Microsoft Playwright Java: a fluent DSL (`playwright()` BIF), a component (`bx:playwrightRender`) and a CLI (`bxplaywright`). Published as two ForgeBox modules from one source tree: `bx-playwright` (small, downloads Node.js) and `bx-playwright-full` (bundles Node.js). See `PLAN.md` for the design and roadmap.
 
 ## Layout
 
@@ -12,7 +12,7 @@ A BoxLang module (registered as `playwright`) wrapping Microsoft Playwright Java
   - `Config.bx` (settings + profiles + env resolution), `Profiles.bx` (built-in profiles, extends, deep merge)
   - `Playwright.bx` (manager), `BrowserContext.bx` (artifacts), `Page.bx`, `Locator.bx`, `Scope.bx` (shared actions/assertions), `Expect.bx`, `Route.bx`, `Request.bx`, `Response.bx`, `Base.bx` (helpers, typed errors)
   - `cli/`: `Cli.bx` (verb registry, parsing, help, completions) and one class per verb with `run( options, config, verb )` returning `{ exitCode, message, data }`
-- `src/main/bx/completions/bxPlaywright.bash`: generated from the verb registry, never edit by hand
+- `src/main/bx/completions/bxplaywright.bash`: generated from the verb registry, never edit by hand
 - `src/main/java/ortus/boxlang/modules/playwright/`
   - `engine/`: `PlaywrightHome` (driver extraction, Node.js resolution, env), `NodeInstaller`, `Platform`, `OptionsMapper` (structs to Playwright options), `SmartSelector`, `Devices`, `PlaywrightErrors`
   - `components/PlaywrightRender.java`

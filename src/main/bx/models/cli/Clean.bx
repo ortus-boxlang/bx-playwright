@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright clean`: remove the extracted drivers and downloaded Node.js. Browsers are kept.
+ * `bxplaywright clean`: remove the extracted drivers and downloaded Node.js. Browsers are kept.
  */
 class {
 

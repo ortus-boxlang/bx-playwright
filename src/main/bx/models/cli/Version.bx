@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright version`: module, Playwright and Node.js versions.
+ * `bxplaywright version`: module, Playwright and Node.js versions.
  */
 class {
 

@@ -1,7 +1,7 @@
 import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
 
 /**
- * `bxPlaywright install-node [--force]`: download the pinned Node.js runtime into the playwright home.
+ * `bxplaywright install-node [--force]`: download the pinned Node.js runtime into the playwright home.
  */
 class {
 

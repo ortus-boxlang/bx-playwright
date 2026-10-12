@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright install [browsers...]`
+ * `bxplaywright install [browsers...]`
  *
  * 1. Extracts the Playwright driver into the playwright home (once per Playwright version)
  * 2. Makes sure a Node.js runtime is available, downloading it when needed (small distribution)

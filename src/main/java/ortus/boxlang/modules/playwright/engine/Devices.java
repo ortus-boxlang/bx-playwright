@@ -78,7 +78,7 @@ public final class Devices {
 		throw PlaywrightErrors.of(
 		    PlaywrightErrors.INVALID_OPTION,
 		    "Unknown device [" + name + "].",
-		    "Run [bxPlaywright devices] to list them. Examples: iPhone 15, Pixel 7, iPad Pro 11, Desktop Chrome."
+		    "Run [bxplaywright devices] to list them. Examples: iPhone 15, Pixel 7, iPad Pro 11, Desktop Chrome."
 		);
 	}
 

@@ -5,7 +5,7 @@ import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwrigh
  *
  * - Runtime DSL: the `playwright()` BIF
  * - Component: `bx:playwrightRender`
- * - CLI: `bxPlaywright <verb>` (or `boxlang module:playwright <verb>`)
+ * - CLI: `bxplaywright <verb>` (or `boxlang module:playwright <verb>`)
  *
  * Every setting below can be overridden in `boxlang.json` under `modules.playwright.settings`.
  */
@@ -34,7 +34,7 @@ class {
 			browsersPath      : "",
 			// Explicit Node.js executable. Empty = bundled (full), downloaded, or system node
 			nodePath          : "",
-			// Node.js version downloaded by `bxPlaywright install` (small distribution)
+			// Node.js version downloaded by `bxplaywright install` (small distribution)
 			nodeVersion       : "@node.version@",
 			// Node.js download mirror. Empty = https://nodejs.org/dist
 			nodeDownloadURL   : "",
@@ -123,7 +123,7 @@ class {
 	}
 
 	/**
-	 * CLI entry point: `bxPlaywright <verb> [options]` or `boxlang module:playwright <verb> [options]`.
+	 * CLI entry point: `bxplaywright <verb> [options]` or `boxlang module:playwright <verb> [options]`.
 	 * Exits the process with the verb's exit code.
 	 *
 	 * @args The CLI arguments

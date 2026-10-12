@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright codegen [url] [--target=boxlang] [--output=file.bxs] [playwright codegen options]`
+ * `bxplaywright codegen [url] [--target=boxlang] [--output=file.bxs] [playwright codegen options]`
  *
  * Opens a browser and records your actions. With the default boxlang target, the recorded code is
  * translated into the bx-playwright DSL when you close the browser. Any other target (java, javascript,
@@ -46,7 +46,7 @@ class {
 	}
 
 	/**
-	 * Resolve the output file against the directory bxPlaywright was started from (not the module folder).
+	 * Resolve the output file against the directory bxplaywright was started from (not the module folder).
 	 *
 	 * @output The output path given with --output or -o, or empty
 	 *

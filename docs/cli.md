@@ -1,20 +1,20 @@
 ---
 title: CLI
 order: 32
-summary: The bxPlaywright command line.
+summary: The bxplaywright command line.
 tags: [reference, cli]
 ---
 
 # CLI
 
-`bxPlaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. `boxlang module:playwright <verb>` runs the same commands.
+`bxplaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. `boxlang module:playwright <verb>` runs the same commands.
 
 ```bash
-bxPlaywright install chromium --with-deps   # browsers and Linux libraries
-bxPlaywright doctor                         # what is installed, with fix hints
-bxPlaywright profiles mobile                # one profile, fully resolved
-bxPlaywright codegen http://localhost:8080 -o login.bxs
-bxPlaywright show-trace trace.zip
+bxplaywright install chromium --with-deps   # browsers and Linux libraries
+bxplaywright doctor                         # what is installed, with fix hints
+bxplaywright profiles mobile                # one profile, fully resolved
+bxplaywright codegen http://localhost:8080 -o login.bxs
+bxplaywright show-trace trace.zip
 ```
 
 ## Options

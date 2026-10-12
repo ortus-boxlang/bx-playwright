@@ -94,7 +94,7 @@ class extends="Base" {
 			var options     = buildOptions( "BrowserType.LaunchOptions", variables.configService.launchOptions( variables.config ) )
 			variables.browser = tryAction(
 				() => browserType.launch( options ),
-				"launch #name#. If the browser is missing run [bxPlaywright install #name#]"
+				"launch #name#. If the browser is missing run [bxplaywright install #name#]"
 			)
 			announceEvent( "onBrowserLaunch", { playwright : this, browser : variables.browser } )
 		}

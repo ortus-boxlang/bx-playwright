@@ -1,6 +1,6 @@
 /**
- * `bxPlaywright completions`: print the bash completion script.
- * The same script ships in the module (completions/bxPlaywright.bash) and is installed by install-bx-module.
+ * `bxplaywright completions`: print the bash completion script.
+ * The same script ships in the module (completions/bxplaywright.bash) and is installed by install-bx-module.
  */
 class {
 

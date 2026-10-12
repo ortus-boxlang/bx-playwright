@@ -4,7 +4,7 @@ import java:java.lang.System;
  * Console helpers shared by the CLI verbs.
  *
  * With `--json` only the final JSON document goes to standard output: progress messages and the output of the
- * Playwright CLI child process go to standard error, so `bxPlaywright <verb> --json | jq` always gets valid JSON.
+ * Playwright CLI child process go to standard error, so `bxplaywright <verb> --json | jq` always gets valid JSON.
  */
 class {
 
@@ -61,7 +61,7 @@ class {
 			throw(
 				type    = "Playwright.NotInstalled",
 				message = "Failed to run the Playwright CLI: #e.message#",
-				detail  = "Run [bxPlaywright doctor]."
+				detail  = "Run [bxplaywright doctor]."
 			)
 		}
 	}
@@ -94,7 +94,7 @@ class {
 	 * @return { found, ok, executable, source, version, problem, fix }: `found` when a runtime was resolved or configured explicitly, `ok` when it can run
 	 */
 	struct function node( required any home, string explicitPath = "" ) {
-		var explicitFix = "Point the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) to a Node.js 20+ executable, or remove it so [bxPlaywright install] downloads one"
+		var explicitFix = "Point the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) to a Node.js 20+ executable, or remove it so [bxplaywright install] downloads one"
 		var info        = {
 			"found"      : len( arguments.explicitPath ) > 0,
 			"ok"         : false,
@@ -102,7 +102,7 @@ class {
 			"source"     : len( arguments.explicitPath ) ? "explicit" : "",
 			"version"    : "",
 			"problem"    : "No Node.js runtime available",
-			"fix"        : "bxPlaywright install (downloads Node.js #arguments.home.getNodeVersion()#), or set the 'nodePath' setting"
+			"fix"        : "bxplaywright install (downloads Node.js #arguments.home.getNodeVersion()#), or set the 'nodePath' setting"
 		}
 		try {
 			var resolved = arguments.home.resolveNode()
@@ -132,7 +132,7 @@ class {
 		var missing = info.source != "system" && !fileExists( info.executable )
 		if ( missing || !len( info.version ) ) {
 			info.problem = missing ? "Node.js executable not found at #info.executable# (#info.source#)" : "Node.js at #info.executable# (#info.source#) does not run or report a version"
-			info.fix     = info.source == "explicit" ? explicitFix : "bxPlaywright install --force (downloads Node.js #arguments.home.getNodeVersion()#)"
+			info.fix     = info.source == "explicit" ? explicitFix : "bxplaywright install --force (downloads Node.js #arguments.home.getNodeVersion()#)"
 			return info
 		}
 		info.ok      = true

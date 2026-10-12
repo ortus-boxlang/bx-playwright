@@ -57,7 +57,7 @@ By default, everything is stored under `~/.boxlang/playwright`, where `~` is the
 
 The BIF downloads browser files only. It does not run package managers or need elevated privileges.
 
-- On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers `bxPlaywright install chromium --with-deps`; never run it from an application request.
+- On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers `bxplaywright install chromium --with-deps`; never run it from an application request.
 - For offline deployments, provision the same bx-playwright home ahead of time. For TestBox, also add `@browserAutoInstall( false )`.
 
 See [Configuration](configuration.md) for every path and setting.
