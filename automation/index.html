@@ -274,7 +274,7 @@ println( &quot;Saved #output#&quot; )
 </code></pre>
 <h2 id="record-a-script-with-codegen"><a href="#record-a-script-with-codegen" id="record-a-script-with-codegen" name="record-a-script-with-codegen" class="anchor"></a>Record a script with codegen</h2>
 <p>Do not write the clicks by hand: record them.</p>
-<pre><code class="language-bash">bxPlaywright codegen https://app.example.com --output=job.bxs
+<pre><code class="language-bash">bxplaywright codegen https://app.example.com --output=job.bxs
 </code></pre>
 <p>A browser opens with the Playwright inspector. Click through the job, close the browser, and <code>job.bxs</code> holds the steps as bx-playwright code. Then:</p>
 <ol>
@@ -326,13 +326,13 @@ for ( attempt = 1; attempt &lt;= 3; attempt++ ) {
 	}
 }
 </code></pre>
-<p>The <code>ci</code> profile keeps a screenshot, a trace and a video of a failed <code>browse()</code>, so you can see what the page looked like when the job broke: open the trace with <code>bxPlaywright show-trace path/to/trace.zip</code>. Artifacts go to <code>{home}/artifacts</code>, or the <code>artifacts.directory</code> setting.</p>
+<p>The <code>ci</code> profile keeps a screenshot, a trace and a video of a failed <code>browse()</code>, so you can see what the page looked like when the job broke: open the trace with <code>bxplaywright show-trace path/to/trace.zip</code>. Artifacts go to <code>{home}/artifacts</code>, or the <code>artifacts.directory</code> setting.</p>
 <p>Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, call <code>cliExit( 1 )</code>, as the <a href="#a-complete-job">complete job</a> does.</p>
 <h2 id="run-it-on-a-server"><a href="#run-it-on-a-server" id="run-it-on-a-server" name="run-it-on-a-server" class="anchor"></a>Run it on a server</h2>
 <p>Scripts run headless by default. On a server or in a container:</p>
 <pre><code class="language-bash"># Once: Chromium plus the Linux libraries it needs
-bxPlaywright install chromium --with-deps
-bxPlaywright doctor
+bxplaywright install chromium --with-deps
+bxplaywright doctor
 
 # Every run
 boxlang /jobs/export.bxs
@@ -413,13 +413,13 @@ println( &quot;Exported #orders.len()# orders&quot; )
 <pre><code class="language-bash">APP_URL=https://app.example.com APP_USER=bot@example.com APP_PASSWORD=*** boxlang jobs/daily-orders.bxs
 </code></pre>
 <h2 id="let-an-ai-agent-do-it"><a href="#let-an-ai-agent-do-it" id="let-an-ai-agent-do-it" name="let-an-ai-agent-do-it" class="anchor"></a>Let an AI agent do it</h2>
-<p>When the steps change too often to script, let an agent drive the browser instead: <code>playwright().aiTools()</code> gives bx-ai agents browser tools, and <code>bxPlaywright mcp</code> serves them to Claude and other MCP clients. See <a href="/ai/index.html">AI Agents</a>.</p>
+<p>When the steps change too often to script, let an agent drive the browser instead: <code>playwright().aiTools()</code> gives bx-ai agents browser tools, and <code>bxplaywright mcp</code> serves them to Claude and other MCP clients. See <a href="/ai/index.html">AI Agents</a>.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/automation.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/automation.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/automation.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/automation.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 12, 2026, 3&#x3a;50&#x3a;19 PM</span></div>
 	
 </article>
 

@@ -13,11 +13,11 @@ Install the module, download a browser and run a first script. Requires BoxLang 
 
 ```bash
 install-bx-module bx-playwright
-bxPlaywright install              # driver + Node.js + Chromium
-bxPlaywright doctor               # check everything
+bxplaywright install              # driver + Node.js + Chromium
+bxplaywright doctor               # check everything
 ```
 
-- More browsers: `bxPlaywright install firefox webkit`.
+- More browsers: `bxplaywright install firefox webkit`.
 - On Linux CI, add `--with-deps` to also install the system libraries browsers need.
 - Everything is stored in `~/.boxlang/playwright`. Change it with the `home` setting or `BX_PLAYWRIGHT_HOME`.
 - `bx-playwright-full` bundles Node.js for every platform, so `install` skips the Node.js download. Browsers are still downloaded unless they are already installed.
@@ -27,10 +27,10 @@ bxPlaywright doctor               # check everything
 
 ### Browser download problems
 
-- Browsers download from Playwright's CDN (`https://cdn.playwright.dev`). Behind a proxy, set `HTTPS_PROXY` before running `bxPlaywright install`.
+- Browsers download from Playwright's CDN (`https://cdn.playwright.dev`). Behind a proxy, set `HTTPS_PROXY` before running `bxplaywright install`.
 - On a slow network, raise `PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT` (milliseconds, `120000` by default), see [Configuration](configuration.md#environment-variables).
 - To skip the Chromium download, use an installed Google Chrome with the `chrome` [profile](profiles.md): `playwright( "chrome" )`.
-- Run `bxPlaywright doctor` to see what is installed and how to fix what is missing.
+- Run `bxplaywright doctor` to see what is installed and how to fix what is missing.
 
 ## First script
 

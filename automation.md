@@ -58,7 +58,7 @@ boxlang capture.bxs --url=https://ortussolutions.com --out=ortus.png
 Do not write the clicks by hand: record them.
 
 ```bash
-bxPlaywright codegen https://app.example.com --output=job.bxs
+bxplaywright codegen https://app.example.com --output=job.bxs
 ```
 
 A browser opens with the Playwright inspector. Click through the job, close the browser, and `job.bxs` holds the steps as bx-playwright code. Then:
@@ -119,7 +119,7 @@ for ( attempt = 1; attempt <= 3; attempt++ ) {
 }
 ```
 
-The `ci` profile keeps a screenshot, a trace and a video of a failed `browse()`, so you can see what the page looked like when the job broke: open the trace with `bxPlaywright show-trace path/to/trace.zip`. Artifacts go to `{home}/artifacts`, or the `artifacts.directory` setting.
+The `ci` profile keeps a screenshot, a trace and a video of a failed `browse()`, so you can see what the page looked like when the job broke: open the trace with `bxplaywright show-trace path/to/trace.zip`. Artifacts go to `{home}/artifacts`, or the `artifacts.directory` setting.
 
 Schedulers and CI systems read the exit code. A script that throws exits with a non zero code; to fail on your own condition, call `cliExit( 1 )`, as the [complete job](#a-complete-job) does.
 
@@ -129,8 +129,8 @@ Scripts run headless by default. On a server or in a container:
 
 ```bash
 # Once: Chromium plus the Linux libraries it needs
-bxPlaywright install chromium --with-deps
-bxPlaywright doctor
+bxplaywright install chromium --with-deps
+bxplaywright doctor
 
 # Every run
 boxlang /jobs/export.bxs
@@ -227,4 +227,4 @@ APP_URL=https://app.example.com APP_USER=bot@example.com APP_PASSWORD=*** boxlan
 
 ## Let an AI agent do it
 
-When the steps change too often to script, let an agent drive the browser instead: `playwright().aiTools()` gives bx-ai agents browser tools, and `bxPlaywright mcp` serves them to Claude and other MCP clients. See [AI Agents](ai.md).
+When the steps change too often to script, let an agent drive the browser instead: `playwright().aiTools()` gives bx-ai agents browser tools, and `bxplaywright mcp` serves them to Claude and other MCP clients. See [AI Agents](ai.md).

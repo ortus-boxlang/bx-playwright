@@ -248,11 +248,11 @@
 <p>Install the module, download a browser and run a first script. Requires BoxLang 1.17+ and Java 21+.</p>
 <h2 id="install"><a href="#install" id="install" name="install" class="anchor"></a>Install</h2>
 <pre><code class="language-bash">install-bx-module bx-playwright
-bxPlaywright install              # driver + Node.js + Chromium
-bxPlaywright doctor               # check everything
+bxplaywright install              # driver + Node.js + Chromium
+bxplaywright doctor               # check everything
 </code></pre>
 <ul>
-<li>More browsers: <code>bxPlaywright install firefox webkit</code>.</li>
+<li>More browsers: <code>bxplaywright install firefox webkit</code>.</li>
 <li>On Linux CI, add <code>--with-deps</code> to also install the system libraries browsers need.</li>
 <li>Everything is stored in <code>~/.boxlang/playwright</code>. Change it with the <code>home</code> setting or <code>BX_PLAYWRIGHT_HOME</code>.</li>
 <li><code>bx-playwright-full</code> bundles Node.js for every platform, so <code>install</code> skips the Node.js download. Browsers are still downloaded unless they are already installed.</li>
@@ -267,10 +267,10 @@ bxPlaywright doctor               # check everything
 </div>
 <h3 id="browser-download-problems"><a href="#browser-download-problems" id="browser-download-problems" name="browser-download-problems" class="anchor"></a>Browser download problems</h3>
 <ul>
-<li>Browsers download from Playwright's CDN (<code>https://cdn.playwright.dev</code>). Behind a proxy, set <code>HTTPS_PROXY</code> before running <code>bxPlaywright install</code>.</li>
+<li>Browsers download from Playwright's CDN (<code>https://cdn.playwright.dev</code>). Behind a proxy, set <code>HTTPS_PROXY</code> before running <code>bxplaywright install</code>.</li>
 <li>On a slow network, raise <code>PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT</code> (milliseconds, <code>120000</code> by default), see <a href="/configuration/index.html#environment-variables">Configuration</a>.</li>
 <li>To skip the Chromium download, use an installed Google Chrome with the <code>chrome</code> <a href="/profiles/index.html">profile</a>: <code>playwright( &quot;chrome&quot; )</code>.</li>
-<li>Run <code>bxPlaywright doctor</code> to see what is installed and how to fix what is missing.</li>
+<li>Run <code>bxplaywright doctor</code> to see what is installed and how to fix what is missing.</li>
 </ul>
 <h2 id="first-script"><a href="#first-script" id="first-script" name="first-script" class="anchor"></a>First script</h2>
 <pre><code class="language-js">// hello.bxs
@@ -310,7 +310,7 @@ try {
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/getting-started.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/getting-started.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/getting-started.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/getting-started.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 12, 2026, 3&#x3a;50&#x3a;19 PM</span></div>
 	
 </article>
 

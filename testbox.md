@@ -139,7 +139,7 @@ To download browsers before the web app starts, or when the server cannot reach 
 
 ```bash
 install-bx-module bx-playwright
-BX_PLAYWRIGHT_HOME=/var/cache/myapp-playwright bxPlaywright install chromium
+BX_PLAYWRIGHT_HOME=/var/cache/myapp-playwright bxplaywright install chromium
 ```
 
 - Point the server's module at the same cache: set its `home` to `/var/cache/myapp-playwright`, or the same `browsersPath` in both runtimes.

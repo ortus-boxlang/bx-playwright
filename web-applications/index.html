@@ -264,7 +264,7 @@ pageTitle = playwright().browse( ( page ) =&gt; page.visit( &quot;https://exampl
 <p>By default, everything is stored under <code>~/.boxlang/playwright</code>, where <code>~</code> is the home directory of the <strong>web-server process user</strong>. Set a dedicated writable location in the server's module settings:</p>
 <pre><code class="language-json">{
 	&quot;modules&quot;: {
-		&quot;playwright&quot;: {
+		&quot;bxplaywright&quot;: {
 			&quot;settings&quot;: {
 				&quot;home&quot;: &quot;/var/lib/myapp/playwright&quot;
 			}
@@ -276,7 +276,7 @@ pageTitle = playwright().browse( ( page ) =&gt; page.visit( &quot;https://exampl
 <h2 id="network-and-linux-dependencies"><a href="#network-and-linux-dependencies" id="network-and-linux-dependencies" name="network-and-linux-dependencies" class="anchor"></a>Network and Linux dependencies</h2>
 <p>The BIF downloads browser files only. It does not run package managers or need elevated privileges.</p>
 <ul>
-<li>On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers <code>bxPlaywright install chromium --with-deps</code>; never run it from an application request.</li>
+<li>On Linux, install the browser's native libraries in the server image or host as part of deployment. Where package installation is allowed, the CLI offers <code>bxplaywright install chromium --with-deps</code>; never run it from an application request.</li>
 <li>For offline deployments, provision the same bx-playwright home ahead of time. For TestBox, also add <code>@browserAutoInstall( false )</code>.</li>
 </ul>
 <p>See <a href="/configuration/index.html">Configuration</a> for every path and setting.</p>
@@ -285,7 +285,7 @@ pageTitle = playwright().browse( ( page ) =&gt; page.visit( &quot;https://exampl
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/web-applications.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/web-applications.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/web-applications.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/web-applications.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 12, 2026, 3&#x3a;50&#x3a;19 PM</span></div>
 	
 </article>
 

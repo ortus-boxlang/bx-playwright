@@ -17,7 +17,7 @@ When the same selectors and steps appear in many scripts or tests, move them int
 
 ```js
 // pages/LoginPage.bx
-class extends="models.PageObject@playwright" {
+class extends="models.PageObject@bxplaywright" {
 
 	url      = "/login"
 	elements = {
@@ -57,7 +57,7 @@ playwright( { baseURL : "http://localhost:8080" } ).browse( ( page ) => {
 
 ```js
 // pages/UserMenu.bx
-class extends="models.PageComponent@playwright" {
+class extends="models.PageComponent@bxplaywright" {
 
 	selector = "nav.user"
 	elements = { logout : "a.logout" }

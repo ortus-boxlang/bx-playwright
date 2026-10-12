@@ -285,17 +285,17 @@
 // ... run the test with context.newPage()
 kept = context.close( failed = true )   // { screenshots, trace, videos, directory }
 </code></pre>
-<p>Artifacts go to <code>{home}/artifacts</code> unless you set <code>artifacts.directory</code>. Open a trace with <code>bxPlaywright show-trace path/to/trace.zip</code>.</p>
+<p>Artifacts go to <code>{home}/artifacts</code> unless you set <code>artifacts.directory</code>. Open a trace with <code>bxplaywright show-trace path/to/trace.zip</code>.</p>
 <h2 id="debugging"><a href="#debugging" id="debugging" name="debugging" class="anchor"></a>Debugging</h2>
 <ul>
 <li><code>playwright( &quot;debug&quot; )</code>: headed, slowed down, every artifact on.</li>
 <li><code>playwright( &quot;headed&quot; )</code> or <code>BX_PLAYWRIGHT_HEADLESS=false</code>.</li>
 <li><code>println( page.snapshot() )</code> prints the accessibility tree: what the page exposes to selectors.</li>
-<li><code>bxPlaywright codegen http://localhost:8080</code> records your clicks as BoxLang code.</li>
+<li><code>bxplaywright codegen http://localhost:8080</code> records your clicks as BoxLang code.</li>
 </ul>
 <h2 id="ci"><a href="#ci" id="ci" name="ci" class="anchor"></a>CI</h2>
 <pre><code class="language-bash">install-bx-module bx-playwright
-bxPlaywright install chromium --with-deps
+bxplaywright install chromium --with-deps
 BX_PLAYWRIGHT_PROFILE=ci boxlang run-tests.bxs
 </code></pre>
 <p>Cache <code>~/.boxlang/playwright</code> between runs to skip the downloads.</p>
@@ -335,8 +335,8 @@ jobs:
       - name: Install Chromium
         run: |
           export PATH=&quot;$HOME/.boxlang/bin:$PATH&quot;
-          bxPlaywright install chromium --with-deps
-          bxPlaywright doctor
+          bxplaywright install chromium --with-deps
+          bxplaywright doctor
 
       - name: Run tests
         env:
@@ -353,14 +353,14 @@ jobs:
           path: ~/.boxlang/playwright/artifacts
           if-no-files-found: ignore
 </code></pre>
-<p>Replace <code>boxlang run-tests.bxs</code> with your test command. If your tests need the application running, start it in an earlier step, for example <code>boxlang-miniserver --port 8080 &amp;</code>, and set <code>BX_PLAYWRIGHT_BASEURL</code>. Open a downloaded trace with <code>bxPlaywright show-trace trace.zip</code>.</p>
+<p>Replace <code>boxlang run-tests.bxs</code> with your test command. If your tests need the application running, start it in an earlier step, for example <code>boxlang-miniserver --port 8080 &amp;</code>, and set <code>BX_PLAYWRIGHT_BASEURL</code>. Open a downloaded trace with <code>bxplaywright show-trace trace.zip</code>.</p>
 <p>For TestBox specs that run inside a web server, the server provisions its own browser: see <a href="/testbox/index.html#provision-the-browser">TestBox Browser Testing</a>.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 10, 2026, 2&#x3a;18&#x3a;27 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/testing.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/testing.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 12, 2026, 3&#x3a;50&#x3a;19 PM</span></div>
 	
 </article>
 
