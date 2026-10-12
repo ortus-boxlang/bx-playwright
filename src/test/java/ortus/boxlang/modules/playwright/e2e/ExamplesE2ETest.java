@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.e2e;
+package ortus.boxlang.modules.bxplaywright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import ortus.boxlang.modules.playwright.BaseIntegrationTest;
+import ortus.boxlang.modules.bxplaywright.BaseIntegrationTest;
 
 /**
  * Runs every example in examples/ so the documentation and skills that copy them stay correct.

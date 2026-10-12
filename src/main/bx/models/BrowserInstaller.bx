@@ -1,4 +1,4 @@
-import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.NodeInstaller@bxplaywright;
 
 /**
  * Installs Playwright browsers using this module's configured home and runtime.
@@ -19,7 +19,7 @@ class {
 	struct function install( required struct options, required any config ) {
 		var home     = arguments.config.home()
 		var data     = { "driver" : "", "node" : {}, "browsers" : [] }
-		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
+		var terminal = new models.cli.Terminal@bxplaywright( arguments.options.json ?: false )
 		var result   = {}
 
 		lock name="bx-playwright-install-#hash( home.getBrowsersPath().toString() )#" type="exclusive" timeout="600" {
@@ -71,7 +71,7 @@ class {
 			data.browsers = home.installedBrowsers()
 			result = {
 				exitCode : exitCode,
-				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxPlaywright doctor].",
+				message  : exitCode == 0 ? "Ready. Browsers in #home.getBrowsersPath()#: #data.browsers.toList( ", " )#" : "Browser installation failed (exit code #exitCode#). Run [bxplaywright doctor].",
 				output   : run.output,
 				data     : data
 			}
@@ -107,7 +107,7 @@ class {
 			return { "browser" : browserName, "channel" : channel, "path" : home.getBrowsersPath().toString(), "installed" : [] }
 		}
 		var cacheKey  = home.getHome().toString() & "|" & home.getPlaywrightVersion() & "|" & browserName
-		var terminal  = new models.cli.Terminal@playwright()
+		var terminal  = new models.cli.Terminal@bxplaywright()
 		var result    = {}
 		var cached    = false
 		var installed = []
@@ -135,7 +135,7 @@ class {
 						type    = "Playwright.NotInstalled",
 						message = "Could not install #browserName# (exit code #result.exitCode#).",
 						detail  = ( len( result.output ) ? "Playwright CLI output:#char( 10 )##result.output##char( 10 )##char( 10 )#" : "" )
-						& "Check network access and server write permissions, or run [boxlang module:playwright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
+						& "Check network access and server write permissions, or run [boxlang module:bxplaywright install #browserName#] from this BoxLang server environment. Linux system libraries must be installed by the host or container."
 					)
 				}
 				for ( var folder in result.data.browsers ) {

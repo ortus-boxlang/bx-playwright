@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.engine;
+package ortus.boxlang.modules.bxplaywright.engine;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -54,8 +54,8 @@ import com.microsoft.playwright.Playwright;
  * <ul>
  * <li>{@code driver/<playwrightVersion>/}: the Playwright driver (JavaScript), extracted once from the jars.
  * In the full distribution the Node.js runtime is extracted next to it.</li>
- * <li>{@code node/}: Node.js runtimes downloaded by {@code bxPlaywright install} (small distribution).</li>
- * <li>{@code browsers/}: the browsers installed by {@code bxPlaywright install}.</li>
+ * <li>{@code node/}: Node.js runtimes downloaded by {@code bxplaywright install} (small distribution).</li>
+ * <li>{@code browsers/}: the browsers installed by {@code bxplaywright install}.</li>
  * </ul>
  * It also resolves which Node.js runtime to use and builds the environment passed to the driver.
  */
@@ -384,13 +384,13 @@ public class PlaywrightHome {
 			    PlaywrightErrors.NOT_INSTALLED,
 			    "The configured Node.js executable [" + explicitNodePath + "] does not exist or is not executable.",
 			    "Point the 'nodePath' setting (or PLAYWRIGHT_NODEJS_PATH) at a Node.js " + MIN_NODE_MAJOR
-			        + "+ executable, or unset it to use the runtime downloaded by [bxPlaywright install]."
+			        + "+ executable, or unset it to use the runtime downloaded by [bxplaywright install]."
 			) );
 		}
 		return resolveNode().orElseThrow( () -> PlaywrightErrors.of(
 		    PlaywrightErrors.NOT_INSTALLED,
 		    "No Node.js runtime is available for Playwright.",
-		    "Run [bxPlaywright install] to download it (or install bx-playwright-full), or set the 'nodePath' setting to a Node.js "
+		    "Run [bxplaywright install] to download it (or install bx-playwright-full), or set the 'nodePath' setting to a Node.js "
 		        + MIN_NODE_MAJOR + "+ executable."
 		) );
 	}
@@ -547,7 +547,7 @@ public class PlaywrightHome {
 			Process process = cliProcess( args ).inheritIO().start();
 			return process.waitFor();
 		} catch ( IOException e ) {
-			throw PlaywrightErrors.of( PlaywrightErrors.NOT_INSTALLED, "Failed to run the Playwright CLI: " + e.getMessage(), "Run [bxPlaywright doctor].", e );
+			throw PlaywrightErrors.of( PlaywrightErrors.NOT_INSTALLED, "Failed to run the Playwright CLI: " + e.getMessage(), "Run [bxplaywright doctor].", e );
 		} catch ( InterruptedException e ) {
 			Thread.currentThread().interrupt();
 			return 130;
@@ -601,7 +601,7 @@ public class PlaywrightHome {
 			}
 			return new CliRun( process.waitFor(), String.join( System.lineSeparator(), tail ) );
 		} catch ( IOException e ) {
-			throw PlaywrightErrors.of( PlaywrightErrors.NOT_INSTALLED, "Failed to run the Playwright CLI: " + e.getMessage(), "Run [bxPlaywright doctor].", e );
+			throw PlaywrightErrors.of( PlaywrightErrors.NOT_INSTALLED, "Failed to run the Playwright CLI: " + e.getMessage(), "Run [bxplaywright doctor].", e );
 		} catch ( InterruptedException e ) {
 			Thread.currentThread().interrupt();
 			return new CliRun( 130, String.join( System.lineSeparator(), tail ) );

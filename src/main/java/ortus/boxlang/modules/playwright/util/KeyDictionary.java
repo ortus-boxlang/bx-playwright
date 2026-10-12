@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.util;
+package ortus.boxlang.modules.bxplaywright.util;
 
 import ortus.boxlang.runtime.scopes.Key;
 
@@ -21,6 +21,6 @@ import ortus.boxlang.runtime.scopes.Key;
  */
 public class KeyDictionary {
 
-	public static final Key moduleName = new Key( "playwright" );
+	public static final Key moduleName = new Key( "bxplaywright" );
 
 }

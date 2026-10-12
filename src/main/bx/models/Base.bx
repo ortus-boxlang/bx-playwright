@@ -1,5 +1,5 @@
-import java:ortus.boxlang.modules.playwright.engine.OptionsMapper@playwright;
-import java:ortus.boxlang.modules.playwright.engine.PlaywrightErrors@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.OptionsMapper@bxplaywright;
+import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightErrors@bxplaywright;
 
 /**
  * Shared helpers for the bx-playwright DSL objects.

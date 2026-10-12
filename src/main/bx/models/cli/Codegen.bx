@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright codegen [url] [--target=boxlang] [--output=file.bxs] [playwright codegen options]`
+ * `bxplaywright codegen [url] [--target=boxlang] [--output=file.bxs] [playwright codegen options]`
  *
  * Opens a browser and records your actions. With the default boxlang target, the recorded code is
  * translated into the bx-playwright DSL when you close the browser. Any other target (java, javascript,
@@ -17,8 +17,8 @@ class {
 	 * @return { exitCode, message, data }
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var cli      = new models.cli.Cli@playwright()
-		var terminal = new models.cli.Terminal@playwright( arguments.options.json ?: false )
+		var cli      = new models.cli.Cli@bxplaywright()
+		var terminal = new models.cli.Terminal@bxplaywright( arguments.options.json ?: false )
 		var target   = arguments.options.target ?: "boxlang"
 		if ( target != "boxlang" ) {
 			var passthrough = [ "codegen" ]
@@ -36,7 +36,7 @@ class {
 		if ( !fileExists( recorded ) ) {
 			return { exitCode : exitCode ?: 1, message : "Nothing was recorded.", data : { "exitCode" : exitCode ?: 1, "code" : "" } }
 		}
-		var code = new models.cli.CodegenTranslator@playwright().translate( fileRead( recorded ) )
+		var code = new models.cli.CodegenTranslator@bxplaywright().translate( fileRead( recorded ) )
 		fileDelete( recorded )
 		if ( len( output ) ) {
 			fileWrite( output, code )
@@ -46,7 +46,7 @@ class {
 	}
 
 	/**
-	 * Resolve the output file against the directory bxPlaywright was started from (not the module folder).
+	 * Resolve the output file against the directory bxplaywright was started from (not the module folder).
 	 *
 	 * @output The output path given with --output or -o, or empty
 	 *

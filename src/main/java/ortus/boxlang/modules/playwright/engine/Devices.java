@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.engine;
+package ortus.boxlang.modules.bxplaywright.engine;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -78,7 +78,7 @@ public final class Devices {
 		throw PlaywrightErrors.of(
 		    PlaywrightErrors.INVALID_OPTION,
 		    "Unknown device [" + name + "].",
-		    "Run [bxPlaywright devices] to list them. Examples: iPhone 15, Pixel 7, iPad Pro 11, Desktop Chrome."
+		    "Run [bxplaywright devices] to list them. Examples: iPhone 15, Pixel 7, iPad Pro 11, Desktop Chrome."
 		);
 	}
 

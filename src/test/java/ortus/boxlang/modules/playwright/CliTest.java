@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright;
+package ortus.boxlang.modules.bxplaywright;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -31,9 +31,9 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "No verb prints usage and fails" )
 	@Test
 	public void testNoVerb() {
-		String output = capture( "result = new models.cli.Cli@playwright().run( [] )" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
-		assertThat( output ).contains( "Usage: bxPlaywright <verb>" );
+		assertThat( output ).contains( "Usage: bxplaywright <verb>" );
 		assertThat( output ).contains( "install" );
 	}
 
@@ -43,7 +43,7 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Unknown verbs fail and print usage" )
 	@Test
 	public void testUnknownVerb() {
-		String output = capture( "result = new models.cli.Cli@playwright().run( [ \"fly\" ] )" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"fly\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( output ).contains( "Unknown verb [fly]" );
 	}
@@ -54,13 +54,13 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Help for a verb and machine readable help" )
 	@Test
 	public void testHelp() {
-		String verbHelp = capture( "result = new models.cli.Cli@playwright().run( [ \"help\", \"install\" ] )" );
-		assertThat( verbHelp ).contains( "bxPlaywright install [browsers...]" );
-		String json = capture( "result = new models.cli.Cli@playwright().run( [ \"help\", \"--json\" ] )" );
+		String verbHelp = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"help\", \"install\" ] )" );
+		assertThat( verbHelp ).contains( "bxplaywright install [browsers...]" );
+		String json = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"help\", \"--json\" ] )" );
 		assertThat( json ).contains( "\"doctor\"" );
 		assertThat( json ).contains( "\"usage\"" );
-		String dashHelp = capture( "result = new models.cli.Cli@playwright().run( [ \"install\", \"--help\" ] )" );
-		assertThat( dashHelp ).contains( "bxPlaywright install [browsers...]" );
+		String dashHelp = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"install\", \"--help\" ] )" );
+		assertThat( dashHelp ).contains( "bxplaywright install [browsers...]" );
 	}
 
 	/**
@@ -71,7 +71,7 @@ public class CliTest extends BaseIntegrationTest {
 	public void testParseOptions() {
 		// @formatter:off
 		Object value = run( """
-			options = new models.cli.Cli@playwright().parseOptions( [ "firefox", "--with-deps", '--device="iPhone 15"', "--no-headless", "webkit" ] )
+			options = new models.cli.Cli@bxplaywright().parseOptions( [ "firefox", "--with-deps", '--device="iPhone 15"', "--no-headless", "webkit" ] )
 			result  = options._positionals.toList() & "|" & options[ "with-deps" ] & "|" & options.device & "|" & options.headless
 		""" );
 		// @formatter:on
@@ -84,10 +84,10 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Version prints versions and supports --json" )
 	@Test
 	public void testVersion() {
-		String output = capture( "result = new models.cli.Cli@playwright().run( [ \"--version\" ] )" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"--version\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 0 );
 		assertThat( output ).contains( "Playwright 1.63.0" );
-		String json = capture( "result = new models.cli.Cli@playwright().run( [ \"version\", \"--json\" ] )" );
+		String json = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"version\", \"--json\" ] )" );
 		assertThat( json ).contains( "\"playwright\":\"1.63.0\"" );
 	}
 
@@ -97,10 +97,10 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Profiles lists and resolves profiles" )
 	@Test
 	public void testProfiles() {
-		String list = capture( "result = new models.cli.Cli@playwright().run( [ \"profiles\" ] )" );
+		String list = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"profiles\" ] )" );
 		assertThat( list ).contains( "mobile" );
 		assertThat( list ).contains( "android-tablet" );
-		String one = capture( "result = new models.cli.Cli@playwright().run( [ \"profiles\", \"tablet\", \"--json\" ] )" );
+		String one = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"profiles\", \"tablet\", \"--json\" ] )" );
 		assertThat( one ).contains( "iPad Pro 11" );
 	}
 
@@ -110,11 +110,11 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Errors print their type and fix, or JSON" )
 	@Test
 	public void testErrors() {
-		String output = capture( "result = new models.cli.Cli@playwright().run( [ \"profiles\", \"nope\" ] )" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"profiles\", \"nope\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( output ).contains( "Error [Playwright.InvalidProfile]" );
 		assertThat( output ).contains( "Fix: Available profiles" );
-		String json = capture( "result = new models.cli.Cli@playwright().run( [ \"profiles\", \"nope\", \"--json\" ] )" );
+		String json = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"profiles\", \"nope\", \"--json\" ] )" );
 		assertThat( json ).contains( "\"type\":\"Playwright.InvalidProfile\"" );
 	}
 
@@ -125,8 +125,8 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "The shipped completion script matches the verb registry" )
 	@Test
 	public void testCompletionsInSync() throws IOException {
-		Object	generated	= run( "result = new models.cli.Cli@playwright().completionScript()" );
-		Path	file		= Path.of( "src/main/bx/completions/bxPlaywright.bash" );
+		Object	generated	= run( "result = new models.cli.Cli@bxplaywright().completionScript()" );
+		Path	file		= Path.of( "src/main/bx/completions/bxplaywright.bash" );
 		if ( "true".equalsIgnoreCase( System.getenv( "UPDATE_COMPLETIONS" ) ) ) {
 			Files.createDirectories( file.getParent() );
 			Files.writeString( file, generated.toString() );
@@ -143,9 +143,9 @@ public class CliTest extends BaseIntegrationTest {
 	 */
 	private String cliWith( String settings ) {
 		String home = Path.of( "build", "cli-test-home" ).toAbsolutePath().toString().replace( "\\", "/" );
-		return "config = new models.Config@playwright( settings = { home : \"" + home + "\", nodeVersion : \"24.21.0\", nodeDownloadURL : \"\", "
+		return "config = new models.Config@bxplaywright( settings = { home : \"" + home + "\", nodeVersion : \"24.21.0\", nodeDownloadURL : \"\", "
 		    + "profiles : {}, defaultProfile : \"default\"" + ( settings.isEmpty() ? "" : ", " + settings ) + " }, environment = {} )\n"
-		    + "cli = new models.cli.Cli@playwright( config )\n";
+		    + "cli = new models.cli.Cli@bxplaywright( config )\n";
 	}
 
 	/**
@@ -157,7 +157,7 @@ public class CliTest extends BaseIntegrationTest {
 	public void testValueFlags() {
 		// @formatter:off
 		Object value = run( """
-			cli     = new models.cli.Cli@playwright()
+			cli     = new models.cli.Cli@bxplaywright()
 			verb    = cli.getVerbs().codegen
 			a       = cli.parseOptions( [ "--output", "a.bxs", "https://example.com" ], verb )
 			b       = cli.parseOptions( [ "-o", "b.bxs", "--target=boxlang" ], verb )
@@ -183,9 +183,9 @@ public class CliTest extends BaseIntegrationTest {
 	public void testCodegenArguments() {
 		// @formatter:off
 		Object value = run( """
-			cli    = new models.cli.Cli@playwright()
+			cli    = new models.cli.Cli@bxplaywright()
 			kept   = cli.withoutOptions( [ "https://example.com", "--output", "a.bxs", "-o", "b.bxs", "--target=boxlang", "--json", "--device", "iPhone 15" ], [ "target", "output", "json" ], cli.getVerbs().codegen )
-			result = kept.toList( "|" ) & "@" & new models.cli.Codegen@playwright().resolveOutput( "real.bxs" )
+			result = kept.toList( "|" ) & "@" & new models.cli.Codegen@bxplaywright().resolveOutput( "real.bxs" )
 		""" );
 		// @formatter:on
 		String	expected	= Path.of( System.getProperty( "user.dir" ), "real.bxs" ).toAbsolutePath().toString();
@@ -201,12 +201,12 @@ public class CliTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( cliWith( "" ) + """
 			verbs   = cli.getVerbs()
-			pass    = new models.cli.Passthrough@playwright()
+			pass    = new models.cli.Passthrough@bxplaywright()
 			shot    = pass.buildArgs( { _raw : [ "https://example.com", "shot.png", "--json" ], json : true }, config, verbs.screenshot )
 			mcp     = pass.buildArgs( { _raw : [ "--port", "8931" ], port : "8931" }, config, verbs.mcp )
 			chosen  = pass.buildArgs( { _raw : [ "--browser", "webkit" ], browser : "webkit" }, config, verbs.mcp )
-			firefox = pass.buildArgs( { _raw : [] }, new models.Config@playwright( settings = { profiles : {}, defaultProfile : "firefox" }, environment = {} ), verbs.mcp )
-			edge    = pass.buildArgs( { _raw : [] }, new models.Config@playwright( settings = { channel : "msedge", profiles : {}, defaultProfile : "default" }, environment = {} ), verbs.mcp )
+			firefox = pass.buildArgs( { _raw : [] }, new models.Config@bxplaywright( settings = { profiles : {}, defaultProfile : "firefox" }, environment = {} ), verbs.mcp )
+			edge    = pass.buildArgs( { _raw : [] }, new models.Config@bxplaywright( settings = { channel : "msedge", profiles : {}, defaultProfile : "default" }, environment = {} ), verbs.mcp )
 			result  = [ shot.toList( " " ), mcp.toList( " " ), chosen.toList( " " ), firefox.toList( " " ), edge.toList( " " ) ].toList( "|" )
 		""" );
 		// @formatter:on
@@ -222,7 +222,7 @@ public class CliTest extends BaseIntegrationTest {
 	public void testStripQuotes() {
 		// @formatter:off
 		Object value = run( """
-			options = new models.cli.Cli@playwright().parseOptions( [ '--a="abc', "--b='abc'", '--c="abc"', '--d=''abc"' ] )
+			options = new models.cli.Cli@bxplaywright().parseOptions( [ '--a="abc', "--b='abc'", '--c="abc"', '--d=''abc"' ] )
 			result  = [ options.a, options.b, options.c, options.d ].toList( "|" )
 		""" );
 		// @formatter:on
@@ -236,10 +236,10 @@ public class CliTest extends BaseIntegrationTest {
 	@Test
 	public void testUnknownVerbJson() {
 		String	expected	= "{\"error\":{\"type\":\"Playwright.InvalidOption\",\"message\":\"Unknown verb [nope].\"";
-		String	help		= capture( "result = new models.cli.Cli@playwright().run( [ \"help\", \"nope\", \"--json\" ] )" );
+		String	help		= capture( "result = new models.cli.Cli@bxplaywright().run( [ \"help\", \"nope\", \"--json\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( help.trim() ).startsWith( expected );
-		String verb = capture( "result = new models.cli.Cli@playwright().run( [ \"nope\", \"--json\" ] )" );
+		String verb = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"nope\", \"--json\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( verb.trim() ).startsWith( expected );
 		assertThat( verb ).doesNotContain( "Usage:" );
@@ -251,11 +251,11 @@ public class CliTest extends BaseIntegrationTest {
 	@DisplayName( "Unknown flags on built-in verbs fail" )
 	@Test
 	public void testUnknownFlags() {
-		String output = capture( "result = new models.cli.Cli@playwright().run( [ \"install\", \"--with-dep\" ] )" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"install\", \"--with-dep\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( output ).contains( "Error [Playwright.InvalidOption]: Unknown option [--with-dep] for [install]." );
 		assertThat( output ).contains( "--with-deps" );
-		String json = capture( "result = new models.cli.Cli@playwright().run( [ \"version\", \"-x\", \"--json\" ] )" );
+		String json = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"version\", \"-x\", \"--json\" ] )" );
 		assertThat( variables.get( result ) ).isEqualTo( 1 );
 		assertThat( json ).contains( "\"type\":\"Playwright.InvalidOption\"" );
 		assertThat( json ).contains( "Unknown option [-x] for [version]." );

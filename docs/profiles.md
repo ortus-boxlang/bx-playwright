@@ -23,7 +23,7 @@ playwright( "tablet", { locale : "es-ES" } )     // plus overrides
 | Appearance | `dark`, `light`, `reduced-motion`, `high-contrast` |
 | Modes | `headed`, `debug`, `record`, `ci`, `offline`, `print`, `screenshot` |
 
-See every value with `bxPlaywright profiles` or one resolved with `bxPlaywright profiles mobile`.
+See every value with `bxplaywright profiles` or one resolved with `bxplaywright profiles mobile`.
 
 The `default` profile is empty: `playwright()` uses your module settings (`browser`, `headless`, `viewport`, ...) as they are.
 

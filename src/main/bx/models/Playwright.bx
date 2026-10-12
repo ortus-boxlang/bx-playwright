@@ -1,6 +1,6 @@
-import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
-import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
-import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.Devices@bxplaywright;
+import java:ortus.boxlang.modules.bxplaywright.engine.Macros@bxplaywright;
+import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightRegistry@bxplaywright;
 import java:java.util.UUID;
 
 /**
@@ -94,7 +94,7 @@ class extends="Base" {
 			var options     = buildOptions( "BrowserType.LaunchOptions", variables.configService.launchOptions( variables.config ) )
 			variables.browser = tryAction(
 				() => browserType.launch( options ),
-				"launch #name#. If the browser is missing run [bxPlaywright install #name#]"
+				"launch #name#. If the browser is missing run [bxplaywright install #name#]"
 			)
 			announceEvent( "onBrowserLaunch", { playwright : this, browser : variables.browser } )
 		}
@@ -109,7 +109,7 @@ class extends="Base" {
 	 */
 	function newContext( struct options = {} ) {
 		var config = duplicate( variables.config )
-		new models.Profiles@playwright().deepMerge( config, arguments.options )
+		new models.Profiles@bxplaywright().deepMerge( config, arguments.options )
 
 		var device = {}
 		if ( len( config.device ?: "" ) ) {
@@ -129,7 +129,7 @@ class extends="Base" {
 
 		var browser = getBrowser()
 		var opts    = buildOptions( "Browser.NewContextOptions", contextOptions )
-		var context = new models.BrowserContext@playwright(
+		var context = new models.BrowserContext@bxplaywright(
 			tryAction( () => browser.newContext( opts ), "create a browser context" ),
 			this,
 			config,
@@ -335,7 +335,7 @@ class extends="Base" {
 		var wasStarted = isStarted()
 		try {
 			var opts = buildOptions( "APIRequest.NewContextOptions", values )
-			return new models.Request@playwright(
+			return new models.Request@bxplaywright(
 				getJava().request().newContext( opts ),
 				variables.config,
 				true,
@@ -393,7 +393,7 @@ class extends="Base" {
 	 * They share one page. Use aiTools() for bx-ai, or map them to any other agent framework.
 	 */
 	array function aiToolDefinitions() {
-		var browser = new models.AiBrowser@playwright( this )
+		var browser = new models.AiBrowser@bxplaywright( this )
 		return [
 			{
 				name        : "browser_visit",
@@ -519,7 +519,7 @@ class extends="Base" {
 	 * @target A Page, Locator, Response or their Java objects
 	 */
 	function expect( required any target ) {
-		return new models.Expect@playwright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
+		return new models.Expect@bxplaywright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
 	}
 
 	/**

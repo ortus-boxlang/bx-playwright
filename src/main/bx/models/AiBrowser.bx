@@ -4,7 +4,7 @@
  * Used by playwright().aiTools() and playwright().aiToolDefinitions().
  *
  * <pre>
- * browser = new models.AiBrowser@playwright( playwright( { baseURL : "http://localhost:8080" } ) )
+ * browser = new models.AiBrowser@bxplaywright( playwright( { baseURL : "http://localhost:8080" } ) )
  * state   = browser.visit( "/login" )           // URL, title and snapshot with refs like e5
  * state   = browser.fill( "e5", "luis@ortus.com" )
  * state   = browser.click( "Sign in" )           // refs or smart selectors

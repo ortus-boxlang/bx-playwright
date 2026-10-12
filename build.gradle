@@ -230,7 +230,7 @@ task createModuleStructure(type: Copy) {
 		include '**/*.bash'
 		// Token Replacements Go Here
 		filter{ line -> line.replaceAll( '@build.version@', project.version ) }
-		filter{ line -> line.replaceAll( '@playwright.version@', playwrightVersion ) }
+		filter{ line -> line.replaceAll( '@bxplaywright.version@', playwrightVersion ) }
 		filter{ line -> line.replaceAll( '@build.flavor@', project.flavor ) }
 		filter{ line -> line.replaceAll( '@node.version@', nodeVersion ) }
 		if( project.branch == "development" ){

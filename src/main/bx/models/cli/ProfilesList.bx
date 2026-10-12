@@ -1,5 +1,5 @@
 /**
- * `bxPlaywright profiles [name]`: list profiles, or show one fully resolved with the module settings.
+ * `bxplaywright profiles [name]`: list profiles, or show one fully resolved with the module settings.
  */
 class {
 
@@ -13,7 +13,7 @@ class {
 	 * @return { exitCode, message, data }
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var profiles = new models.Profiles@playwright()
+		var profiles = new models.Profiles@bxplaywright()
 		if ( arguments.options._positionals.len() ) {
 			var resolved = arguments.config.resolve( arguments.options._positionals )
 			return { exitCode : 0, message : jsonSerialize( resolved, true ), data : resolved }

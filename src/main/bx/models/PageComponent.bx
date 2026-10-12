@@ -5,7 +5,7 @@
  *
  * <pre>
  * // DatePicker.bx
- * class extends="models.PageComponent@playwright" {
+ * class extends="models.PageComponent@bxplaywright" {
  *     selector = ".datepicker"
  *     elements = { next : ".next-month", title : ".month-title" }
  *

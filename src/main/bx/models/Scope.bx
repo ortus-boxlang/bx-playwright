@@ -1,6 +1,6 @@
-import java:ortus.boxlang.modules.playwright.engine.SmartSelector@playwright;
-import java:ortus.boxlang.modules.playwright.engine.ImageDiff@playwright;
-import java:ortus.boxlang.modules.playwright.engine.Macros@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.SmartSelector@bxplaywright;
+import java:ortus.boxlang.modules.bxplaywright.engine.ImageDiff@bxplaywright;
+import java:ortus.boxlang.modules.bxplaywright.engine.Macros@bxplaywright;
 
 /**
  * Selector based actions, finders and inline assertions shared by Page and Locator.
@@ -154,7 +154,7 @@ abstract class extends="Base" {
 	}
 
 	/**
-	 * Bind a page component (a class extending models.PageComponent@playwright) to its element in this scope.
+	 * Bind a page component (a class extending models.PageComponent@bxplaywright) to its element in this scope.
 	 *
 	 * @component The component instance
 	 *
@@ -886,7 +886,7 @@ abstract class extends="Base" {
 	 * @return The Expect
 	 */
 	function newExpect( required any target, any countTarget ) {
-		return new models.Expect@playwright(
+		return new models.Expect@bxplaywright(
 			arguments.target,
 			getConfig().timeouts.assertion ?: 5000,
 			page().softCollector(),
@@ -960,7 +960,7 @@ abstract class extends="Base" {
 	 * @return A Locator
 	 */
 	private function wrapLocator( required any javaLocator ) {
-		return new models.Locator@playwright( arguments.javaLocator, page() )
+		return new models.Locator@bxplaywright( arguments.javaLocator, page() )
 	}
 
 }

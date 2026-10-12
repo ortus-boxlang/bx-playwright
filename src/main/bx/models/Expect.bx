@@ -1,4 +1,4 @@
-import java:com.microsoft.playwright.assertions.PlaywrightAssertions@playwright;
+import java:com.microsoft.playwright.assertions.PlaywrightAssertions@bxplaywright;
 
 /**
  * Web-first assertions: they retry until they pass or the assertion timeout expires.

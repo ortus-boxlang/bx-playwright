@@ -1,13 +1,13 @@
-import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightRegistry@bxplaywright;
 
 /**
  * bx-playwright: fluent browser automation and testing for BoxLang, powered by Microsoft Playwright.
  *
  * - Runtime DSL: the `playwright()` BIF
  * - Component: `bx:playwrightRender`
- * - CLI: `bxPlaywright <verb>` (or `boxlang module:playwright <verb>`)
+ * - CLI: `bxplaywright <verb>` (or `boxlang module:bxplaywright <verb>`)
  *
- * Every setting below can be overridden in `boxlang.json` under `modules.playwright.settings`.
+ * Every setting below can be overridden in `boxlang.json` under `modules.bxplaywright.settings`.
  */
 class {
 
@@ -16,7 +16,7 @@ class {
 	property name="log";
 
 	this.version      = "@build.version@+@build.number@";
-	this.mapping      = "playwright";
+	this.mapping      = "bxplaywright";
 	this.author       = "Ortus Solutions";
 	this.description  = "Fluent browser automation and testing for BoxLang, powered by Microsoft Playwright";
 	this.webURL       = "https://github.com/ortus-boxlang/bx-playwright";
@@ -34,7 +34,7 @@ class {
 			browsersPath      : "",
 			// Explicit Node.js executable. Empty = bundled (full), downloaded, or system node
 			nodePath          : "",
-			// Node.js version downloaded by `bxPlaywright install` (small distribution)
+			// Node.js version downloaded by `bxplaywright install` (small distribution)
 			nodeVersion       : "@node.version@",
 			// Node.js download mirror. Empty = https://nodejs.org/dist
 			nodeDownloadURL   : "",
@@ -109,7 +109,7 @@ class {
 	 * Called when the module is activated.
 	 */
 	function onLoad() {
-		log.info( "bx-playwright loaded (Playwright @playwright.version@, @build.flavor@ distribution)" )
+		log.info( "bx-playwright loaded (Playwright @bxplaywright.version@, @build.flavor@ distribution)" )
 	}
 
 	/**
@@ -123,7 +123,7 @@ class {
 	}
 
 	/**
-	 * CLI entry point: `bxPlaywright <verb> [options]` or `boxlang module:playwright <verb> [options]`.
+	 * CLI entry point: `bxplaywright <verb> [options]` or `boxlang module:bxplaywright <verb> [options]`.
 	 * Exits the process with the verb's exit code.
 	 *
 	 * @args The CLI arguments

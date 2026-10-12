@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.engine;
+package ortus.boxlang.modules.bxplaywright.engine;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -170,7 +170,7 @@ public class NodeInstaller {
 				throw PlaywrightErrors.of(
 				    PlaywrightErrors.NODE_INSTALL_FAILED,
 				    "Checksum mismatch for " + archiveName + ": expected " + expected + " but got " + actual,
-				    "Retry [bxPlaywright install-node --force]. If you use a mirror (nodeDownloadURL), make sure it serves the official files."
+				    "Retry [bxplaywright install-node --force]. If you use a mirror (nodeDownloadURL), make sure it serves the official files."
 				);
 			}
 
@@ -182,7 +182,7 @@ public class NodeInstaller {
 				throw PlaywrightErrors.of(
 				    PlaywrightErrors.NODE_INSTALL_FAILED,
 				    "Node.js was extracted but the executable was not found at " + folderName + "/" + platform.getNodeExecutable(),
-				    "Run [bxPlaywright install-node --force], or set the 'nodePath' setting to an existing Node.js executable."
+				    "Run [bxplaywright install-node --force], or set the 'nodePath' setting to an existing Node.js executable."
 				);
 			}
 			stagedExecutable.toFile().setExecutable( true, true );
@@ -190,7 +190,7 @@ public class NodeInstaller {
 				throw PlaywrightErrors.of(
 				    PlaywrightErrors.NODE_INSTALL_FAILED,
 				    "The downloaded Node.js does not run: [" + stagedExecutable.getFileName() + " --version] failed.",
-				    "Run [bxPlaywright install-node --force]. If it keeps failing, set the 'nodePath' setting to an existing Node.js "
+				    "Run [bxplaywright install-node --force]. If it keeps failing, set the 'nodePath' setting to an existing Node.js "
 				        + PlaywrightHome.MIN_NODE_MAJOR + "+ executable."
 				);
 			}

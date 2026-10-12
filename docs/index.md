@@ -33,7 +33,7 @@ When a test fails, the `ci` profile keeps a screenshot, a trace and a video. Her
 
 ![Failure screenshot of the dashboard with the last order still Processing](assets/demo-failure-screenshot.png)
 
-`bxPlaywright show-trace` replays every action with the DOM, console and network:
+`bxplaywright show-trace` replays every action with the DOM, console and network:
 
 ![The Playwright trace viewer showing the failed hasText assertion](assets/demo-trace-viewer.png)
 
@@ -48,14 +48,14 @@ TestBox attaches all three to the failing spec in its report:
 | `playwright()` | The BIF that returns a manager: pages, contexts, one-shot helpers |
 | Page and Locator | Chainable actions, smart selectors, web-first assertions |
 | `bx:playwrightRender` | A component that renders its body to PDF, PNG, JPEG or WebP |
-| `bxPlaywright` | The CLI: install browsers, doctor, codegen to BoxLang, trace viewer, MCP |
+| `bxplaywright` | The CLI: install browsers, doctor, codegen to BoxLang, trace viewer, MCP |
 
 ## Two distributions
 
 | Module | Size | Node.js |
 |---|---|---|
-| `bx-playwright` | ~4 MB | downloaded by `bxPlaywright install` |
-| `bx-playwright-full` | ~206 MB | bundled for every platform (browsers are still downloaded by `bxPlaywright install`) |
+| `bx-playwright` | ~4 MB | downloaded by `bxplaywright install` |
+| `bx-playwright-full` | ~206 MB | bundled for every platform (browsers are still downloaded by `bxplaywright install`) |
 
 Same module name (`playwright`), same API. Install one of them.
 

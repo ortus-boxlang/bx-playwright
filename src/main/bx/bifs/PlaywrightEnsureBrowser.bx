@@ -24,9 +24,9 @@ class {
 	 * @throws Playwright.NotInstalled when installation fails, with the last lines of the Playwright CLI output in its detail
 	 */
 	struct function invoke( string browser = "chromium", string channel = "" ) {
-		return new models.BrowserInstaller@playwright().ensure(
+		return new models.BrowserInstaller@bxplaywright().ensure(
 			arguments.browser,
-			new models.Config@playwright(),
+			new models.Config@bxplaywright(),
 			arguments.channel
 		)
 	}

@@ -99,7 +99,7 @@ class extends="Base" {
 	 * @target A Response wrapper or Playwright APIResponse
 	 */
 	function expect( required any target ) {
-		return new models.Expect@playwright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
+		return new models.Expect@bxplaywright( arguments.target, variables.config.timeouts.assertion ?: 5000 )
 	}
 
 	/**
@@ -158,7 +158,7 @@ class extends="Base" {
 			requestOptions.setMaxRedirects( javacast( "int", values.maxRedirects ) )
 		}
 		var target = arguments.url
-		return new models.Response@playwright( tryAction( () => variables.java.fetch( target, requestOptions ), "#arguments.method# #target#" ) )
+		return new models.Response@bxplaywright( tryAction( () => variables.java.fetch( target, requestOptions ), "#arguments.method# #target#" ) )
 	}
 
 }

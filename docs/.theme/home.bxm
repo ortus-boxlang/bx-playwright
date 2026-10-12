@@ -293,7 +293,7 @@
 					</bx:if>
 				</div>
 				<div class="install-chip">
-					<span>$</span><span>install-bx-module bx-playwright</span><span class="sep">|</span><span>bxPlaywright install</span>
+					<span>$</span><span>install-bx-module bx-playwright</span><span class="sep">|</span><span>bxplaywright install</span>
 				</div>
 			</div>
 			<div class="preview">
@@ -355,7 +355,7 @@
 				</figure>
 				<figure class="bxsites-image-gallery__item">
 					<img class="bxsites-image-gallery__image" src="#variables.basePath#assets/demo-trace-viewer.png" alt="The Playwright trace viewer showing the failed hasText assertion" data-bxsites-lightbox loading="lazy">
-					<figcaption class="bxsites-image-gallery__caption"><b>The trace</b><code>bxPlaywright show-trace</code> replays every action with the DOM, console and network.</figcaption>
+					<figcaption class="bxsites-image-gallery__caption"><b>The trace</b><code>bxplaywright show-trace</code> replays every action with the DOM, console and network.</figcaption>
 				</figure>
 				<figure class="bxsites-image-gallery__item">
 					<img class="bxsites-image-gallery__image" style="object-position:left top" src="#variables.basePath#assets/demo-testbox-attachments.png" alt="A failing TestBox spec with its screenshot, trace and video attached" data-bxsites-lightbox loading="lazy">
@@ -500,13 +500,13 @@
 				</div>
 				<div class="bxh-card">
 					<div class="icon">#homeIcon( "server" )#</div>
-					<h3><a href="#variables.basePath#cli/">The bxPlaywright CLI</a></h3>
+					<h3><a href="#variables.basePath#cli/">The bxplaywright CLI</a></h3>
 					<p><code>install</code>, <code>doctor</code>, <code>codegen</code>, <code>screenshot</code>, <code>pdf</code>, <code>show-trace</code> and <code>mcp</code>, with bash completions and <code>--json</code> output.</p>
 				</div>
 				<div class="bxh-card">
 					<div class="icon">#bxsitesIcon( "sparkle" )#</div>
 					<h3><a href="#variables.basePath#cli/">Record BoxLang code</a></h3>
-					<p><code>bxPlaywright codegen</code> opens a browser, records your clicks and writes bx-playwright code for you.</p>
+					<p><code>bxplaywright codegen</code> opens a browser, records your clicks and writes bx-playwright code for you.</p>
 				</div>
 				<div class="bxh-card">
 					<div class="icon">#homeIcon( "java" )#</div>
@@ -517,12 +517,12 @@
 		</div>
 	</section>
 
-	<!--- Section: the bxPlaywright CLI --->
+	<!--- Section: the bxplaywright CLI --->
 	<section>
 		<div class="bxh-wrap">
 			<div class="pw-split">
 				<div>
-					<span class="eyebrow">The bxPlaywright CLI</span>
+					<span class="eyebrow">The bxplaywright CLI</span>
 					<h2>One command line for the whole browser toolchain.</h2>
 					<p class="lead" style="font-size:1.05rem">Install browsers and their system libraries, check your setup, record tests, capture pages and serve a browser to your AI agent. No Node.js project, no <code>package.json</code>.</p>
 					<div class="pw-verbs"><div class="pw-verb"><h4>Set up</h4><p><code>install</code>, <code>install-deps</code>, <code>doctor</code> and <code>version</code>: everything a browser needs, checked with fix hints.</p></div><div class="pw-verb"><h4>Record and replay</h4><p><code>codegen</code> writes BoxLang from your clicks, <code>open</code> drives a headed browser and <code>show-trace</code> replays a failure.</p></div><div class="pw-verb"><h4>Capture</h4><p><code>screenshot</code> and <code>pdf</code> grab any URL from the shell, no script needed.</p></div><div class="pw-verb"><h4>Agents and automation</h4><p><code>mcp</code> serves a browser to AI agents. Every verb speaks <code>--json</code>, with bash completions included.</p></div></div>
@@ -530,7 +530,7 @@
 				</div>
 				<div class="term-panel pw-term">
 					<div class="preview-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">bash</span></div>
-					<div class="term-body"><span class="tl" style="animation-delay:0.00s"><span class="pr">$</span> <span class="cmd">bxPlaywright install chromium --with-deps</span></span><span class="tl" style="animation-delay:0.25s"><span class="cm">  driver, Node.js and Chromium, plus the Linux system libraries</span></span><span class="tl" style="animation-delay:0.50s">&nbsp;</span><span class="tl" style="animation-delay:0.75s"><span class="pr">$</span> <span class="cmd">bxPlaywright doctor</span></span><span class="tl" style="animation-delay:1.00s"><span class="ok">[ok]</span>   module    bx-playwright (small), Playwright 1.63.0, Java 21</span><span class="tl" style="animation-delay:1.25s"><span class="ok">[ok]</span>   driver    Extracted at ~/.boxlang/playwright/driver/1.63.0</span><span class="tl" style="animation-delay:1.50s"><span class="ok">[ok]</span>   node      Node.js 24.21.0 (downloaded)</span><span class="tl" style="animation-delay:1.75s"><span class="ok">[ok]</span>   browsers  chromium-1243, chromium_headless_shell-1243</span><span class="tl" style="animation-delay:2.00s"><span class="ok">[ok]</span>   defaults  profile default, chromium, headless true</span><span class="tl" style="animation-delay:2.25s">&nbsp;</span><span class="tl" style="animation-delay:2.50s"><span class="pr">$</span> <span class="cmd">bxPlaywright codegen http://localhost:8080 -o login.bxs</span></span><span class="tl" style="animation-delay:2.75s"><span class="cm">  records your clicks and writes bx-playwright code</span></span><span class="tl" style="animation-delay:3.00s">&nbsp;</span><span class="tl" style="animation-delay:3.25s"><span class="pr">$</span> <span class="cmd">bxPlaywright mcp --headless</span></span><span class="tl" style="animation-delay:3.50s"><span class="cm">  a browser for Claude, Cursor, VS Code and any MCP client</span></span></div>
+					<div class="term-body"><span class="tl" style="animation-delay:0.00s"><span class="pr">$</span> <span class="cmd">bxplaywright install chromium --with-deps</span></span><span class="tl" style="animation-delay:0.25s"><span class="cm">  driver, Node.js and Chromium, plus the Linux system libraries</span></span><span class="tl" style="animation-delay:0.50s">&nbsp;</span><span class="tl" style="animation-delay:0.75s"><span class="pr">$</span> <span class="cmd">bxplaywright doctor</span></span><span class="tl" style="animation-delay:1.00s"><span class="ok">[ok]</span>   module    bx-playwright (small), Playwright 1.63.0, Java 21</span><span class="tl" style="animation-delay:1.25s"><span class="ok">[ok]</span>   driver    Extracted at ~/.boxlang/playwright/driver/1.63.0</span><span class="tl" style="animation-delay:1.50s"><span class="ok">[ok]</span>   node      Node.js 24.21.0 (downloaded)</span><span class="tl" style="animation-delay:1.75s"><span class="ok">[ok]</span>   browsers  chromium-1243, chromium_headless_shell-1243</span><span class="tl" style="animation-delay:2.00s"><span class="ok">[ok]</span>   defaults  profile default, chromium, headless true</span><span class="tl" style="animation-delay:2.25s">&nbsp;</span><span class="tl" style="animation-delay:2.50s"><span class="pr">$</span> <span class="cmd">bxplaywright codegen http://localhost:8080 -o login.bxs</span></span><span class="tl" style="animation-delay:2.75s"><span class="cm">  records your clicks and writes bx-playwright code</span></span><span class="tl" style="animation-delay:3.00s">&nbsp;</span><span class="tl" style="animation-delay:3.25s"><span class="pr">$</span> <span class="cmd">bxplaywright mcp --headless</span></span><span class="tl" style="animation-delay:3.50s"><span class="cm">  a browser for Claude, Cursor, VS Code and any MCP client</span></span></div>
 				</div>
 			</div>
 		</div>
@@ -576,7 +576,7 @@
 				<div class="bxh-card">
 					<div class="icon">#homeIcon( "server" )#</div>
 					<h3><a href="#variables.basePath#ai/">Playwright MCP</a></h3>
-					<p><code>bxPlaywright mcp</code> starts Playwright's MCP server for Claude, Cursor, VS Code and every MCP client.</p>
+					<p><code>bxplaywright mcp</code> starts Playwright's MCP server for Claude, Cursor, VS Code and every MCP client.</p>
 				</div>
 				<div class="bxh-card">
 					<div class="icon">#bxsitesIcon( "copy" )#</div>
@@ -607,7 +607,7 @@
 				<div class="bxh-card">
 					<div class="icon">#homeIcon( "cube" )#</div>
 					<h3><a href="#variables.basePath#getting-started/">bx-playwright</a></h3>
-					<p>About 4 MB. Uses a Node.js 20+ already on the machine, or <code>bxPlaywright install</code> downloads and verifies one for your platform.</p>
+					<p>About 4 MB. Uses a Node.js 20+ already on the machine, or <code>bxplaywright install</code> downloads and verifies one for your platform.</p>
 				</div>
 				<div class="bxh-card">
 					<div class="icon">#homeIcon( "offline" )#</div>
@@ -658,7 +658,7 @@
 			<div class="cta">
 				<span class="eyebrow">Free &amp; open source</span>
 				<h2>Your first browser test in a minute.</h2>
-				<p>Install the module, run <code>bxPlaywright install</code>, and drive a real browser from your next BoxLang script.</p>
+				<p>Install the module, run <code>bxplaywright install</code>, and drive a real browser from your next BoxLang script.</p>
 				<div class="hero-actions">
 					<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#getting-started/">Get Started &rarr;</a>
 					<a class="bxh-btn bxh-btn-ghost" href="#variables.basePath#browsing/">Read the docs</a>

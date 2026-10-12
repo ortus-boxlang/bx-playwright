@@ -2,7 +2,7 @@ import java:ortus.boxlang.runtime.BoxRuntime;
 import java:ortus.boxlang.runtime.scopes.Key;
 import java:java.lang.System;
 import java:java.io.File;
-import java:ortus.boxlang.modules.playwright.engine.PlaywrightHome@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightHome@bxplaywright;
 
 /**
  * Resolves the effective configuration of a playwright() call.
@@ -24,7 +24,7 @@ class {
 	 * Build info stamped at build time.
 	 */
 	static {
-		PLAYWRIGHT_VERSION = "@playwright.version@"
+		PLAYWRIGHT_VERSION = "@bxplaywright.version@"
 		FLAVOR             = "@build.flavor@"
 		MODULE_VERSION     = "@build.version@"
 		ENV_PREFIX         = "BX_PLAYWRIGHT_"
@@ -44,23 +44,23 @@ class {
 	]
 
 	/**
-	 * @settings    The module settings. Defaults to the loaded playwright module settings
+	 * @settings    The module settings. Defaults to the loaded bxplaywright module settings
 	 * @environment Environment variables. Defaults to the process environment
 	 */
 	function init( struct settings, struct environment ) {
 		variables.settings    = arguments.settings ?: moduleSettings()
 		variables.environment = arguments.environment ?: server.system.environment
-		variables.profiles    = new models.Profiles@playwright()
+		variables.profiles    = new models.Profiles@bxplaywright()
 		return this
 	}
 
 	/**
-	 * The settings of the loaded playwright module, read from the module service.
+	 * The settings of the loaded bxplaywright module, read from the module service.
 	 *
-	 * @return The settings of the loaded playwright module
+	 * @return The settings of the loaded bxplaywright module
 	 */
 	struct function moduleSettings() {
-		return BoxRuntime.getInstance().getModuleService().getModuleSettings( Key.of( "playwright" ) )
+		return BoxRuntime.getInstance().getModuleService().getModuleSettings( Key.of( "bxplaywright" ) )
 	}
 
 	/**
@@ -77,12 +77,12 @@ class {
 	}
 
 	/**
-	 * The physical path of the loaded playwright module on disk.
+	 * The physical path of the loaded bxplaywright module on disk.
 	 *
-	 * @return The physical path of the loaded playwright module
+	 * @return The physical path of the loaded bxplaywright module
 	 */
 	string function modulePath() {
-		return BoxRuntime.getInstance().getModuleService().getModuleRecord( Key.of( "playwright" ) ).physicalPath.toString()
+		return BoxRuntime.getInstance().getModuleService().getModuleRecord( Key.of( "bxplaywright" ) ).physicalPath.toString()
 	}
 
 	/**

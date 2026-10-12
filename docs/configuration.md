@@ -12,7 +12,7 @@ Every setting has a sensible default. Override them in `boxlang.json` for the wh
 ```json
 {
 	"modules": {
-		"playwright": {
+		"bxplaywright": {
 			"settings": {
 				"baseURL": "http://localhost:8080",
 				"headless": false,
@@ -37,7 +37,7 @@ Every setting has a sensible default. Override them in `boxlang.json` for the wh
 | `slowMo` | `0` | Milliseconds between actions |
 | `baseURL` | | Relative URLs resolve against it |
 | `viewport` | `{ width : 1280, height : 720 }` | |
-| `device` | | A device name, see `bxPlaywright devices`. Its screen replaces the `viewport` setting and earlier viewports; a viewport set by a later profile or by options wins |
+| `device` | | A device name, see `bxplaywright devices`. Its screen replaces the `viewport` setting and earlier viewports; a viewport set by a later profile or by options wins |
 | `locale`, `timezone`, `colorScheme` | `colorScheme : light` | Emulation |
 | `ignoreHTTPSErrors` | `false` | |
 | `timeouts` | `{ action : 30000, navigation : 30000, assertion : 5000 }` | Milliseconds |

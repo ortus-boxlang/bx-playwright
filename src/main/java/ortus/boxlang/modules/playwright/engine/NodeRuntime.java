@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.engine;
+package ortus.boxlang.modules.bxplaywright.engine;
 
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -32,7 +32,7 @@ public class NodeRuntime {
 		EXPLICIT,
 		/** Extracted from the jars of bx-playwright-full */
 		BUNDLED,
-		/** Downloaded by {@code bxPlaywright install} */
+		/** Downloaded by {@code bxplaywright install} */
 		DOWNLOADED,
 		/** {@code node} found on the system PATH */
 		SYSTEM

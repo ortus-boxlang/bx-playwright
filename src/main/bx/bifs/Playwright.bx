@@ -29,12 +29,12 @@ class {
 		var profiles  = arguments.profile
 		var overrides = arguments.options
 		if ( isStruct( profiles ) ) {
-			var merger = new models.Profiles@playwright()
+			var merger = new models.Profiles@bxplaywright()
 			overrides  = merger.deepMerge( merger.deepMerge( {}, profiles ), arguments.options )
 			profiles   = ""
 		}
-		var configService = new models.Config@playwright()
-		return new models.Playwright@playwright( configService.resolve( profiles, overrides ), configService )
+		var configService = new models.Config@bxplaywright()
+		return new models.Playwright@bxplaywright( configService.resolve( profiles, overrides ), configService )
 	}
 
 }

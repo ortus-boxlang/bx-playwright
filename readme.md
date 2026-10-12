@@ -31,14 +31,14 @@ Two distributions, same module (`playwright`), same API:
 
 | Module | Size | Node.js |
 |---|---|---|
-| `bx-playwright` | ~4 MB | Downloaded by `bxPlaywright install` for your OS |
+| `bx-playwright` | ~4 MB | Downloaded by `bxplaywright install` for your OS |
 | `bx-playwright-full` | ~206 MB | Bundled for every platform (offline friendly) |
 
 ```bash
 install-bx-module bx-playwright
-bxPlaywright install            # driver + Node.js + Chromium
-bxPlaywright install firefox webkit
-bxPlaywright doctor             # check everything
+bxplaywright install            # driver + Node.js + Chromium
+bxplaywright install firefox webkit
+bxplaywright doctor             # check everything
 ```
 
 Requires BoxLang 1.17+ and Java 21+.
@@ -103,7 +103,7 @@ Add your own in the module settings, extending any profile:
 
 ```json
 "modules": {
-	"playwright": {
+	"bxplaywright": {
 		"settings": {
 			"baseURL": "http://localhost:8080",
 			"profiles": { "staging": { "extends": "desktop", "baseURL": "https://staging.example.com" } }
@@ -116,7 +116,7 @@ Resolution order (last wins): module settings, profiles, `BX_PLAYWRIGHT_*` envir
 
 ## CLI
 
-`bxPlaywright <verb>` (or `boxlang module:playwright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
+`bxplaywright <verb>` (or `boxlang module:bxplaywright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
 
 ## Development
 

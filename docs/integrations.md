@@ -35,11 +35,11 @@ Check for it before you use it, so your library still loads without it:
 
 ```js
 function hasPlaywright() {
-	return getModuleList().keyExists( "playwright" )
+	return getModuleList().keyExists( "bxplaywright" )
 }
 ```
 
-The module is registered as `playwright`, and its classes are available as `models.X@playwright`, for example, `new models.PageObject@playwright()`.
+The module is registered as `playwright`, and its classes are available as `models.X@bxplaywright`, for example, `new models.PageObject@bxplaywright()`.
 
 ## Owning the lifecycle
 
@@ -80,7 +80,7 @@ Every error carries a `type`, a `message` and a `detail` with the fix. A runner 
 |---|---|
 | `Playwright.AssertionFailed` | A test failure |
 | `Playwright.Timeout`, `Playwright.ActionFailed` | A test error (the page did not behave) |
-| `Playwright.NotInstalled` | Skip, or an error that tells the user to run `bxPlaywright install` |
+| `Playwright.NotInstalled` | Skip, or an error that tells the user to run `bxplaywright install` |
 | Any other `Playwright.*` | A test error |
 
 TestBox counts only `TestBox.AssertionFailed` as a failure, so a TestBox integration translates `Playwright.AssertionFailed` and keeps the message and detail.
@@ -109,4 +109,4 @@ A test runner can use `onPlaywrightArtifact` to collect every file a test produc
 
 ## Configuration
 
-Libraries pass settings as the second argument of `playwright()`, and users override them with profiles, module settings and environment variables. A library should not write module settings. Offer profiles instead, so users see them in `bxPlaywright profiles` and can change them.
+Libraries pass settings as the second argument of `playwright()`, and users override them with profiles, module settings and environment variables. A library should not write module settings. Offer profiles instead, so users see them in `bxplaywright profiles` and can change them.

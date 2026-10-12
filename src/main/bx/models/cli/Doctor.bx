@@ -1,7 +1,7 @@
 import java:java.lang.System;
 
 /**
- * `bxPlaywright doctor`: check the installation and explain how to fix what is missing.
+ * `bxplaywright doctor`: check the installation and explain how to fix what is missing.
  * Read only: it never installs or changes anything.
  */
 class {
@@ -39,11 +39,11 @@ class {
 				"status"  : "warn",
 				"check"   : "driver",
 				"message" : "Not extracted yet (it is extracted automatically on first use)",
-				"fix"     : "bxPlaywright install"
+				"fix"     : "bxplaywright install"
 			} )
 		}
 
-		var node = new models.cli.Terminal@playwright().node( home, arguments.config.nodePath() )
+		var node = new models.cli.Terminal@bxplaywright().node( home, arguments.config.nodePath() )
 		if ( node.ok ) {
 			checks.append( {
 				"status"  : "ok",
@@ -71,7 +71,7 @@ class {
 				"status"  : "fail",
 				"check"   : "browsers",
 				"message" : "No browsers installed in #home.getBrowsersPath()#",
-				"fix"     : "bxPlaywright install chromium"
+				"fix"     : "bxplaywright install chromium"
 			} )
 		}
 

@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright;
+package ortus.boxlang.modules.bxplaywright;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -29,7 +29,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 	public void testExtends() {
 		// @formatter:off
 		Object value = run( """
-			profile = new models.Profiles@playwright().resolve( "iphone" )
+			profile = new models.Profiles@bxplaywright().resolve( "iphone" )
 			result  = profile.browser & "|" & profile.device & "|" & profile.keyExists( "extends" )
 		""" );
 		// @formatter:on
@@ -44,7 +44,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 	public void testMerge() {
 		// @formatter:off
 		Object value = run( """
-			profile = new models.Profiles@playwright().resolve( [ "ci", "dark", "debug" ] )
+			profile = new models.Profiles@bxplaywright().resolve( [ "ci", "dark", "debug" ] )
 			result  = profile.colorScheme & "|" & profile.headless & "|" & profile.artifacts.screenshot & "|" & profile.artifacts.trace
 		""" );
 		// @formatter:on
@@ -60,7 +60,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			user    = { staging : { extends : "desktop", baseURL : "https://staging.test" }, dark : { colorScheme : "light" } }
-			profile = new models.Profiles@playwright().resolve( "staging,dark", user )
+			profile = new models.Profiles@bxplaywright().resolve( "staging,dark", user )
 			result  = profile.viewport.width & "|" & profile.baseURL & "|" & profile.colorScheme
 		""" );
 		// @formatter:on
@@ -76,7 +76,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			try {
-				new models.Profiles@playwright().resolve( "nope" )
+				new models.Profiles@bxplaywright().resolve( "nope" )
 				result = "no error"
 			} catch ( "Playwright.InvalidProfile" e ) {
 				result = e.message & "|" & e.detail
@@ -96,7 +96,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			try {
-				new models.Profiles@playwright().resolve( "a", { a : { extends : "b" }, b : { extends : "a" } } )
+				new models.Profiles@bxplaywright().resolve( "a", { a : { extends : "b" }, b : { extends : "a" } } )
 				result = "no error"
 			} catch ( "Playwright.InvalidProfile" e ) {
 				result = e.message
@@ -114,7 +114,7 @@ public class ProfilesTest extends BaseIntegrationTest {
 	public void testDeviceViewportMerge() {
 		// @formatter:off
 		Object value = run( """
-			profiles = new models.Profiles@playwright()
+			profiles = new models.Profiles@bxplaywright()
 			a = profiles.resolve( [ "desktop", "android" ] )
 			b = profiles.resolve( [ "android", "desktop" ] )
 			result = a.device & "|" & a.keyExists( "viewport" ) & "|" & b.device & "|" & b.viewport.width

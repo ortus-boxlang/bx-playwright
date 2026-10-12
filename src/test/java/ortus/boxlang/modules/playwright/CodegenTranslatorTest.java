@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright;
+package ortus.boxlang.modules.bxplaywright;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -69,7 +69,7 @@ public class CodegenTranslatorTest extends BaseIntegrationTest {
 	@DisplayName( "Recorded Java becomes the BoxLang DSL" )
 	@Test
 	public void testTranslate() {
-		String code = run( "result = new models.cli.CodegenTranslator@playwright().translate( recording )" ).toString();
+		String code = run( "result = new models.cli.CodegenTranslator@bxplaywright().translate( recording )" ).toString();
 		assertThat( code ).startsWith( "playwright().browse( ( page ) => {\n" );
 		assertThat( code ).contains( "\tpage.visit( \"http://localhost:8080/login\" )\n" );
 		assertThat( code ).contains( "\tpage.byLabel( \"Email\" ).fill( \"luis@ortus.com\" )\n" );
@@ -91,7 +91,7 @@ public class CodegenTranslatorTest extends BaseIntegrationTest {
 	@DisplayName( "Unknown statements are kept as comments" )
 	@Test
 	public void testUnknown() {
-		Object value = run( "result = new models.cli.CodegenTranslator@playwright().translateStatement( \"context.close()\" )" );
+		Object value = run( "result = new models.cli.CodegenTranslator@bxplaywright().translateStatement( \"context.close()\" )" );
 		assertThat( value ).isEqualTo( "// TODO translate: context.close()" );
 	}
 
@@ -106,7 +106,7 @@ public class CodegenTranslatorTest extends BaseIntegrationTest {
 		String java = "public class Example {\n  public static void main(String[] args) {\n    try (Playwright playwright = Playwright.create()) {\n"
 		    + "      Page page = context.newPage();\n" + body + "\n    }\n  }\n}\n";
 		variables.put( Key.of( "java" ), java );
-		return run( "result = new models.cli.CodegenTranslator@playwright().translate( java )" ).toString();
+		return run( "result = new models.cli.CodegenTranslator@bxplaywright().translate( java )" ).toString();
 	}
 
 	/**

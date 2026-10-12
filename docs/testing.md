@@ -48,20 +48,20 @@ context = playwright().newContext( { artifacts : { trace : "retain-on-failure", 
 kept = context.close( failed = true )   // { screenshots, trace, videos, directory }
 ```
 
-Artifacts go to `{home}/artifacts` unless you set `artifacts.directory`. Open a trace with `bxPlaywright show-trace path/to/trace.zip`.
+Artifacts go to `{home}/artifacts` unless you set `artifacts.directory`. Open a trace with `bxplaywright show-trace path/to/trace.zip`.
 
 ## Debugging
 
 - `playwright( "debug" )`: headed, slowed down, every artifact on.
 - `playwright( "headed" )` or `BX_PLAYWRIGHT_HEADLESS=false`.
 - `println( page.snapshot() )` prints the accessibility tree: what the page exposes to selectors.
-- `bxPlaywright codegen http://localhost:8080` records your clicks as BoxLang code.
+- `bxplaywright codegen http://localhost:8080` records your clicks as BoxLang code.
 
 ## CI
 
 ```bash
 install-bx-module bx-playwright
-bxPlaywright install chromium --with-deps
+bxplaywright install chromium --with-deps
 BX_PLAYWRIGHT_PROFILE=ci boxlang run-tests.bxs
 ```
 
@@ -106,8 +106,8 @@ jobs:
       - name: Install Chromium
         run: |
           export PATH="$HOME/.boxlang/bin:$PATH"
-          bxPlaywright install chromium --with-deps
-          bxPlaywright doctor
+          bxplaywright install chromium --with-deps
+          bxplaywright doctor
 
       - name: Run tests
         env:
@@ -125,6 +125,6 @@ jobs:
           if-no-files-found: ignore
 ```
 
-Replace `boxlang run-tests.bxs` with your test command. If your tests need the application running, start it in an earlier step, for example `boxlang-miniserver --port 8080 &`, and set `BX_PLAYWRIGHT_BASEURL`. Open a downloaded trace with `bxPlaywright show-trace trace.zip`.
+Replace `boxlang run-tests.bxs` with your test command. If your tests need the application running, start it in an earlier step, for example `boxlang-miniserver --port 8080 &`, and set `BX_PLAYWRIGHT_BASEURL`. Open a downloaded trace with `bxplaywright show-trace trace.zip`.
 
 For TestBox specs that run inside a web server, the server provisions its own browser: see [TestBox Browser Testing](testbox.md#provision-the-browser).
