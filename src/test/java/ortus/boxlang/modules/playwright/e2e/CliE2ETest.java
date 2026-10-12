@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.e2e;
+package ortus.boxlang.modules.bxplaywright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import ortus.boxlang.modules.playwright.BaseIntegrationTest;
+import ortus.boxlang.modules.bxplaywright.BaseIntegrationTest;
 import ortus.boxlang.runtime.scopes.Key;
 
 public class CliE2ETest extends BaseIntegrationTest {
@@ -38,7 +38,7 @@ public class CliE2ETest extends BaseIntegrationTest {
 	public void prepare() {
 		E2E.home();
 		String home = E2E.homeDir().toString().replace( "\\", "/" );
-		cli = "cli = new models.cli.Cli@playwright( new models.Config@playwright( settings = { home : \"" + home
+		cli = "cli = new models.cli.Cli@bxplaywright( new models.Config@bxplaywright( settings = { home : \"" + home
 		    + "\", nodeVersion : \"" + E2E.NODE_VERSION + "\", nodeDownloadURL : \"\", profiles : {}, defaultProfile : \"default\" }, environment = {} ) )\n";
 	}
 
@@ -186,7 +186,7 @@ public class CliE2ETest extends BaseIntegrationTest {
 			""".formatted( url );
 		// @formatter:on
 		variables.put( Key.of( "recording" ), recording );
-		String code = run( "result = new models.cli.CodegenTranslator@playwright().translate( recording )" ).toString();
+		String code = run( "result = new models.cli.CodegenTranslator@bxplaywright().translate( recording )" ).toString();
 		assertThat( code ).doesNotContain( "TODO translate: page" );
 		run( code + "\nresult = \"ran\"" );
 		assertThat( variables.get( result ) ).isEqualTo( "ran" );

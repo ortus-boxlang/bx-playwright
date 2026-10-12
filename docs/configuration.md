@@ -12,7 +12,7 @@ Every setting has a sensible default. Override them in `boxlang.json` for the wh
 ```json
 {
 	"modules": {
-		"playwright": {
+		"bxplaywright": {
 			"settings": {
 				"baseURL": "http://localhost:8080",
 				"headless": false,

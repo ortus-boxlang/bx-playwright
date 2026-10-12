@@ -3,7 +3,7 @@
  *
  * <pre>
  * // LoginPage.bx
- * class extends="models.PageObject@playwright" {
+ * class extends="models.PageObject@bxplaywright" {
  *     url      = "/login"
  *     elements = { email : "input[name=email]", password : "#password", submit : "button[type=submit]" }
  *

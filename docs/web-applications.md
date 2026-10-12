@@ -42,7 +42,7 @@ By default, everything is stored under `~/.boxlang/playwright`, where `~` is the
 ```json
 {
 	"modules": {
-		"playwright": {
+		"bxplaywright": {
 			"settings": {
 				"home": "/var/lib/myapp/playwright"
 			}

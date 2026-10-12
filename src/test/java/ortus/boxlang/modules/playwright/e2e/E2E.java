@@ -12,16 +12,16 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.e2e;
+package ortus.boxlang.modules.bxplaywright.e2e;
 
 import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Assumptions;
 
-import ortus.boxlang.modules.playwright.engine.NodeInstaller;
-import ortus.boxlang.modules.playwright.engine.Platform;
-import ortus.boxlang.modules.playwright.engine.PlaywrightHome;
+import ortus.boxlang.modules.bxplaywright.engine.NodeInstaller;
+import ortus.boxlang.modules.bxplaywright.engine.Platform;
+import ortus.boxlang.modules.bxplaywright.engine.PlaywrightHome;
 
 /**
  * Shared setup for end-to-end tests that drive a real browser.
@@ -69,7 +69,7 @@ public final class E2E {
 		if ( home == null ) {
 			PlaywrightHome candidate = new PlaywrightHome( homeDir(), null, PLAYWRIGHT_VERSION, NODE_VERSION, null, Platform.current() );
 			if ( candidate.resolveNode().isEmpty()
-			    || candidate.resolveNode().get().getSource() == ortus.boxlang.modules.playwright.engine.NodeRuntime.Source.SYSTEM ) {
+			    || candidate.resolveNode().get().getSource() == ortus.boxlang.modules.bxplaywright.engine.NodeRuntime.Source.SYSTEM ) {
 				new NodeInstaller( candidate, null, System.out::println ).install( false );
 			}
 			if ( candidate.installedBrowsers().stream().noneMatch( name -> name.startsWith( "chromium" ) ) ) {

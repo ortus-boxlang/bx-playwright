@@ -229,7 +229,7 @@ class {
 			options._verb = first
 			options._raw  = rest
 
-			var result = new "models.cli.#verb.class#@playwright"().run( options, getConfig(), verb )
+			var result = new "models.cli.#verb.class#@bxplaywright"().run( options, getConfig(), verb )
 			return output( result, options.json ?: false )
 		} catch ( any e ) {
 			return printError( e, options.json ?: json )
@@ -314,7 +314,7 @@ class {
 			if ( isArray( verb.words ) ) {
 				words.append( verb.words, true )
 			} else if ( verb.words == "@profiles" ) {
-				words.append( new models.Profiles@playwright().builtIn().keyArray().sort( "textnocase" ), true )
+				words.append( new models.Profiles@bxplaywright().builtIn().keyArray().sort( "textnocase" ), true )
 			} else if ( verb.words == "@verbs" ) {
 				words.append( names, true )
 			}
@@ -344,7 +344,7 @@ class {
 	 */
 	private function getConfig() {
 		if ( isNull( variables.config ) ) {
-			variables.config = new models.Config@playwright()
+			variables.config = new models.Config@bxplaywright()
 		}
 		return variables.config
 	}

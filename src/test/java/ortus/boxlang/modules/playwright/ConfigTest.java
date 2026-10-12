@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright;
+package ortus.boxlang.modules.bxplaywright;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -31,7 +31,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testDefaults() {
 		// @formatter:off
 		Object value = run( """
-			config = new models.Config@playwright( environment = {} ).resolve()
+			config = new models.Config@bxplaywright( environment = {} ).resolve()
 			result = config.profiles.toList() & "|" & config.browser & "|" & config.headless & "|" & config.timeouts.assertion & "|" & config.keyExists( "home" )
 		""" );
 		// @formatter:on
@@ -47,7 +47,7 @@ public class ConfigTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			env    = { BX_PLAYWRIGHT_PROFILE : "mobile", BX_PLAYWRIGHT_HEADLESS : "false", BX_PLAYWRIGHT_BASEURL : "http://env.test" }
-			cfg    = new models.Config@playwright( environment = env )
+			cfg    = new models.Config@bxplaywright( environment = env )
 			a      = cfg.resolve()
 			b      = cfg.resolve( "firefox", { baseURL : "http://call.test" } )
 			result = a.profiles.toList() & "|" & a.browser & "|" & a.headless & "|" & a.baseURL & "|" & b.browser & "|" & b.baseURL
@@ -64,7 +64,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testOptions() {
 		// @formatter:off
 		Object value = run( """
-			cfg     = new models.Config@playwright( environment = {} )
+			cfg     = new models.Config@bxplaywright( environment = {} )
 			config  = cfg.resolve( [ "chrome", "dark" ], { slowMo : 100, timezone : "UTC", device : "Pixel 7" } )
 			launch  = cfg.launchOptions( config )
 			context = cfg.contextOptions( config, { viewport : { width : 390, height : 844 }, isMobile : true } )
@@ -82,8 +82,8 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testHome() {
 		// @formatter:off
 		Object value = run( """
-			a      = new models.Config@playwright( settings = { home : "", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).homePath()
-			b      = new models.Config@playwright( settings = { home : "/tmp/pw", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).home()
+			a      = new models.Config@bxplaywright( settings = { home : "", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).homePath()
+			b      = new models.Config@bxplaywright( settings = { home : "/tmp/pw", nodeVersion : "24.21.0", profiles : {} }, environment = {} ).home()
 			result = a & "|" & b.getBrowsersPath().toString()
 		""" );
 		// @formatter:on
@@ -102,9 +102,9 @@ public class ConfigTest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = run( """
 			settings = { browser : "firefox", headless : false, viewport : { width : 800, height : 600 }, defaultProfile : "default", profiles : {} }
-			config   = new models.Config@playwright( settings = settings, environment = {} ).resolve()
+			config   = new models.Config@bxplaywright( settings = settings, environment = {} ).resolve()
 			result   = config.browser & "|" & config.headless & "|" & config.viewport.width & "x" & config.viewport.height
-				& "|" & new models.Profiles@playwright().resolve( "default" ).isEmpty()
+				& "|" & new models.Profiles@bxplaywright().resolve( "default" ).isEmpty()
 		""" );
 		// @formatter:on
 		assertThat( value ).isEqualTo( "firefox|false|800x600|true" );
@@ -134,13 +134,13 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testDeviceAndViewportOrder() {
 		// @formatter:off
 		Object value = run( """
-			cfg      = new models.Config@playwright( environment = {} )
+			cfg      = new models.Config@bxplaywright( environment = {} )
 			device   = { viewport : { width : 412, height : 839 }, userAgent : "Pixel UA", isMobile : true, hasTouch : true }
 			screenOf = ( config ) => {
 				var options = cfg.contextOptions( config, device )
 				return options.viewport.width & "x" & options.viewport.height & "/" & options.isMobile & "/" & options.userAgent
 			}
-			settings = new models.Config@playwright( settings = { device : "Pixel 7", viewport : { width : 1280, height : 720 }, profiles : {} }, environment = {} )
+			settings = new models.Config@bxplaywright( settings = { device : "Pixel 7", viewport : { width : 1280, height : 720 }, profiles : {} }, environment = {} )
 			result   = [
 				screenOf( cfg.resolve( [ "android", "desktop" ] ) ),
 				screenOf( cfg.resolve( "android", { viewport : { width : 500, height : 500 } } ) ),
@@ -163,7 +163,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testSessionPath() {
 		// @formatter:off
 		Object value = run( """
-			cfg    = new models.Config@playwright( settings = { home : "/tmp/pw", profiles : {} }, environment = {} )
+			cfg    = new models.Config@bxplaywright( settings = { home : "/tmp/pw", profiles : {} }, environment = {} )
 			result = [ "admin", "admin-test", "a b", "a-b", "a~20b" ].map( ( name ) => listLast( cfg.sessionPath( name ), "/\\" ) ).toList( "," )
 		""" );
 		// @formatter:on
@@ -178,7 +178,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testRelativeArtifactsPath() {
 		// @formatter:off
 		Object value = run( """
-			cfg      = new models.Config@playwright( settings = { artifacts : { directory : "relartifacts" }, profiles : {} }, environment = {} )
+			cfg      = new models.Config@bxplaywright( settings = { artifacts : { directory : "relartifacts" }, profiles : {} }, environment = {} )
 			absolute = createObject( "java", "java.io.File" ).init( createObject( "java", "java.lang.System" ).getProperty( "java.io.tmpdir" ), "abs-artifacts" ).getAbsolutePath()
 			result   = cfg.artifactsPath() & "|" & cfg.artifactsPath( { artifacts : { directory : absolute } } ) & "|" & absolute
 		""" );
@@ -196,7 +196,7 @@ public class ConfigTest extends BaseIntegrationTest {
 	public void testRelativeSnapshotsPath() {
 		// @formatter:off
 		Object value = run( """
-			cfg      = new models.Config@playwright( settings = { snapshots : { directory : "relsnaps" }, profiles : {} }, environment = {} )
+			cfg      = new models.Config@bxplaywright( settings = { snapshots : { directory : "relsnaps" }, profiles : {} }, environment = {} )
 			absolute = createObject( "java", "java.io.File" ).init( createObject( "java", "java.lang.System" ).getProperty( "java.io.tmpdir" ), "abs-snaps" ).getAbsolutePath()
 			result   = cfg.snapshotsPath() & "|" & cfg.snapshotsPath( { snapshots : { directory : absolute } } ) & "|" & absolute
 		""" );

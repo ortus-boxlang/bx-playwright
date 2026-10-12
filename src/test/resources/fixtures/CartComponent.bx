@@ -1,7 +1,7 @@
 /**
  * Test page component for the cart widget
  */
-class extends="models.PageComponent@playwright" {
+class extends="models.PageComponent@bxplaywright" {
 
 	selector = "@cart"
 	elements = { remove : "button" }

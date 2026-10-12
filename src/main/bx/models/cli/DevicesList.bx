@@ -1,4 +1,4 @@
-import java:ortus.boxlang.modules.playwright.engine.Devices@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.Devices@bxplaywright;
 
 /**
  * `bxplaywright devices`: list the device descriptors shipped with Playwright.

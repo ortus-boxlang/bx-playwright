@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.e2e;
+package ortus.boxlang.modules.bxplaywright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -25,9 +25,9 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.PlaywrightException;
 
-import ortus.boxlang.modules.playwright.engine.NodeRuntime;
-import ortus.boxlang.modules.playwright.engine.PlaywrightHome;
-import ortus.boxlang.modules.playwright.engine.PlaywrightRegistry;
+import ortus.boxlang.modules.bxplaywright.engine.NodeRuntime;
+import ortus.boxlang.modules.bxplaywright.engine.PlaywrightHome;
+import ortus.boxlang.modules.bxplaywright.engine.PlaywrightRegistry;
 
 public class EngineE2ETest {
 

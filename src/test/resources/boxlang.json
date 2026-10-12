@@ -1,6 +1,6 @@
 {
 	"modules": {
-		"playwright": {
+		"bxplaywright": {
 			"settings": {
 				"home": "build/playwright-home"
 			}

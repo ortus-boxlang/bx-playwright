@@ -1,7 +1,7 @@
 /**
  * Test page object for /dashboard
  */
-class extends="models.PageObject@playwright" {
+class extends="models.PageObject@bxplaywright" {
 
 	url      = "/dashboard"
 	elements = { welcome : "##welcome", todos : ".todos li" }

@@ -35,11 +35,11 @@ Check for it before you use it, so your library still loads without it:
 
 ```js
 function hasPlaywright() {
-	return getModuleList().keyExists( "playwright" )
+	return getModuleList().keyExists( "bxplaywright" )
 }
 ```
 
-The module is registered as `playwright`, and its classes are available as `models.X@playwright`, for example, `new models.PageObject@playwright()`.
+The module is registered as `playwright`, and its classes are available as `models.X@bxplaywright`, for example, `new models.PageObject@bxplaywright()`.
 
 ## Owning the lifecycle
 

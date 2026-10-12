@@ -1,7 +1,7 @@
 /**
  * Page object for the login page of the example app.
  */
-class extends="models.PageObject@playwright" {
+class extends="models.PageObject@bxplaywright" {
 
 	url      = "/login"
 	elements = { email : "##email", password : "input[type=password]", submit : "button" }

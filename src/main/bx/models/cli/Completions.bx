@@ -14,7 +14,7 @@ class {
 	 * @return { exitCode, message, data }
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var script = new models.cli.Cli@playwright().completionScript()
+		var script = new models.cli.Cli@bxplaywright().completionScript()
 		return { exitCode : 0, message : script.left( script.len() - 1 ), data : { "script" : script } }
 	}
 

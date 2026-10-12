@@ -12,7 +12,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-package ortus.boxlang.modules.playwright.e2e;
+package ortus.boxlang.modules.bxplaywright.e2e;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sun.net.httpserver.HttpServer;
 
-import ortus.boxlang.modules.playwright.BaseIntegrationTest;
+import ortus.boxlang.modules.bxplaywright.BaseIntegrationTest;
 
 /**
  * Drives the DSL against a fake site (src/test/resources/site) served through request interception.
@@ -53,7 +53,7 @@ public class DslE2ETest extends BaseIntegrationTest {
 		String site = Path.of( "src/test/resources/site" ).toAbsolutePath().toString().replace( "\\", "/" );
 		// @formatter:off
 		setup = """
-			import java:ortus.boxlang.modules.playwright.engine.OptionsMapper@playwright;
+			import java:ortus.boxlang.modules.bxplaywright.engine.OptionsMapper@bxplaywright;
 			site = "%s"
 			function serve( ctx ) {
 				ctx.intercept( "http://app.test/**" ).handle( ( route ) => {
@@ -90,7 +90,7 @@ public class DslE2ETest extends BaseIntegrationTest {
 	@Test
 	public void testCloseReleasesRegistry() {
 		// @formatter:off
-		Object value = run( "import java:ortus.boxlang.modules.playwright.engine.PlaywrightRegistry@playwright;\n" + setup + """
+		Object value = run( "import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightRegistry@bxplaywright;\n" + setup + """
 			PlaywrightRegistry.closeAll()
 			pw.newPage().setContent( "<h1>Hi</h1>" )
 			open = PlaywrightRegistry.openCount()
@@ -759,7 +759,7 @@ public class DslE2ETest extends BaseIntegrationTest {
 		// @formatter:off
 		Object value = bx( """
 			ctx     = serve( pw.newContext() )
-			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			browser = new models.AiBrowser@bxplaywright( { newPage : () => ctx.newPage() } )
 			state   = browser.visit( "http://app.test/login" )
 			found    = reFind( "textbox ""Email"" \\[ref=(e[0-9]+)\\]", state, 1, true )
 			emailRef = found.pos[ 1 ] ? found.match[ 2 ] : ""
@@ -1192,7 +1192,7 @@ public class DslE2ETest extends BaseIntegrationTest {
 			ctx.intercept( "http://frame.test/**" ).handle( ( route ) => {
 				route.fulfill( OptionsMapper.build( "Route.FulfillOptions", { status : 200, contentType : "text/html", body : html } ) )
 			} )
-			browser = new models.AiBrowser@playwright( { newPage : () => ctx.newPage() } )
+			browser = new models.AiBrowser@bxplaywright( { newPage : () => ctx.newPage() } )
 			state   = browser.visit( "http://frame.test/" )
 			found   = reFind( "button ""Inner"" \\[ref=(f[0-9]+e[0-9]+)\\]", state, 1, true )
 			ref     = found.pos[ 1 ] ? found.match[ 2 ] : ""

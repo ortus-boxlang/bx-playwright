@@ -33,7 +33,7 @@ agent.run( "Log in as luis@ortus.com and tell me how many todos I have" )
 
 Tools: `browser_visit`, `browser_snapshot`, `browser_click`, `browser_fill`, `browser_select`, `browser_press`, `browser_back`, `browser_text`, `browser_screenshot`, `browser_close`. Each returns the new page state; errors come back as text so the agent can recover.
 
-For other frameworks, `aiToolDefinitions()` returns `[ { name, description, arguments, handler } ]`, and `models.AiBrowser@playwright` can be used directly.
+For other frameworks, `aiToolDefinitions()` returns `[ { name, description, arguments, handler } ]`, and `models.AiBrowser@bxplaywright` can be used directly.
 
 ## Playwright MCP
 
@@ -49,7 +49,7 @@ claude mcp add playwright -- bxplaywright mcp --headless
 ```json
 {
   "mcpServers": {
-    "playwright": {
+    "bxplaywright": {
       "command": "bxplaywright",
       "args": [ "mcp", "--headless" ]
     }

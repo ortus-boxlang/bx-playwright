@@ -1,4 +1,4 @@
-import java:ortus.boxlang.modules.playwright.engine.NodeInstaller@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.NodeInstaller@bxplaywright;
 
 /**
  * `bxplaywright install-node [--force]`: download the pinned Node.js runtime into the playwright home.
@@ -16,7 +16,7 @@ class {
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
 		var home       = arguments.config.home()
-		var terminal   = new models.cli.Terminal@playwright( arguments.options.json ?: false )
+		var terminal   = new models.cli.Terminal@bxplaywright( arguments.options.json ?: false )
 		var executable = new NodeInstaller(
 			home,
 			arguments.config.getSettings().nodeDownloadURL ?: "",

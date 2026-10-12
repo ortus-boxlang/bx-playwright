@@ -43,7 +43,7 @@ class {
 			} )
 		}
 
-		var node = new models.cli.Terminal@playwright().node( home, arguments.config.nodePath() )
+		var node = new models.cli.Terminal@bxplaywright().node( home, arguments.config.nodePath() )
 		if ( node.ok ) {
 			checks.append( {
 				"status"  : "ok",

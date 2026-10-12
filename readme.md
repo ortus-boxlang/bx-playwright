@@ -103,7 +103,7 @@ Add your own in the module settings, extending any profile:
 
 ```json
 "modules": {
-	"playwright": {
+	"bxplaywright": {
 		"settings": {
 			"baseURL": "http://localhost:8080",
 			"profiles": { "staging": { "extends": "desktop", "baseURL": "https://staging.example.com" } }
@@ -116,7 +116,7 @@ Resolution order (last wins): module settings, profiles, `BX_PLAYWRIGHT_*` envir
 
 ## CLI
 
-`bxplaywright <verb>` (or `boxlang module:playwright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
+`bxplaywright <verb>` (or `boxlang module:bxplaywright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
 
 ## Development
 

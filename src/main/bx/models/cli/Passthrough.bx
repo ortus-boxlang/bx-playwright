@@ -19,7 +19,7 @@ class {
 		if ( cliArgs.isEmpty() ) {
 			return { exitCode : 1, message : "Nothing to run. Example: bxplaywright run --help", data : { "exitCode" : 1 } }
 		}
-		var exitCode = new models.cli.Terminal@playwright( arguments.options.json ?: false ).runPlaywright( arguments.config.home(), cliArgs )
+		var exitCode = new models.cli.Terminal@bxplaywright( arguments.options.json ?: false ).runPlaywright( arguments.config.home(), cliArgs )
 		return { exitCode : exitCode, message : "", data : { "exitCode" : exitCode } }
 	}
 
@@ -36,7 +36,7 @@ class {
 	 */
 	array function buildArgs( required struct options, required any config, struct verb = {} ) {
 		var cliArgs = len( arguments.verb.command ?: "" ) ? [ arguments.verb.command ] : []
-		cliArgs.append( new models.cli.Cli@playwright().withoutOptions( arguments.options._raw ?: [], [ "json" ], arguments.verb ), true )
+		cliArgs.append( new models.cli.Cli@bxplaywright().withoutOptions( arguments.options._raw ?: [], [ "json" ], arguments.verb ), true )
 		if ( ( arguments.verb.command ?: "" ) == "mcp" && !choosesBrowser( arguments.options ) ) {
 			cliArgs.append( "--browser=#mcpBrowser( arguments.config )#" )
 		}

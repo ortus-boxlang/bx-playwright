@@ -1,4 +1,4 @@
-import java:ortus.boxlang.modules.playwright.engine.PlaywrightErrors@playwright;
+import java:ortus.boxlang.modules.bxplaywright.engine.PlaywrightErrors@bxplaywright;
 
 /**
  * A browser tab. Returned by playwright().visit(), newPage() and browse().
@@ -240,7 +240,7 @@ class extends="Scope" {
 	/**
 	 * Bind a page object to this page without navigating, and run its at() check.
 	 *
-	 * @pageObject A class extending models.PageObject@playwright
+	 * @pageObject A class extending models.PageObject@bxplaywright
 	 *
 	 * @return The bound page object
 	 */
@@ -557,7 +557,7 @@ class extends="Scope" {
 	 * @return A Route builder
 	 */
 	function intercept( required any pattern ) {
-		return new models.Route@playwright( variables.java, arguments.pattern, this )
+		return new models.Route@bxplaywright( variables.java, arguments.pattern, this )
 	}
 
 	/**

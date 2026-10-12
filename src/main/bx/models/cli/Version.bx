@@ -15,7 +15,7 @@ class {
 	struct function run( required struct options, required any config, struct verb = {} ) {
 		var home  = arguments.config.home()
 		var build = arguments.config.buildInfo()
-		var node  = new models.cli.Terminal@playwright().node( home, arguments.config.nodePath() )
+		var node  = new models.cli.Terminal@bxplaywright().node( home, arguments.config.nodePath() )
 		var data  = {
 			"module"       : build.module,
 			"distribution" : build.distribution,

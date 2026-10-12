@@ -25,7 +25,7 @@
 	],
 	"boxlang": {
 		"minimumVersion": "1.17.0",
-		"moduleName": "playwright",
+		"moduleName": "bxplaywright",
 		"executable": "bxplaywright",
 		"completions": "completions/bxplaywright.bash"
 	},

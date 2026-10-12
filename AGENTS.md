@@ -45,7 +45,7 @@ UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'  # regenerate completi
 - Scope names (`url`, `form`, `request`, `cookie`, `session`, `cgi`, ...) resolve to the scope on a web runtime, even as a `var`, a closure parameter, or an argument used without `arguments.`. Pick other names; `ScopeNamesTest` enforces it.
 - `#` in strings starts interpolation: write `##id` for a literal `#id`.
 - `property` declarations must come before any other statement in a class body.
-- Relative `new models.X()` only resolves from `ModuleConfig.bx`; elsewhere use `new models.X@playwright()`.
+- Relative `new models.X()` only resolves from `ModuleConfig.bx`; elsewhere use `new models.X@bxplaywright()`.
 - `duplicate()` deep copies and fails on Java objects: copy arrays of wrappers with `append( other, true )`.
 - Java exceptions thrown by Playwright arrive wrapped; use `PlaywrightErrors.rootMessage()`/`rootType()`.
 - Playwright evaluates regexes in the browser: no Java-only syntax such as `\Q...\E`.

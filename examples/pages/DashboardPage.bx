@@ -1,7 +1,7 @@
 /**
  * Page object for the dashboard of the example app.
  */
-class extends="models.PageObject@playwright" {
+class extends="models.PageObject@bxplaywright" {
 
 	url      = "/dashboard"
 	elements = { heading : "h1" }

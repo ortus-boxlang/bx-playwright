@@ -7,7 +7,7 @@ tags: [reference, cli]
 
 # CLI
 
-`bxplaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. `boxlang module:playwright <verb>` runs the same commands.
+`bxplaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. `boxlang module:bxplaywright <verb>` runs the same commands.
 
 ```bash
 bxplaywright install chromium --with-deps   # browsers and Linux libraries

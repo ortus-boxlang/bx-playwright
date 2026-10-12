@@ -19,7 +19,7 @@ class {
 	 * @throws Playwright.NotInstalled when the configured Node.js cannot run
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		return new models.BrowserInstaller@playwright().install( arguments.options, arguments.config )
+		return new models.BrowserInstaller@bxplaywright().install( arguments.options, arguments.config )
 	}
 
 }
