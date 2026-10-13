@@ -21,27 +21,24 @@ class {
 	property name="environment" type="struct";
 
 	/**
-	 * Build info stamped at build time.
+	 * Build info stamped at build time, and the class constants.
 	 */
 	static {
 		PLAYWRIGHT_VERSION = "@bxplaywright.version@"
 		FLAVOR             = "@build.flavor@"
 		MODULE_VERSION     = "@build.version@"
 		ENV_PREFIX         = "BX_PLAYWRIGHT_"
+		// Keys that are module-level only and never part of a resolved browser configuration
+		MODULE_ONLY_KEYS   = [
+			"home",
+			"browsersPath",
+			"nodePath",
+			"nodeVersion",
+			"nodeDownloadURL",
+			"defaultProfile",
+			"profiles"
+		]
 	}
-
-	/**
-	 * Keys that are module-level only and never part of a resolved browser configuration.
-	 */
-	variables.MODULE_ONLY_KEYS = [
-		"home",
-		"browsersPath",
-		"nodePath",
-		"nodeVersion",
-		"nodeDownloadURL",
-		"defaultProfile",
-		"profiles"
-	]
 
 	/**
 	 * @settings    The module settings. Defaults to the loaded bxplaywright module settings
@@ -51,7 +48,17 @@ class {
 		variables.settings    = arguments.settings ?: moduleSettings()
 		variables.environment = arguments.environment ?: server.system.environment
 		variables.profiles    = new models.Profiles@bxplaywright()
+		variables.files       = new models.FileSystem@bxplaywright()
 		return this
+	}
+
+	/**
+	 * File operations on real paths, for the sessions, artifacts, snapshots and module resources.
+	 *
+	 * @return A FileSystem
+	 */
+	function files() {
+		return variables.files
 	}
 
 	/**
@@ -106,7 +113,7 @@ class {
 		// Baseline for settings structs that leave out the core keys (the module settings always have them)
 		var config = { browser : "chromium", headless : true }
 		config.append( duplicate( variables.settings ), true )
-		for ( var optionName in variables.MODULE_ONLY_KEYS ) {
+		for ( var optionName in static.MODULE_ONLY_KEYS ) {
 			config.delete( optionName )
 		}
 		// The viewport setting always has a value, so a device set in the module settings wins over it
@@ -314,7 +321,7 @@ class {
 		}
 		if ( len( arguments.config.session ?: "" ) ) {
 			var sessionFile = sessionPath( arguments.config.session )
-			if ( !fileExists( sessionFile ) ) {
+			if ( !variables.files.exists( sessionFile ) ) {
 				throw(
 					type    = "Playwright.InvalidOption",
 					message = "The session [#arguments.config.session#] does not exist yet.",

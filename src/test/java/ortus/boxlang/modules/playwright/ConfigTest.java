@@ -206,4 +206,28 @@ public class ConfigTest extends BaseIntegrationTest {
 		assertThat( parts[ 1 ] ).isEqualTo( parts[ 2 ] );
 	}
 
+	/**
+	 * FileSystem works on real paths, even when the first segment of a path is also a mapping name (a /root mapping with HOME=/root).
+	 */
+	@DisplayName( "FileSystem ignores mappings that share the first segment of a path" )
+	@Test
+	public void testFileSystemIgnoresMappings() {
+		// @formatter:off
+		Object value = run( """
+			tmp   = createObject( "java", "java.io.File" ).init( createObject( "java", "java.lang.System" ).getProperty( "java.io.tmpdir" ) ).getCanonicalPath()
+			real  = tmp & "/bxpw-fs-" & createUUID()
+			decoy = tmp & "/bxpw-decoy-" & createUUID()
+			bx:application action="update" mappings=getApplicationMetadata().mappings.append( { "/#listFirst( real, "/" )#" : decoy } );
+			file  = real & "/sessions/a.json"
+			files = new models.FileSystem@bxplaywright()
+			files.createDirectory( real & "/sessions" ).writeBinary( file, charsetDecode( "{}", "utf-8" ) )
+			result = files.exists( file ) & "|" & files.read( file ) & "|" & createObject( "java", "java.io.File" ).init( file ).exists() & "|" & createObject( "java", "java.io.File" ).init( decoy ).exists()
+			files.delete( file )
+			result &= "|" & files.exists( file )
+		""" );
+		// @formatter:on
+		// The file is at the real path and nothing was written under the mapping
+		assertThat( value ).isEqualTo( "true|{}|true|false|false" );
+	}
+
 }

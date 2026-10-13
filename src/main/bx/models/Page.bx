@@ -850,7 +850,8 @@ class extends="Scope" {
 		if ( variables.java.evaluate( "typeof window.axe !== 'undefined'" ) ) {
 			return
 		}
-		var source = fileRead( manager().getConfigService().modulePath() & "/resources/axe.min.js" )
+		var configService = manager().getConfigService()
+		var source        = configService.files().read( configService.modulePath() & "/resources/axe.min.js" )
 		variables.java.addScriptTag( buildOptions( "Page.AddScriptTagOptions", { content : source } ) )
 	}
 

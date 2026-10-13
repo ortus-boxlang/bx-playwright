@@ -681,31 +681,30 @@ abstract class extends="Base" {
 		var baseline  = directory & "/" & baseName & ".png"
 		var actualPng = directory & "/" & baseName & "-actual.png"
 		var diffPng   = directory & "/" & baseName & "-diff.png"
-		directoryCreate( directory, true, true )
+		var files     = page().manager().getConfigService().files()
+		files.createDirectory( directory )
 
 		var actual = stableScreenshot( shot )
-		if ( ( settings.update ?: false ) || !fileExists( baseline ) ) {
-			fileWrite( baseline, actual )
+		if ( ( settings.update ?: false ) || !files.exists( baseline ) ) {
+			files.writeBinary( baseline, actual )
 			announceEvent( "onPlaywrightArtifact", { type : "baseline", path : baseline } )
 			return this
 		}
 
-		var result = ImageDiff.compare( fileReadBinary( baseline ), actual, javacast( "double", settings.threshold ?: 0.2 ) ).toMap()
+		var result = ImageDiff.compare( files.readBinary( baseline ), actual, javacast( "double", settings.threshold ?: 0.2 ) ).toMap()
 		var maxPixels = val( settings.maxDiffPixels ?: 0 )
 		var maxRatio  = val( settings.maxDiffPixelRatio ?: 0 )
 		var passes    = result.sameSize && ( result.diffPixels <= maxPixels || ( maxRatio > 0 && result.diffRatio <= maxRatio ) )
 		if ( passes ) {
 			for ( var stale in [ actualPng, diffPng ] ) {
-				if ( fileExists( stale ) ) {
-					fileDelete( stale )
-				}
+				files.delete( stale )
 			}
 			return this
 		}
 
-		fileWrite( actualPng, actual )
+		files.writeBinary( actualPng, actual )
 		if ( !isNull( result.diffImage ) ) {
-			fileWrite( diffPng, result.diffImage )
+			files.writeBinary( diffPng, result.diffImage )
 		}
 		var message = result.sameSize
 			? "Screenshot [#baseName#] differs from its baseline: #result.diffPixels# pixels (#numberFormat( result.diffRatio * 100, "0.00" )#%) are different."
