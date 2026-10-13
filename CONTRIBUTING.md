@@ -82,6 +82,17 @@ We recommend that anytime you hack on the core you start the formatter watcher (
 
 You can also see the Ortus Coding Standards you must follow here: https://github.com/Ortus-Solutions/coding-standards.
 
+## Documentation
+
+The documentation site lives in `docs/` and is built with [bxSites](https://github.com/ortus-boxlang/bx-sites) (`bxsites.yaml`).
+
+-   `docs/` always holds the docs of the **next** release. Write the docs of a change in the same pull request, against `development`.
+-   Pull requests that touch `docs/**` or `bxsites.yaml` run the **Docs Check** workflow: `bxSites lint`, `build` and `audit`. Other pull requests skip it.
+-   Every push to `development` that touches the docs publishes the site to <https://bxplaywright.boxlang.io>, where `docs/` is served at `/next/` once a version is released.
+-   A release (a merge to `main`) locks the released `docs/` into `docs/versions/MAJOR.MINOR.x/` and serves it at the site root. A patch release refreshes its minor line folder. Fix a typo in a released version by editing its folder directly.
+
+Preview locally with `bxSites serve`.
+
 ## Financial Contributions
 
 You can support ColdBox and all of our Open Source initiatives at Ortus Solutions by becoming a patreon. You can also get lots of goodies and services depending on the level of contributions.

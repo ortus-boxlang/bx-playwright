@@ -35,6 +35,8 @@ jobs:
   build:
     name: Build & Publish Release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.current_version.outputs.version }}
     permissions:
       checks: write
       pull-requests: write
@@ -65,8 +67,9 @@ jobs:
           if [[ "${{ github.ref }}" == "refs/heads/development" ]]; then
             TMPVERSION=$(echo $TMPVERSION | sed 's/-.*$//')-snapshot
           fi
-          # Set the version in the environment
+          # Set the version in the environment, and as an output for the next release prep
           echo "VERSION=$TMPVERSION" >> $GITHUB_ENV
+          echo "version=$TMPVERSION" >> $GITHUB_OUTPUT
           # A snapshot version is never tagged or released, whatever triggered the build
           if [[ "$TMPVERSION" == *-snapshot ]]; then
             echo "SNAPSHOT=true" >> $GITHUB_ENV
@@ -203,6 +206,28 @@ jobs:
         with:
           ref: development
 
+      # The released commit: its docs/ is what shipped
+      - name: Checkout Released Docs
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          path: .release
+          sparse-checkout: |
+            docs
+            bxsites.yaml
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JDK }}
+
+      - name: Setup BoxLang and bxSites
+        uses: ortus-boxlang/setup-boxlang@main
+        with:
+          version: latest
+          modules: bx-sites bx-markdown bx-esapi bx-yaml bx-image
+
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
@@ -218,12 +243,37 @@ jobs:
           ./gradlew bumpMinorVersion --stacktrace --console=plain
           git pull
 
+      # Lock the released docs into docs/versions/MAJOR.MINOR.x and serve them at the site root.
+      # docs/ keeps going as the next version, served at /next/.
+      - name: Lock the Released Docs
+        run: |
+          export PATH="$HOME/.boxlang/bin:$PATH"
+          ./.github/scripts/lock-docs-version.sh "${{ needs.build.outputs.version }}" .release .
+          rm -rf .release
+
       - name: Commit Version Bump
         uses: EndBug/add-and-commit@v11.1.1
         with:
           author_name: Github Actions
           author_email: info@ortussolutions.com
-          message: "Version bump"
+          message: "Version bump, docs of v${{ needs.build.outputs.version }} locked"
           add: |
             gradle.properties
             changelog.md
+            bxsites.yaml
+            docs/versions
+
+  ##########################################################################################
+  # Publish the docs with the released version locked
+  # (the commit above is pushed with the workflow token, which does not trigger docs.yml)
+  ##########################################################################################
+  publish_docs:
+    name: Publish Docs
+    if: github.ref != 'refs/heads/development'
+    needs: [prep_next_release]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/docs.yml
+    with:
+      ref: development
+      publish: true
