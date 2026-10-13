@@ -1,32 +1,55 @@
 # Builds the bxSites documentation in docs/ and publishes it to the gh-pages branch,
 # served by GitHub Pages at https://bxplaywright.boxlang.io
+#
+# - Pushes to development publish, only when the docs change (docs/**, bxsites.yaml)
+# - docs-check.yml calls it with publish: false to check the docs of a pull request
+# - release.yml calls it after locking the released docs into docs/versions/
 name: Docs
 
 on:
   push:
     branches:
       - development
-      - main
     paths:
       - "docs/**"
       - "bxsites.yaml"
+      - "bxsites.yml"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: "The branch, tag or commit to build, defaults to the triggering one"
+        required: false
+        default: ""
+        type: string
+      publish:
+        description: "Publish to gh-pages after the checks pass"
+        required: false
+        default: true
+        type: boolean
 
-# Only one publish at a time; a newer push replaces a queued one
+# Only one publish at a time, a newer one replaces a queued one. Checks run on their own.
 concurrency:
-  group: docs
+  group: ${{ ( inputs.publish == true || github.event_name == 'workflow_dispatch' || ( github.event_name == 'push' && github.ref == 'refs/heads/development' ) ) && 'docs-publish' || format( 'docs-check-{0}', github.ref ) }}
   cancel-in-progress: true
 
 jobs:
-  publish:
-    name: Build & Publish Docs
+  docs:
+    name: Build & Check Docs
     runs-on: ubuntu-latest
+    env:
+      # Publish on a call with publish: true, a manual run or a push to development. docs-check.yml only
+      # runs on other branches, so its checks never publish. (inputs.publish is null on a push, and
+      # null == false is true in expressions, so this tests for true.)
+      PUBLISH: ${{ inputs.publish == true || github.event_name == 'workflow_dispatch' || ( github.event_name == 'push' && github.ref == 'refs/heads/development' ) }}
     permissions:
       contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
 
       - name: Setup Java
         uses: actions/setup-java@v6
@@ -40,7 +63,7 @@ jobs:
           version: latest
           modules: bx-sites bx-markdown bx-esapi bx-yaml bx-image
 
-      # Same gates as the tests workflow: lint issues, broken links or missing alt text fail the publish
+      # Lint issues, broken links or missing alt text fail the check and the publish
       - name: Build and Check Docs
         run: |
           export PATH="$HOME/.boxlang/bin:$PATH"
@@ -52,10 +75,11 @@ jobs:
           bxSites audit
 
       - name: Publish to gh-pages
+        if: env.PUBLISH == 'true'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./site
           cname: bxplaywright.boxlang.io
-          commit_message: "Docs: ${{ github.event.head_commit.message || 'manual publish' }}"
+          commit_message: "Docs: ${{ github.event.head_commit.message || 'release or manual publish' }}"

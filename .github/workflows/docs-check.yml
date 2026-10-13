@@ -1,0 +1,34 @@
+# Checks the docs of a pull request or a feature branch, only when the docs change
+name: Docs Check
+
+on:
+  push:
+    branches-ignore:
+      - "main"
+      - "master"
+      - "development"
+      - "releases/v*"
+    paths:
+      - "docs/**"
+      - "bxsites.yaml"
+      - "bxsites.yml"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/docs-check.yml"
+  pull_request:
+    branches:
+      - "releases/v*"
+      - development
+    paths:
+      - "docs/**"
+      - "bxsites.yaml"
+      - "bxsites.yml"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/docs-check.yml"
+
+jobs:
+  docs:
+    uses: ./.github/workflows/docs.yml
+    permissions:
+      contents: write
+    with:
+      publish: false
