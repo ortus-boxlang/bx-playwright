@@ -110,6 +110,8 @@
 		@media (max-width:640px){.hero-mark{width:88px;margin-bottom:16px}.bxh-brand img.brand-wordmark{height:38px}}
 		.section-link{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-weight:600;color:var(--brand1)}
 		.section-link:hover{text-decoration:underline}
+		.pw-trailer{max-width:960px;margin:28px auto 0}
+		.pw-trailer video{display:block;width:100%;height:auto;aspect-ratio:16/9;background:##0b1220;border-radius:14px;border:1px solid var(--border-strong);box-shadow:0 20px 50px var(--shadow-color-soft)}
 		.pw-gallery{display:grid;margin-top:28px;grid-template-columns:repeat(var(--bxsites-gallery-cols,3),minmax(0,1fr));gap:22px}
 		.pw-gallery .bxsites-image-gallery__item{margin:0;min-width:0}
 		.pw-gallery .bxsites-image-gallery__image{display:block;width:100%;height:auto;object-fit:cover;transition:transform .2s ease,box-shadow .2s ease}
@@ -314,6 +316,22 @@
 			</div>
 		</div>
 	</main>
+
+	<!--- Section: the trailer (60s, captions burned in; preload none so only the poster loads until play) --->
+	<section>
+		<div class="bxh-wrap">
+			<div class="section-head" style="text-align:center;margin-inline:auto">
+				<span class="eyebrow" style="justify-content:center">Watch the trailer</span>
+				<h2>BxPlaywright in 60 seconds.</h2>
+			</div>
+			<div class="pw-trailer">
+				<video controls preload="none" playsinline poster="#variables.basePath#assets/video/bxplaywright-trailer-poster.jpg" aria-label="BxPlaywright trailer: install, scripts, assertions, rendering, network mocking, AI snapshots, TestBox and ColdBox">
+					<source src="#variables.basePath#assets/video/bxplaywright-trailer.mp4" type="video/mp4">
+					<a href="#variables.basePath#assets/video/bxplaywright-trailer.mp4">Download the BxPlaywright trailer (MP4, 60 seconds)</a>
+				</video>
+			</div>
+		</div>
+	</section>
 
 	<!--- Section: the flow (install, browse, assert, ship) --->
 	<section>
