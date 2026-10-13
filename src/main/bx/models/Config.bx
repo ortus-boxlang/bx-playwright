@@ -51,7 +51,17 @@ class {
 		variables.settings    = arguments.settings ?: moduleSettings()
 		variables.environment = arguments.environment ?: server.system.environment
 		variables.profiles    = new models.Profiles@bxplaywright()
+		variables.files       = new models.FileSystem@bxplaywright()
 		return this
+	}
+
+	/**
+	 * File operations on real paths, for the sessions, artifacts, snapshots and module resources.
+	 *
+	 * @return A FileSystem
+	 */
+	function files() {
+		return variables.files
 	}
 
 	/**
@@ -314,7 +324,7 @@ class {
 		}
 		if ( len( arguments.config.session ?: "" ) ) {
 			var sessionFile = sessionPath( arguments.config.session )
-			if ( !fileExists( sessionFile ) ) {
+			if ( !variables.files.exists( sessionFile ) ) {
 				throw(
 					type    = "Playwright.InvalidOption",
 					message = "The session [#arguments.config.session#] does not exist yet.",

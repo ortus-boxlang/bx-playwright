@@ -121,7 +121,7 @@ class extends="Base" {
 		var artifacts    = config.artifacts ?: {}
 		if ( ( artifacts.screenshot ?: "off" ) != "off" || ( artifacts.trace ?: "off" ) != "off" || ( artifacts.video ?: "off" ) != "off" ) {
 			artifactsDir = variables.configService.artifactsPath( config ) & "/" & dateTimeFormat( now(), "yyyyMMdd-HHmmss" ) & "-" & UUID.randomUUID().toString().left( 8 )
-			directoryCreate( artifactsDir, true, true )
+			variables.configService.files().createDirectory( artifactsDir )
 			if ( ( artifacts.video ?: "off" ) != "off" ) {
 				contextOptions.recordVideoDir = artifactsDir
 			}
@@ -368,11 +368,12 @@ class extends="Base" {
 	string function session( required string name, required function setup, struct options = {} ) {
 		var file   = variables.configService.sessionPath( arguments.name )
 		var maxAge = val( arguments.options.maxAge ?: 0 )
-		var fresh  = fileExists( file ) && ( maxAge <= 0 || dateDiff( "n", getFileInfo( file ).lastModified, now() ) < maxAge )
+		var files  = variables.configService.files()
+		var fresh  = files.exists( file ) && ( maxAge <= 0 || dateDiff( "n", files.lastModified( file ), now() ) < maxAge )
 		if ( fresh && !( arguments.options.refresh ?: false ) ) {
 			return file
 		}
-		directoryCreate( getDirectoryFromPath( file ), true, true )
+		files.createDirectory( getDirectoryFromPath( file ) )
 		// The setup starts clean: never load the session configured on this manager (it may not exist yet, or be stale)
 		var setupOptions = { session : "" }
 		setupOptions.append( arguments.options.context ?: {}, false )
@@ -380,7 +381,8 @@ class extends="Base" {
 		var failed  = true
 		try {
 			arguments.setup( context.newPage() )
-			context.saveStorageState( file )
+			// Write the real path: saveStorageState() expands its path, which applies mappings such as /root
+			context.getJava().storageState( context.buildOptions( "BrowserContext.StorageStateOptions", { path : file } ) )
 			failed = false
 		} finally {
 			context.close( failed )

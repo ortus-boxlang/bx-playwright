@@ -1,0 +1,89 @@
+import java:java.io.File;
+import java:java.io.FileOutputStream;
+import java:java.nio.file.Files;
+
+/**
+ * File operations on real filesystem paths, for the files the module manages: sessions, artifacts, snapshots and its own resources.
+ *
+ * BoxLang's file BIFs resolve a path that starts with a mapping name to that mapping. An application with the common
+ * `/root` mapping and a home under `/root` (CI running as root) would read and write `/root/.boxlang/playwright/...`
+ * inside the application, while Playwright reads the real path. These methods never apply mappings.
+ */
+class {
+
+	/**
+	 * @path An absolute path
+	 *
+	 * @return Whether a file or directory exists at the path
+	 */
+	boolean function exists( required string path ) {
+		return new File( arguments.path ).exists()
+	}
+
+	/**
+	 * Create a directory and its missing parents. Does nothing when it exists.
+	 *
+	 * @path An absolute path
+	 */
+	function createDirectory( required string path ) {
+		var directory = new File( arguments.path )
+		if ( !directory.isDirectory() && !directory.mkdirs() ) {
+			throw( type = "Playwright.FileSystem", message = "Cannot create the directory [#arguments.path#]." )
+		}
+		return this
+	}
+
+	/**
+	 * Delete a file. Does nothing when it does not exist.
+	 *
+	 * @path An absolute path
+	 */
+	function delete( required string path ) {
+		Files.deleteIfExists( new File( arguments.path ).toPath() )
+		return this
+	}
+
+	/**
+	 * @path An absolute path
+	 *
+	 * @return The file content as UTF-8 text
+	 */
+	string function read( required string path ) {
+		return Files.readString( new File( arguments.path ).toPath() )
+	}
+
+	/**
+	 * @path An absolute path
+	 *
+	 * @return The file content as a byte array
+	 */
+	function readBinary( required string path ) {
+		return Files.readAllBytes( new File( arguments.path ).toPath() )
+	}
+
+	/**
+	 * Write a byte array to a file, replacing its content.
+	 *
+	 * @path    An absolute path
+	 * @content A byte array
+	 */
+	function writeBinary( required string path, required any content ) {
+		var out = new FileOutputStream( new File( arguments.path ) )
+		try {
+			out.write( arguments.content )
+		} finally {
+			out.close()
+		}
+		return this
+	}
+
+	/**
+	 * @path An absolute path
+	 *
+	 * @return When the file was last modified
+	 */
+	date function lastModified( required string path ) {
+		return createObject( "java", "java.util.Date" ).init( new File( arguments.path ).lastModified() )
+	}
+
+}

@@ -252,7 +252,7 @@ class extends="Base" {
 			if ( keep( "video", arguments.failed ) ) {
 				variables.artifacts.videos.append( path )
 			} else {
-				fileDelete( path )
+				variables.manager.getConfigService().files().delete( path )
 			}
 		}
 
