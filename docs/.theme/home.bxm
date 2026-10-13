@@ -281,10 +281,10 @@
 		<div class="bxh-hero-grid">
 			<div>
 				<img class="hero-mark" src="#variables.basePath#assets/brand/bxplaywright-icon.svg" alt="" width="120" height="120">
-				<span class="eyebrow">BoxLang module &middot; powered by Microsoft Playwright</span>
+				<span class="eyebrow">Automate, test, and control real browsers</span>
 				<h1>Real browsers.<br><span class="grad">Fluent BoxLang.</span></h1>
 				<p class="lead">
-					<strong>bx-playwright</strong> drives Chromium, Firefox and WebKit from BoxLang. Test your apps end to end, mock the network, test APIs, render HTML to PDFs and images, and give AI agents a browser. One fluent API, no Node.js project to maintain.
+					<strong>BxPlaywright</strong> brings Chromium, Firefox, and WebKit to BoxLang through a powerful, fluent API. Build end-to-end tests, mock network requests, test APIs, generate PDFs and screenshots, and empower AI agents with browser automation; all without managing a separate Node.js project.
 				</p>
 				<div class="hero-actions">
 					<a class="bxh-btn bxh-btn-primary" href="#variables.basePath#getting-started/">Get Started &rarr;</a>
