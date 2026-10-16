@@ -12,7 +12,7 @@ A BoxLang module (registered as `playwright`) wrapping Microsoft Playwright Java
   - `Config.bx` (settings + profiles + env resolution), `Profiles.bx` (built-in profiles, extends, deep merge)
   - `Playwright.bx` (manager), `BrowserContext.bx` (artifacts), `Page.bx`, `Locator.bx`, `Scope.bx` (shared actions/assertions), `Expect.bx`, `Route.bx`, `Request.bx`, `Response.bx`, `Base.bx` (helpers, typed errors)
   - `cli/`: `Cli.bx` (verb registry, parsing, help, completions) and one class per verb with `run( options, config, verb )` returning `{ exitCode, message, data }`
-- `src/main/bx/completions/bxplaywright.bash`: generated from the verb registry, never edit by hand
+- `src/main/bx/completions/`: the bash, zsh (`_bxplaywright`), fish and PowerShell completion scripts, generated from the verb registry (`Cli.completionScript( shell )`), never edit by hand. `box.json` points the installer at the bash one (`boxlang.completions`)
 - `src/main/java/ortus/boxlang/modules/playwright/`
   - `engine/`: `PlaywrightHome` (driver extraction, Node.js resolution, env), `NodeInstaller`, `Platform`, `OptionsMapper` (structs to Playwright options), `SmartSelector`, `Devices`, `PlaywrightErrors`
   - `components/PlaywrightRender.java`

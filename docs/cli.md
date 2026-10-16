@@ -7,7 +7,7 @@ tags: [reference, cli]
 
 # CLI
 
-`bxplaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. `boxlang module:bxplaywright <verb>` runs the same commands.
+`bxplaywright` installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions (zsh, fish and PowerShell completions are one command away, see [Tab completions](#tab-completions)). `boxlang module:bxplaywright <verb>` runs the same commands.
 
 ```bash
 bxplaywright install chromium --with-deps   # browsers and Linux libraries
@@ -42,9 +42,23 @@ Options are `--flag`, `--flag=value` or `--flag value`, and `--no-flag` for fals
 | `show-trace [trace.zip]` | Trace viewer |
 | `mcp` | Playwright MCP server (uses the configured browser, `--browser=chromium` by default, unless you pass `--browser`) |
 | `run <args...>` | Any Playwright CLI command |
-| `completions` | Print the bash completion script |
+| `completions` | Print the tab completion script for `bash` (default), `zsh`, `fish` or `powershell` |
 | `help [verb] [--json]` | Help |
 
 Exit codes: `0` on success, `1` on failure. Errors print their type and a `Fix:` line.
 
 Download problems (proxy, timeouts, using an installed Chrome) are covered in [Getting Started](getting-started.md#browser-download-problems).
+
+## Tab completions
+
+`install-bx-module bx-playwright` installs the bash completions: open a new shell and press Tab after `bxplaywright`. They complete the verbs, their flags, browser names, profile names and file paths. The other shells print their script with `bxplaywright completions <shell>`:
+
+| Shell | Load the completions |
+| --- | --- |
+| bash | Installed with the module. Without the installer: `source <(bxplaywright completions bash)` |
+| zsh | `source <(bxplaywright completions zsh)` in `~/.zshrc`, or save it as `_bxplaywright` in a folder of `$fpath`: `bxplaywright completions zsh > "${fpath[1]}/_bxplaywright"` |
+| fish | `bxplaywright completions fish > ~/.config/fish/completions/bxplaywright.fish` |
+| PowerShell | `bxplaywright completions powershell \| Out-String \| Invoke-Expression`, and add the same line to your `$PROFILE` |
+
+The module also ships the four scripts in its `completions/` folder. They are generated from the verb list, so they always match the installed version.
+

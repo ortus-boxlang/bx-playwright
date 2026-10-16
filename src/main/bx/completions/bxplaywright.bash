@@ -11,7 +11,7 @@ _bxplaywright_complete() {
 	case "$verb" in
 		clean) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;
 		codegen) COMPREPLY=( $(compgen -W "--output --target --device --viewport-size --load-storage --save-storage" -- "$cur") ) ;;
-		completions) COMPREPLY=( $(compgen -W "" -- "$cur") ) ;;
+		completions) COMPREPLY=( $(compgen -W "bash zsh fish powershell" -- "$cur") ) ;;
 		devices) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;
 		doctor) COMPREPLY=( $(compgen -W "--json" -- "$cur") ) ;;
 		help) COMPREPLY=( $(compgen -W "--json clean codegen completions devices doctor help install install-deps install-node mcp open pdf profiles run screenshot show-trace uninstall version" -- "$cur") ) ;;

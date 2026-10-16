@@ -22,6 +22,8 @@ import java.nio.file.Path;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.ParameterizedTest;
 
 public class CliTest extends BaseIntegrationTest {
 
@@ -119,19 +121,45 @@ public class CliTest extends BaseIntegrationTest {
 	}
 
 	/**
-	 * The completion script is generated from the verb registry. After changing verbs, regenerate it with:
+	 * The completion scripts are generated from the verb registry. After changing verbs, regenerate them with:
 	 * {@code UPDATE_COMPLETIONS=true ./gradlew test --tests '*CliTest'}
+	 *
+	 * @param shell The shell
+	 * @param file  The shipped script of that shell, under src/main/bx/completions
+	 *
+	 * @throws IOException when a script cannot be read or written
 	 */
-	@DisplayName( "The shipped completion script matches the verb registry" )
-	@Test
-	public void testCompletionsInSync() throws IOException {
-		Object	generated	= run( "result = new models.cli.Cli@bxplaywright().completionScript()" );
-		Path	file		= Path.of( "src/main/bx/completions/bxplaywright.bash" );
+	@DisplayName( "The shipped completion scripts match the verb registry" )
+	@ParameterizedTest( name = "{0}" )
+	@CsvSource( { "bash,bxplaywright.bash", "zsh,_bxplaywright", "fish,bxplaywright.fish", "powershell,bxplaywright.ps1" } )
+	public void testCompletionsInSync( String shell, String file ) throws IOException {
+		Object	generated	= run( "result = new models.cli.Cli@bxplaywright().completionScript( \"" + shell + "\" )" );
+		Path	path		= Path.of( "src/main/bx/completions", file );
 		if ( "true".equalsIgnoreCase( System.getenv( "UPDATE_COMPLETIONS" ) ) ) {
-			Files.createDirectories( file.getParent() );
-			Files.writeString( file, generated.toString() );
+			Files.createDirectories( path.getParent() );
+			Files.writeString( path, generated.toString() );
 		}
-		assertThat( Files.readString( file ) ).isEqualTo( generated );
+		assertThat( Files.readString( path ) ).isEqualTo( generated );
+	}
+
+	/**
+	 * The completions verb prints bash by default, the script of the shell it is given, and a typed error for an unknown shell.
+	 */
+	@DisplayName( "The completions verb prints the script of a shell" )
+	@Test
+	public void testCompletionsVerb() {
+		assertThat( capture( "result = new models.cli.Cli@bxplaywright().run( [ \"completions\" ] )" ) )
+		    .contains( "complete -F _bxplaywright_complete bxplaywright" );
+		assertThat( capture( "result = new models.cli.Cli@bxplaywright().run( [ \"completions\", \"zsh\" ] )" ) )
+		    .contains( "compdef _bxplaywright bxplaywright" );
+		assertThat( capture( "result = new models.cli.Cli@bxplaywright().run( [ \"completions\", \"fish\" ] )" ) )
+		    .contains( "complete -c bxplaywright -n __fish_use_subcommand -a install" );
+		assertThat( capture( "result = new models.cli.Cli@bxplaywright().run( [ \"completions\", \"PowerShell\" ] )" ) )
+		    .contains( "Register-ArgumentCompleter -Native -CommandName bxplaywright" );
+		String output = capture( "result = new models.cli.Cli@bxplaywright().run( [ \"completions\", \"tcsh\" ] )" );
+		assertThat( variables.get( result ) ).isEqualTo( 1 );
+		assertThat( output ).contains( "Error [Playwright.InvalidOption]" );
+		assertThat( output ).contains( "Fix: Use one of bash, zsh, fish, powershell" );
 	}
 
 	/**

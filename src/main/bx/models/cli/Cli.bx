@@ -16,154 +16,164 @@
 class {
 
 	/**
-	 * Browsers accepted by install and uninstall.
+	 * Class constants: the browsers, the shells with completions and the verb registry.
 	 */
-	variables.BROWSERS = [ "chromium", "firefox", "webkit", "chrome", "chrome-beta", "msedge", "all" ]
+	static {
+		/**
+		 * Browsers accepted by install and uninstall.
+		 */
+		BROWSERS = [ "chromium", "firefox", "webkit", "chrome", "chrome-beta", "msedge", "all" ]
 
-	/**
-	 * The verb registry. It drives dispatch, help and the bash completions.
-	 */
-	variables.VERBS = {
-		"install"      : {
-			class       : "Install",
-			description : "Set up the driver and Node.js, then install browsers (default: chromium)",
-			usage       : "install [browsers...] [--with-deps] [--only-shell] [--force] [--skip-node]",
-			flags       : [ "--with-deps", "--only-shell", "--force", "--skip-node", "--json" ],
-			words       : variables.BROWSERS
-		},
-		"install-node" : {
-			class       : "InstallNode",
-			description : "Download the Node.js runtime only (small distribution)",
-			usage       : "install-node [--force]",
-			flags       : [ "--force", "--json" ],
-			words       : []
-		},
-		"install-deps" : {
-			class       : "Passthrough",
-			command     : "install-deps",
-			description : "Install the operating system packages browsers need (Linux)",
-			usage       : "install-deps [browsers...]",
-			flags       : [],
-			words       : variables.BROWSERS
-		},
-		"uninstall"    : {
-			class       : "Passthrough",
-			command     : "uninstall",
-			description : "Remove installed browsers",
-			usage       : "uninstall [--all]",
-			flags       : [ "--all" ],
-			words       : []
-		},
-		"doctor"       : {
-			class       : "Doctor",
-			description : "Check versions, paths, Node.js and browsers, with fix hints",
-			usage       : "doctor [--json]",
-			flags       : [ "--json" ],
-			words       : []
-		},
-		"version"      : {
-			class       : "Version",
-			description : "Show the module, Playwright and Node.js versions",
-			usage       : "version [--json]",
-			flags       : [ "--json" ],
-			words       : []
-		},
-		"clean"        : {
-			class       : "Clean",
-			description : "Remove the extracted driver and downloaded Node.js (browsers are kept)",
-			usage       : "clean [--json]",
-			flags       : [ "--json" ],
-			words       : []
-		},
-		"devices"      : {
-			class       : "DevicesList",
-			description : "List the device descriptors usable in the device setting",
-			usage       : "devices [--json]",
-			flags       : [ "--json" ],
-			words       : []
-		},
-		"profiles"     : {
-			class       : "ProfilesList",
-			description : "List profiles, or show one fully resolved",
-			usage       : "profiles [name] [--json]",
-			flags       : [ "--json" ],
-			words       : "@profiles"
-		},
-		"codegen"      : {
-			class       : "Codegen",
-			description : "Record browser actions and generate BoxLang code (or --target=java, javascript, python)",
-			usage       : "codegen [url] [--output=file.bxs|-o file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
-			flags       : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
-			values      : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
-			aliases     : { "-o" : "--output" },
-			forwards    : true,
-			words       : []
-		},
-		"open"         : {
-			class       : "Passthrough",
-			command     : "open",
-			description : "Open a headed browser",
-			usage       : "open [url]",
-			flags       : [ "--device", "--browser" ],
-			values      : [ "--device", "--browser" ],
-			words       : []
-		},
-		"screenshot"   : {
-			class       : "Passthrough",
-			command     : "screenshot",
-			description : "Take a screenshot of a URL",
-			usage       : "screenshot <url> <file> [--full-page] [--device=name]",
-			flags       : [ "--full-page", "--device", "--browser" ],
-			values      : [ "--device", "--browser" ],
-			words       : "@files"
-		},
-		"pdf"          : {
-			class       : "Passthrough",
-			command     : "pdf",
-			description : "Save a URL as PDF (Chromium)",
-			usage       : "pdf <url> <file> [--paper-format=A4]",
-			flags       : [ "--paper-format" ],
-			values      : [ "--paper-format" ],
-			words       : "@files"
-		},
-		"show-trace"   : {
-			class       : "Passthrough",
-			command     : "show-trace",
-			description : "Open the trace viewer",
-			usage       : "show-trace [trace.zip]",
-			flags       : [],
-			words       : "@files"
-		},
-		"mcp"          : {
-			class       : "Passthrough",
-			command     : "mcp",
-			description : "Start the Playwright MCP server for AI agents",
-			usage       : "mcp [options]",
-			flags       : [ "--headless", "--browser", "--port" ],
-			values      : [ "--browser", "--port" ],
-			words       : []
-		},
-		"run"          : {
-			class       : "Passthrough",
-			command     : "",
-			description : "Run any Playwright CLI command as-is",
-			usage       : "run <playwright cli arguments...>",
-			flags       : [],
-			words       : []
-		},
-		"completions"  : {
-			class       : "Completions",
-			description : "Print the bash completion script",
-			usage       : "completions",
-			flags       : [],
-			words       : []
-		},
-		"help"         : {
-			class       : "",
-			description : "Show help for all verbs or one verb",
-			usage       : "help [verb] [--json]",
-			flags       : [ "--json" ],
-			words       : "@verbs"
+		/**
+		 * Shells with a tab completion script.
+		 */
+		SHELLS = [ "bash", "zsh", "fish", "powershell" ]
+
+		/**
+		 * The verb registry. It drives dispatch, help and the tab completions of every shell.
+		 */
+		VERBS = {
+			"install"      : {
+				class       : "Install",
+				description : "Set up the driver and Node.js, then install browsers (default: chromium)",
+				usage       : "install [browsers...] [--with-deps] [--only-shell] [--force] [--skip-node]",
+				flags       : [ "--with-deps", "--only-shell", "--force", "--skip-node", "--json" ],
+				words       : static.BROWSERS
+			},
+			"install-node" : {
+				class       : "InstallNode",
+				description : "Download the Node.js runtime only (small distribution)",
+				usage       : "install-node [--force]",
+				flags       : [ "--force", "--json" ],
+				words       : []
+			},
+			"install-deps" : {
+				class       : "Passthrough",
+				command     : "install-deps",
+				description : "Install the operating system packages browsers need (Linux)",
+				usage       : "install-deps [browsers...]",
+				flags       : [],
+				words       : static.BROWSERS
+			},
+			"uninstall"    : {
+				class       : "Passthrough",
+				command     : "uninstall",
+				description : "Remove installed browsers",
+				usage       : "uninstall [--all]",
+				flags       : [ "--all" ],
+				words       : []
+			},
+			"doctor"       : {
+				class       : "Doctor",
+				description : "Check versions, paths, Node.js and browsers, with fix hints",
+				usage       : "doctor [--json]",
+				flags       : [ "--json" ],
+				words       : []
+			},
+			"version"      : {
+				class       : "Version",
+				description : "Show the module, Playwright and Node.js versions",
+				usage       : "version [--json]",
+				flags       : [ "--json" ],
+				words       : []
+			},
+			"clean"        : {
+				class       : "Clean",
+				description : "Remove the extracted driver and downloaded Node.js (browsers are kept)",
+				usage       : "clean [--json]",
+				flags       : [ "--json" ],
+				words       : []
+			},
+			"devices"      : {
+				class       : "DevicesList",
+				description : "List the device descriptors usable in the device setting",
+				usage       : "devices [--json]",
+				flags       : [ "--json" ],
+				words       : []
+			},
+			"profiles"     : {
+				class       : "ProfilesList",
+				description : "List profiles, or show one fully resolved",
+				usage       : "profiles [name] [--json]",
+				flags       : [ "--json" ],
+				words       : "@profiles"
+			},
+			"codegen"      : {
+				class       : "Codegen",
+				description : "Record browser actions and generate BoxLang code (or --target=java, javascript, python)",
+				usage       : "codegen [url] [--output=file.bxs|-o file.bxs] [--target=boxlang] [--device=name] [--viewport-size=w,h] [--load-storage=file] [--save-storage=file]",
+				flags       : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
+				values      : [ "--output", "--target", "--device", "--viewport-size", "--load-storage", "--save-storage" ],
+				aliases     : { "-o" : "--output" },
+				forwards    : true,
+				words       : []
+			},
+			"open"         : {
+				class       : "Passthrough",
+				command     : "open",
+				description : "Open a headed browser",
+				usage       : "open [url]",
+				flags       : [ "--device", "--browser" ],
+				values      : [ "--device", "--browser" ],
+				words       : []
+			},
+			"screenshot"   : {
+				class       : "Passthrough",
+				command     : "screenshot",
+				description : "Take a screenshot of a URL",
+				usage       : "screenshot <url> <file> [--full-page] [--device=name]",
+				flags       : [ "--full-page", "--device", "--browser" ],
+				values      : [ "--device", "--browser" ],
+				words       : "@files"
+			},
+			"pdf"          : {
+				class       : "Passthrough",
+				command     : "pdf",
+				description : "Save a URL as PDF (Chromium)",
+				usage       : "pdf <url> <file> [--paper-format=A4]",
+				flags       : [ "--paper-format" ],
+				values      : [ "--paper-format" ],
+				words       : "@files"
+			},
+			"show-trace"   : {
+				class       : "Passthrough",
+				command     : "show-trace",
+				description : "Open the trace viewer",
+				usage       : "show-trace [trace.zip]",
+				flags       : [],
+				words       : "@files"
+			},
+			"mcp"          : {
+				class       : "Passthrough",
+				command     : "mcp",
+				description : "Start the Playwright MCP server for AI agents",
+				usage       : "mcp [options]",
+				flags       : [ "--headless", "--browser", "--port" ],
+				values      : [ "--browser", "--port" ],
+				words       : []
+			},
+			"run"          : {
+				class       : "Passthrough",
+				command     : "",
+				description : "Run any Playwright CLI command as-is",
+				usage       : "run <playwright cli arguments...>",
+				flags       : [],
+				words       : []
+			},
+			"completions"  : {
+				class       : "Completions",
+				description : "Print the tab completion script for bash (default), zsh, fish or powershell",
+				usage       : "completions [bash|zsh|fish|powershell]",
+				flags       : [],
+				words       : static.SHELLS
+			},
+			"help"         : {
+				class       : "",
+				description : "Show help for all verbs or one verb",
+				usage       : "help [verb] [--json]",
+				flags       : [ "--json" ],
+				words       : "@verbs"
+			}
 		}
 	}
 
@@ -200,11 +210,11 @@ class {
 
 		try {
 			if ( first == "help" ) {
-				options = parseOptions( rest, variables.VERBS.help )
-				validateOptions( "help", variables.VERBS.help, options )
+				options = parseOptions( rest, static.VERBS.help )
+				validateOptions( "help", static.VERBS.help, options )
 				return help( options )
 			}
-			if ( !variables.VERBS.keyExists( first ) ) {
+			if ( !static.VERBS.keyExists( first ) ) {
 				if ( !json ) {
 					println( "Unknown verb [#first#]." )
 					println( "" )
@@ -221,7 +231,7 @@ class {
 				return help( { _positionals : [ first ], json : json } )
 			}
 
-			var verb = variables.VERBS[ first ]
+			var verb = static.VERBS[ first ]
 			options  = parseOptions( rest, verb )
 			if ( isStrict( verb ) ) {
 				validateOptions( first, verb, options )
@@ -284,17 +294,81 @@ class {
 	 * @return The verb registry
 	 */
 	struct function getVerbs() {
-		return variables.VERBS
+		return static.VERBS
 	}
 
 	/**
-	 * Build the bash completion script from the verb registry.
+	 * Build the tab completion script of a shell from the verb registry.
 	 *
-	 * @return The completion script
+	 * @shell One of `bash`, `zsh`, `fish` or `powershell`
+	 *
+	 * @return The completion script, ending with a new line
+	 *
+	 * @throws Playwright.InvalidOption when the shell is not supported
 	 */
-	string function completionScript() {
+	string function completionScript( string shell = "bash" ) {
+		switch ( lCase( arguments.shell ) ) {
+			case "bash":
+				return bashCompletions()
+			case "zsh":
+				return zshCompletions()
+			case "fish":
+				return fishCompletions()
+			case "powershell":
+				return powershellCompletions()
+		}
+		throw(
+			type    = "Playwright.InvalidOption",
+			message = "Unknown shell [#arguments.shell#].",
+			detail  = "Use one of #static.SHELLS.toList( ", " )#: bxplaywright completions <shell>"
+		)
+	}
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Private
+	 * --------------------------------------------------------------------------
+	 */
+
+	/**
+	 * The words a verb completes after its name: its flags, then its own words (browsers, profiles or verb names).
+	 *
+	 * @name The verb name
+	 *
+	 * @return The completion words, flags first
+	 */
+	private array function completionWords( required string name ) {
+		var verb  = static.VERBS[ arguments.name ]
+		var words = verb.flags.duplicate()
+		if ( isArray( verb.words ) ) {
+			words.append( verb.words, true )
+		} else if ( verb.words == "@profiles" ) {
+			words.append( new models.Profiles@bxplaywright().builtIn().keyArray().sort( "textnocase" ), true )
+		} else if ( verb.words == "@verbs" ) {
+			words.append( static.VERBS.keyArray().sort( "textnocase" ), true )
+		}
+		return words
+	}
+
+	/**
+	 * Whether a verb also completes file paths.
+	 *
+	 * @name The verb name
+	 *
+	 * @return True when the verb takes files
+	 */
+	private boolean function completesFiles( required string name ) {
+		return isSimpleValue( static.VERBS[ arguments.name ].words ) && static.VERBS[ arguments.name ].words == "@files"
+	}
+
+	/**
+	 * The bash completion script. install-bx-module installs it from completions/bxplaywright.bash.
+	 *
+	 * @return The script
+	 */
+	private string function bashCompletions() {
 		var nl    = char( 10 )
-		var names = variables.VERBS.keyArray().sort( "textnocase" )
+		var names = static.VERBS.keyArray().sort( "textnocase" )
 		var lines = [
 			"##!/usr/bin/env bash",
 			"## bxplaywright bash completions. Generated by `bxplaywright completions`, do not edit.",
@@ -309,16 +383,8 @@ class {
 			"	case ""$verb"" in"
 		]
 		for ( var name in names ) {
-			var verb  = variables.VERBS[ name ]
-			var words = verb.flags.duplicate()
-			if ( isArray( verb.words ) ) {
-				words.append( verb.words, true )
-			} else if ( verb.words == "@profiles" ) {
-				words.append( new models.Profiles@bxplaywright().builtIn().keyArray().sort( "textnocase" ), true )
-			} else if ( verb.words == "@verbs" ) {
-				words.append( names, true )
-			}
-			if ( verb.words == "@files" ) {
+			var words = completionWords( name )
+			if ( completesFiles( name ) ) {
 				lines.append( "		#name#) COMPREPLY=( $(compgen -W ""#words.toList( " " )#"" -- ""$cur"") $(compgen -f -- ""$cur"") ) ;;" )
 			} else {
 				lines.append( "		#name#) COMPREPLY=( $(compgen -W ""#words.toList( " " )#"" -- ""$cur"") ) ;;" )
@@ -332,10 +398,127 @@ class {
 	}
 
 	/**
-	 * --------------------------------------------------------------------------
-	 * Private
-	 * --------------------------------------------------------------------------
+	 * The zsh completion script. Works sourced, or saved as _bxplaywright in a folder of $fpath.
+	 *
+	 * @return The script
 	 */
+	private string function zshCompletions() {
+		var nl    = char( 10 )
+		var names = static.VERBS.keyArray().sort( "textnocase" )
+		var lines = [
+			"##compdef bxplaywright",
+			"## bxplaywright zsh completions. Generated by `bxplaywright completions zsh`, do not edit.",
+			"## Load: source <(bxplaywright completions zsh), or save it as _bxplaywright in a folder of $fpath.",
+			"_bxplaywright() {",
+			"	local -a verbs",
+			"	verbs=("
+		]
+		for ( var name in names ) {
+			lines.append( "		'#name#:#replace( static.VERBS[ name ].description, "'", "'\''", "all" )#'" )
+		}
+		lines.append( "	)" )
+		lines.append( "	if (( CURRENT == 2 )); then" )
+		lines.append( "		_describe -t commands 'bxplaywright verb' verbs" )
+		lines.append( "		compadd -- --help --version" )
+		lines.append( "		return" )
+		lines.append( "	fi" )
+		lines.append( "	case ""${words[2]}"" in" )
+		for ( var name in names ) {
+			var words = completionWords( name )
+			var steps = []
+			if ( words.len() ) {
+				steps.append( "compadd -- #words.toList( " " )#" )
+			}
+			if ( completesFiles( name ) ) {
+				steps.append( "_files" )
+			}
+			lines.append( "		#name#) #steps.len() ? steps.toList( "; " ) : ":"# ;;" )
+		}
+		lines.append( "	esac" )
+		lines.append( "}" )
+		lines.append( "if [[ ""${funcstack[1]}"" == ""_bxplaywright"" ]]; then" )
+		lines.append( "	_bxplaywright ""$@""" )
+		lines.append( "else" )
+		lines.append( "	compdef _bxplaywright bxplaywright" )
+		lines.append( "fi" )
+		return lines.toList( nl ) & nl
+	}
+
+	/**
+	 * The fish completion script.
+	 *
+	 * @return The script
+	 */
+	private string function fishCompletions() {
+		var nl    = char( 10 )
+		var names = static.VERBS.keyArray().sort( "textnocase" )
+		var lines = [
+			"## bxplaywright fish completions. Generated by `bxplaywright completions fish`, do not edit.",
+			"## Load: bxplaywright completions fish > ~/.config/fish/completions/bxplaywright.fish",
+			"complete -c bxplaywright -f",
+			"complete -c bxplaywright -n __fish_use_subcommand -l help -d 'Show help'",
+			"complete -c bxplaywright -n __fish_use_subcommand -l version -d 'Show the version'"
+		]
+		for ( var name in names ) {
+			var description = replace( replace( static.VERBS[ name ].description, "\", "\\", "all" ), "'", "\'", "all" )
+			lines.append( "complete -c bxplaywright -n __fish_use_subcommand -a #name# -d '#description#'" )
+		}
+		for ( var name in names ) {
+			var verb      = static.VERBS[ name ]
+			var condition = "-n '__fish_seen_subcommand_from #name#'"
+			for ( var flag in verb.flags ) {
+				lines.append( "complete -c bxplaywright #condition# -l #flag.reReplace( "^--", "" )#" )
+			}
+			var words = completionWords( name ).filter( ( word ) -> !word.startsWith( "--" ) )
+			if ( words.len() ) {
+				lines.append( "complete -c bxplaywright #condition# -a '#words.toList( " " )#'" )
+			}
+			if ( completesFiles( name ) ) {
+				lines.append( "complete -c bxplaywright #condition# -F" )
+			}
+		}
+		return lines.toList( nl ) & nl
+	}
+
+	/**
+	 * The PowerShell completion script. When nothing matches, PowerShell falls back to file names.
+	 *
+	 * @return The script
+	 */
+	private string function powershellCompletions() {
+		var nl    = char( 10 )
+		var names = static.VERBS.keyArray().sort( "textnocase" )
+		var lines = [
+			"## bxplaywright PowerShell completions. Generated by `bxplaywright completions powershell`, do not edit.",
+			"## Load: bxplaywright completions powershell | Out-String | Invoke-Expression, or add that line to your $PROFILE",
+			"Register-ArgumentCompleter -Native -CommandName bxplaywright -ScriptBlock {",
+			"	param( $wordToComplete, $commandAst, $cursorPosition )",
+			"	$verbs = [ordered]@{"
+		]
+		for ( var name in names ) {
+			lines.append( "		'#name#' = '#replace( static.VERBS[ name ].description, "'", "''", "all" )#'" )
+		}
+		lines.append( "	}" )
+		lines.append( "	$words = @{" )
+		for ( var name in names ) {
+			var words = completionWords( name ).map( ( word ) -> "'#word#'" )
+			lines.append( "		'#name#' = @( #words.toList( ", " )# )" )
+		}
+		lines.append( "	}" )
+		lines.append( "	$elements = @( $commandAst.CommandElements | ForEach-Object { $_.ToString() } )" )
+		lines.append( "	if ( $elements.Count -le 1 -or ( $elements.Count -eq 2 -and $wordToComplete ) ) {" )
+		lines.append( "		$candidates = @( $verbs.Keys ) + @( '--help', '--version' )" )
+		lines.append( "	} else {" )
+		lines.append( "		$candidates = $words[ $elements[ 1 ] ]" )
+		lines.append( "	}" )
+		lines.append( "	$candidates | Where-Object { $_ -like ""$wordToComplete*"" } | ForEach-Object {" )
+		lines.append( "		$tip = if ( $verbs.Contains( $_ ) ) { $verbs[ $_ ] } else { $_ }" )
+		lines.append( "		[System.Management.Automation.CompletionResult]::new( $_, $_, 'ParameterValue', $tip )" )
+		lines.append( "	}" )
+		lines.append( "}" )
+		return lines.toList( nl ) & nl
+	}
+
 
 	/**
 	 * Get the configuration, lazily creating one from the module settings when none was given.
@@ -377,7 +560,7 @@ class {
 	 */
 	private numeric function help( required struct options ) {
 		var target = options._positionals.len() ? options._positionals[ 1 ] : ""
-		if ( len( target ) && !variables.VERBS.keyExists( target ) && ( options.json ?: false ) ) {
+		if ( len( target ) && !static.VERBS.keyExists( target ) && ( options.json ?: false ) ) {
 			throw(
 				type    = "Playwright.InvalidOption",
 				message = "Unknown verb [#target#].",
@@ -386,9 +569,9 @@ class {
 		}
 		if ( options.json ?: false ) {
 			var data = {}
-			for ( var name in variables.VERBS ) {
+			for ( var name in static.VERBS ) {
 				if ( !len( target ) || target == name ) {
-					var verb     = variables.VERBS[ name ]
+					var verb     = static.VERBS[ name ]
 					data[ name ] = {
 						"description" : verb.description,
 						"usage"       : "bxplaywright " & verb.usage,
@@ -400,11 +583,11 @@ class {
 			return 0
 		}
 		if ( len( target ) ) {
-			if ( !variables.VERBS.keyExists( target ) ) {
+			if ( !static.VERBS.keyExists( target ) ) {
 				println( "Unknown verb [#target#]." )
 				return 1
 			}
-			var verb = variables.VERBS[ target ]
+			var verb = static.VERBS[ target ]
 			println( "bxplaywright #verb.usage#" )
 			println( "" )
 			println( "  #verb.description#" )
@@ -422,8 +605,8 @@ class {
 		println( "" )
 		println( "Usage: bxplaywright <verb> [options]" )
 		println( "" )
-		for ( var name in variables.VERBS.keyArray().sort( "textnocase" ) ) {
-			println( "  #name.lJustify( 14 )# #variables.VERBS[ name ].description#" )
+		for ( var name in static.VERBS.keyArray().sort( "textnocase" ) ) {
+			println( "  #name.lJustify( 14 )# #static.VERBS[ name ].description#" )
 		}
 		println( "" )
 		println( "Global options:" )

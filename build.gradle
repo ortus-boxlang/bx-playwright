@@ -227,7 +227,8 @@ task createModuleStructure(type: Copy) {
 		include '**/*.bx'
 		include '**/*.bxm'
 		include '**/*.bxs'
-		include '**/*.bash'
+		// The tab completion scripts of every shell (bash, zsh, fish, PowerShell)
+		include 'completions/*'
 		// Token Replacements Go Here
 		filter{ line -> line.replaceAll( '@build.version@', project.version ) }
 		filter{ line -> line.replaceAll( '@bxplaywright.version@', playwrightVersion ) }

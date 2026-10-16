@@ -116,7 +116,7 @@ Resolution order (last wins): module settings, profiles, `BX_PLAYWRIGHT_*` envir
 
 ## CLI
 
-`bxplaywright <verb>` (or `boxlang module:bxplaywright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module.
+`bxplaywright <verb>` (or `boxlang module:bxplaywright <verb>`): `install`, `install-node`, `install-deps`, `uninstall`, `doctor`, `version`, `devices`, `profiles`, `clean`, `codegen`, `open`, `screenshot`, `pdf`, `show-trace`, `mcp`, `run`, `completions`, `help`. Add `--json` for machine readable output. Bash completions are installed with the module; `bxplaywright completions zsh|fish|powershell` prints the other shells' scripts.
 
 ## Development
 
