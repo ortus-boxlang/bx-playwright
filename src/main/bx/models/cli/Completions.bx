@@ -1,21 +1,29 @@
 /**
- * `bxplaywright completions`: print the bash completion script.
- * The same script ships in the module (completions/bxplaywright.bash) and is installed by install-bx-module.
+ * `bxplaywright completions [shell]`: print the tab completion script of bash (the default), zsh, fish or PowerShell.
+ * The scripts ship in the module (completions/). install-bx-module installs the bash one, see `boxlang.completions` in box.json.
+ *
+ * - bash:       source <(bxplaywright completions bash)
+ * - zsh:        source <(bxplaywright completions zsh), or save it as _bxplaywright in a folder of $fpath
+ * - fish:       bxplaywright completions fish > ~/.config/fish/completions/bxplaywright.fish
+ * - powershell: bxplaywright completions powershell | Out-String | Invoke-Expression, or add that line to your $PROFILE
  */
 class {
 
 	/**
-	 * Print the bash completion script built from the verb registry.
+	 * Print the completion script of a shell, built from the verb registry.
 	 *
-	 * @options CLI options
+	 * @options CLI options: _positionals (the shell, bash when empty)
 	 * @config  The models.Config
 	 * @verb    The verb registry entry
 	 *
 	 * @return { exitCode, message, data }
+	 *
+	 * @throws Playwright.InvalidOption when the shell is not supported
 	 */
 	struct function run( required struct options, required any config, struct verb = {} ) {
-		var script = new models.cli.Cli@bxplaywright().completionScript()
-		return { exitCode : 0, message : script.left( script.len() - 1 ), data : { "script" : script } }
+		var shell  = arguments.options._positionals.len() ? arguments.options._positionals[ 1 ] : "bash"
+		var script = new models.cli.Cli@bxplaywright().completionScript( shell )
+		return { exitCode : 0, message : script.left( script.len() - 1 ), data : { "shell" : lCase( shell ), "script" : script } }
 	}
 
 }
