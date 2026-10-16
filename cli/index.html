@@ -233,12 +233,12 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#options">Options</a></li><li class="toc-level-2"><a href="#verbs">Verbs</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#options">Options</a></li><li class="toc-level-2"><a href="#verbs">Verbs</a></li><li class="toc-level-2"><a href="#tab-completions">Tab completions</a></li></ul></details>
 		
 
 		
 		<h1 id="cli"><a href="#cli" id="cli" name="cli" class="anchor"></a>CLI</h1>
-<p><code>bxplaywright</code> installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions. <code>boxlang module:bxplaywright &lt;verb&gt;</code> runs the same commands.</p>
+<p><code>bxplaywright</code> installs browsers, checks your setup and wraps Playwright's tools. It is installed with the module, together with its bash completions (zsh, fish and PowerShell completions are one command away, see <a href="#tab-completions">Tab completions</a>). <code>boxlang module:bxplaywright &lt;verb&gt;</code> runs the same commands.</p>
 <pre><code class="language-bash">bxplaywright install chromium --with-deps   # browsers and Linux libraries
 bxplaywright doctor                         # what is installed, with fix hints
 bxplaywright profiles mobile                # one profile, fully resolved
@@ -269,18 +269,32 @@ bxplaywright show-trace trace.zip
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>show-trace [trace.zip]</code></td><td>Trace viewer</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>mcp</code></td><td>Playwright MCP server (uses the configured browser, <code>--browser=chromium</code> by default, unless you pass <code>--browser</code>)</td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>run &lt;args...&gt;</code></td><td>Any Playwright CLI command</td></tr>
-<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>completions</code></td><td>Print the bash completion script</td></tr>
+<tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>completions</code></td><td>Print the tab completion script for <code>bash</code> (default), <code>zsh</code>, <code>fish</code> or <code>powershell</code></td></tr>
 <tr x-show="!q || $el.textContent.toLowerCase().includes( q.toLowerCase() )"><td><code>help [verb] [--json]</code></td><td>Help</td></tr>
 </tbody>
 </table></div>
 <p>Exit codes: <code>0</code> on success, <code>1</code> on failure. Errors print their type and a <code>Fix:</code> line.</p>
 <p>Download problems (proxy, timeouts, using an installed Chrome) are covered in <a href="/getting-started/index.html#browser-download-problems">Getting Started</a>.</p>
+<h2 id="tab-completions"><a href="#tab-completions" id="tab-completions" name="tab-completions" class="anchor"></a>Tab completions</h2>
+<p><code>install-bx-module bx-playwright</code> installs the bash completions: open a new shell and press Tab after <code>bxplaywright</code>. They complete the verbs, their flags, browser names, profile names and file paths. The other shells print their script with <code>bxplaywright completions &lt;shell&gt;</code>:</p>
+<div class="bxsites-table-wrap"><table class="table">
+<thead>
+<tr><th>Shell</th><th>Load the completions</th></tr>
+</thead>
+<tbody>
+<tr><td>bash</td><td>Installed with the module. Without the installer: <code>source &lt;(bxplaywright completions bash)</code></td></tr>
+<tr><td>zsh</td><td><code>source &lt;(bxplaywright completions zsh)</code> in <code>~/.zshrc</code>, or save it as <code>_bxplaywright</code> in a folder of <code>&#x24;fpath&#x60;&#x3a; &#x60;bxplaywright completions zsh &gt; &quot;&#x24;{fpath[1]}/_bxplaywright&quot;</code></td></tr>
+<tr><td>fish</td><td><code>bxplaywright completions fish &gt; ~/.config/fish/completions/bxplaywright.fish</code></td></tr>
+<tr><td>PowerShell</td><td><code>bxplaywright completions powershell \| Out-String \| Invoke-Expression</code>, and add the same line to your <code>$PROFILE</code></td></tr>
+</tbody>
+</table></div>
+<p>The module also ships the four scripts in its <code>completions/</code> folder. They are generated from the verb list, so they always match the installed version.</p>
 
 	
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/cli.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/cli.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 13, 2026, 5&#x3a;01&#x3a;48 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/cli.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/cli.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 16, 2026, 2&#x3a;00&#x3a;09 PM</span></div>
 	
 </article>
 
@@ -312,7 +326,7 @@ bxplaywright show-trace trace.zip
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#options">Options</a></li><li class="toc-level-2"><a href="#verbs">Verbs</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#options">Options</a></li><li class="toc-level-2"><a href="#verbs">Verbs</a></li><li class="toc-level-2"><a href="#tab-completions">Tab completions</a></li></ul></nav>
 				</aside>
 			
 		</div>
@@ -354,7 +368,7 @@ bxplaywright show-trace trace.zip
 
 	
 	
-		<script src="/assets/page-actions-init.e7dd88d0.js" defer></script>
+		<script src="/assets/page-actions-init.9092e0f1.js" defer></script>
 	
 
 	
@@ -368,7 +382,7 @@ bxplaywright show-trace trace.zip
 
 	
 	
-		<script src="/assets/image-gallery-init.fecaa494.js" defer></script>
+		<script src="/assets/image-gallery-init.63219523.js" defer></script>
 	
 
 	
