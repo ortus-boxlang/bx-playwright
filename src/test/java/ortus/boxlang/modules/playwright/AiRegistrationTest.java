@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import ortus.boxlang.runtime.modules.ModuleRecord;
 import ortus.boxlang.runtime.scopes.Key;
 
 /**
@@ -36,17 +35,13 @@ public class AiRegistrationTest extends BaseIntegrationTest {
 	private static final Path BX_AI = Path.of( "build/test-modules/bxai" );
 
 	/**
-	 * Load bx-ai into the shared runtime, after bx-playwright, so the tests also cover the module that loads second.
+	 * bx-ai is loaded by the runtime itself from build/test-modules (see src/test/resources/boxlang.json), because functions of a module
+	 * activated by hand after startup are not visible to the other modules.
 	 */
 	@BeforeAll
-	public static void loadBxAi() {
+	public static void requireBxAi() {
 		assumeTrue( Files.isDirectory( BX_AI ), "bx-ai not found in build/test-modules/bxai - run `./gradlew extractBxAi` first" );
-		Key name = Key.of( "bxai" );
-		if ( !moduleService.hasModule( name ) ) {
-			ModuleRecord record = new ModuleRecord( BX_AI.toAbsolutePath().toString() );
-			moduleService.getRegistry().put( name, record );
-			record.loadDescriptor( runtime.getRuntimeContext() ).register( runtime.getRuntimeContext() ).activate( runtime.getRuntimeContext() );
-		}
+		assumeTrue( moduleService.hasModule( Key.of( "bxai" ) ), "the runtime did not load bx-ai from build/test-modules" );
 	}
 
 	/**
