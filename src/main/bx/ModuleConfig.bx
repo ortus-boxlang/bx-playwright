@@ -89,7 +89,10 @@ class {
 			launchOptions     : {},
 			contextOptions    : {},
 			// Your own profiles, merged over the built-in ones
-			profiles          : {}
+			profiles          : {},
+			// With the bx-ai module loaded, register the browser tools in aiToolRegistry() as browser_*@bxplaywright
+			// so agents can pick them by name. They use these module settings and open no browser until used.
+			registerAiTools   : true
 		};
 
 		interceptors = [];
@@ -110,12 +113,43 @@ class {
 	 */
 	function onLoad() {
 		log.info( "bx-playwright loaded (Playwright @bxplaywright.version@, @build.flavor@ distribution)" )
+		registerAiTools()
+	}
+
+	/**
+	 * Called once every module has been registered. bx-ai may load after bx-playwright, so look for it again here.
+	 */
+	function onRuntimeStart() {
+		registerAiTools()
+	}
+
+	/**
+	 * Register the browser tools with bx-ai when it is loaded and the registerAiTools setting is on.
+	 * Never fails the module: an agent framework problem must not stop the browser DSL from loading.
+	 */
+	private function registerAiTools() {
+		if ( !( moduleRecord.settings.registerAiTools ?: true ) ) {
+			return
+		}
+		try {
+			var count = new models.AiRegistration().register()
+			if ( count > 0 ) {
+				log.info( "bx-playwright registered #count# browser tool(s) in the bx-ai tool registry (browser_*@bxplaywright)" )
+			}
+		} catch ( any e ) {
+			log.warn( "bx-playwright could not register its bx-ai tools: #e.message#" )
+		}
 	}
 
 	/**
 	 * Called when the module is deactivated: close every Playwright instance still open, with its driver and browsers.
 	 */
 	function onUnload() {
+		try {
+			new models.AiRegistration().unregister()
+		} catch ( any e ) {
+			log.warn( "bx-playwright could not unregister its bx-ai tools: #e.message#" )
+		}
 		var closed = PlaywrightRegistry::closeAll()
 		if ( closed > 0 ) {
 			log.info( "bx-playwright closed #closed# Playwright instance(s) left open" )

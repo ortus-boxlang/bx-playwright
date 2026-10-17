@@ -316,6 +316,26 @@ task downloadBoxLang( type: Download ) {
 }
 
 /**
+ * bx-ai, for the tests that check the browser tools register themselves in its tool registry.
+ * Unpacked to build/test-modules/bxai; those tests skip themselves when it is missing.
+ */
+task downloadBxAi( type: Download ) {
+	doFirst {
+		file( "build/test-modules" ).mkdirs()
+	}
+	src "https://downloads.ortussolutions.com/ortussolutions/boxlang-modules/bx-ai/${bxAiVersion}/bx-ai-${bxAiVersion}.zip"
+	dest "build/test-modules/bx-ai-${bxAiVersion}.zip"
+	overwrite true
+	onlyIfModified false
+}
+
+task extractBxAi( type: Copy ) {
+	dependsOn downloadBxAi
+	from zipTree( "build/test-modules/bx-ai-${bxAiVersion}.zip" )
+	into "build/test-modules/bxai"
+}
+
+/**
  * Project Wide Helper function
  * This is not a task, but a reusable UDF
  */

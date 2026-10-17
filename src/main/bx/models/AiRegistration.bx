@@ -1,0 +1,62 @@
+/**
+ * Registers the browser tools in bx-ai's tool registry, when the bx-ai module is loaded.
+ *
+ * The tools are registered as browser_visit@bxplaywright, browser_click@bxplaywright, ... so an agent
+ * picks them by name: aiAgent( tools : [ "browser_visit@bxplaywright", ... ] ), or
+ * aiToolRegistry().getByModule( "bxplaywright" ) for all of them. Nothing starts at registration:
+ * the browser opens when the first tool is used, with the module settings.
+ *
+ * Called by ModuleConfig when the module loads and again when the runtime has started, so it does not
+ * matter which of the two modules loads first. Registering twice is harmless.
+ */
+class {
+
+	/**
+	 * The name the tools are registered under, the part after the @ in their registry keys.
+	 */
+	function moduleName() {
+		return "bxplaywright"
+	}
+
+	/**
+	 * Whether the bx-ai module is loaded, so there is a registry to register in.
+	 *
+	 * @return True when aiToolRegistry() and aiTool() exist
+	 */
+	boolean function available() {
+		var functions = getFunctionList()
+		return functions.keyExists( "aiToolRegistry" ) && functions.keyExists( "aiTool" )
+	}
+
+	/**
+	 * Register the browser tools. Does nothing when bx-ai is not loaded. Tools that are already registered are kept.
+	 *
+	 * @return How many tools were newly registered
+	 */
+	numeric function register() {
+		if ( !available() ) {
+			return 0
+		}
+		var registry   = aiToolRegistry()
+		var registered = 0
+		// The browser, and the playwright() manager behind it, are only created when a tool is first used
+		var tools = new models.AiBrowser@bxplaywright( () => playwright() ).tools()
+		for ( var tool in tools ) {
+			if ( !registry.has( tool.getName() & "@" & moduleName() ) ) {
+				registry.register( tool, moduleName() )
+				registered++
+			}
+		}
+		return registered
+	}
+
+	/**
+	 * Remove the browser tools from the registry. Does nothing when bx-ai is not loaded.
+	 */
+	function unregister() {
+		if ( available() ) {
+			aiToolRegistry().unregisterByModule( moduleName() )
+		}
+	}
+
+}

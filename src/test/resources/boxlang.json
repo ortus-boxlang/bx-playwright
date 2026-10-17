@@ -1,4 +1,5 @@
 {
+	"modulesDirectory": [ "build/test-modules" ],
 	"modules": {
 		"bxplaywright": {
 			"settings": {

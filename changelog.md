@@ -10,3 +10,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - First release of the bx-playwright module.
+- With the bx-ai module loaded, the browser tools register themselves in `aiToolRegistry()` as `browser_*@bxplaywright`, so an agent picks them by name or all at once with `getByModule( "bxplaywright" )`. Nothing starts until a tool is used. Turn it off with `registerAiTools : false`. `aiTools()` no longer leaks the tools into the registry under bare names.

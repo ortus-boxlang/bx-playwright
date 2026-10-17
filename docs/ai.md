@@ -33,6 +33,23 @@ agent.run( "Log in as luis@ortus.com and tell me how many todos I have" )
 
 Tools: `browser_visit`, `browser_snapshot`, `browser_click`, `browser_fill`, `browser_select`, `browser_press`, `browser_back`, `browser_text`, `browser_screenshot`, `browser_close`. Each returns the new page state; errors come back as text so the agent can recover.
 
+### Registered for you
+
+When the bx-ai module is loaded, the same tools are also registered in bx-ai's tool registry as `browser_visit@bxplaywright`, `browser_click@bxplaywright` and so on. It does not matter which module loads first. An agent can pick them by name, or take them all:
+
+```js
+aiAgent( name : "Browser", tools : [ "browser_visit@bxplaywright", "browser_snapshot@bxplaywright" ] )
+aiAgent( name : "Browser", tools : aiToolRegistry().getByModule( "bxplaywright" ) )
+```
+
+They use the module settings (`browser`, `headless`, `baseURL`, ...) and share one page. Nothing starts until a tool is used. Frameworks that give every agent every registered tool will give them the browser, so turn it off in `boxlang.json` if you only want `aiTools()`:
+
+```json
+"modules": { "bxplaywright": { "settings": { "registerAiTools": false } } }
+```
+
+`aiTools()` returns tools of its own and does not add them to the registry.
+
 For other frameworks, `aiToolDefinitions()` returns `[ { name, description, arguments, handler } ]`, and `models.AiBrowser@bxplaywright` can be used directly.
 
 ## Playwright MCP
