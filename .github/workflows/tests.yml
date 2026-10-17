@@ -76,7 +76,7 @@ jobs:
           # End-to-end tests drive a real browser, only on Linux
           PLAYWRIGHT_E2E: ${{ runner.os == 'Linux' }}
         run: |
-          ./gradlew downloadBoxLang
+          ./gradlew downloadBoxLang extractBxAi
           # this is done in order to build the module structure before testing
           ./gradlew shadowJar test --stacktrace --console=plain
 

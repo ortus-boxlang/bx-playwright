@@ -59,7 +59,8 @@ public class HelpTest extends BaseIntegrationTest {
 	}
 
 	/**
-	 * aiToolDefinitions() returns the browser tool definitions without bx-ai, while aiTools() throws Playwright.NotInstalled mentioning bx-ai.
+	 * aiToolDefinitions() returns the browser tool definitions without bx-ai, while aiTools() throws Playwright.NotInstalled mentioning bx-ai
+	 * (or returns the tools when another test class loaded bx-ai into the shared runtime).
 	 */
 	@DisplayName( "aiTools() explains that bx-ai is needed; aiToolDefinitions() works without it" )
 	@Test
@@ -68,8 +69,7 @@ public class HelpTest extends BaseIntegrationTest {
 		Object value = run( """
 			definitions = playwright().aiToolDefinitions()
 			try {
-				playwright().aiTools()
-				missing = "installed"
+				missing = playwright().aiTools().len() == 10
 			} catch ( "Playwright.NotInstalled" e ) {
 				missing = e.detail contains "bx-ai"
 			}
