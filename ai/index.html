@@ -233,7 +233,7 @@
 		
 		
 		
-			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#snapshots-with-refs">Snapshots with refs</a></li><li class="toc-level-2"><a href="#browser-tools-for-bx-ai">Browser tools for bx-ai</a></li><li class="toc-level-2"><a href="#playwright-mcp">Playwright MCP</a></li><li class="toc-level-2"><a href="#codegen-to-boxlang">Codegen to BoxLang</a></li><li class="toc-level-2"><a href="#self-description">Self description</a></li></ul></details>
+			<details class="bxsites-toc-mobile toc-mobile d-xl-none"><summary class="toc-mobile__summary">On this page</summary><ul class="list-unstyled"><li class="toc-level-2"><a href="#snapshots-with-refs">Snapshots with refs</a></li><li class="toc-level-2"><a href="#browser-tools-for-bx-ai">Browser tools for bx-ai</a></li><li class="toc-level-3"><a href="#registered-for-you">Registered for you</a></li><li class="toc-level-2"><a href="#playwright-mcp">Playwright MCP</a></li><li class="toc-level-2"><a href="#codegen-to-boxlang">Codegen to BoxLang</a></li><li class="toc-level-2"><a href="#self-description">Self description</a></li></ul></details>
 		
 
 		
@@ -255,6 +255,15 @@ page.fill( &quot;ref=e5&quot;, &quot;luis@ortus.com&quot; ).click( &quot;ref=e7&
 agent.run( &quot;Log in as luis@ortus.com and tell me how many todos I have&quot; )
 </code></pre>
 <p>Tools: <code>browser_visit</code>, <code>browser_snapshot</code>, <code>browser_click</code>, <code>browser_fill</code>, <code>browser_select</code>, <code>browser_press</code>, <code>browser_back</code>, <code>browser_text</code>, <code>browser_screenshot</code>, <code>browser_close</code>. Each returns the new page state; errors come back as text so the agent can recover.</p>
+<h3 id="registered-for-you"><a href="#registered-for-you" id="registered-for-you" name="registered-for-you" class="anchor"></a>Registered for you</h3>
+<p>When the bx-ai module is loaded, the same tools are also registered in bx-ai's tool registry as <code>browser_visit@bxplaywright</code>, <code>browser_click@bxplaywright</code> and so on. It does not matter which module loads first. An agent can pick them by name, or take them all:</p>
+<pre><code class="language-js">aiAgent( name : &quot;Browser&quot;, tools : [ &quot;browser_visit@bxplaywright&quot;, &quot;browser_snapshot@bxplaywright&quot; ] )
+aiAgent( name : &quot;Browser&quot;, tools : aiToolRegistry().getByModule( &quot;bxplaywright&quot; ) )
+</code></pre>
+<p>They use the module settings (<code>browser</code>, <code>headless</code>, <code>baseURL</code>, ...) and share one page. Nothing starts until a tool is used. Frameworks that give every agent every registered tool will give them the browser, so turn it off in <code>boxlang.json</code> if you only want <code>aiTools()</code>:</p>
+<pre><code class="language-json">&quot;modules&quot;: { &quot;bxplaywright&quot;: { &quot;settings&quot;: { &quot;registerAiTools&quot;: false } } }
+</code></pre>
+<p><code>aiTools()</code> returns tools of its own and does not add them to the registry.</p>
 <p>For other frameworks, <code>aiToolDefinitions()</code> returns <code>[ { name, description, arguments, handler } ]</code>, and <code>models.AiBrowser@bxplaywright</code> can be used directly.</p>
 <h2 id="playwright-mcp"><a href="#playwright-mcp" id="playwright-mcp" name="playwright-mcp" class="anchor"></a>Playwright MCP</h2>
 <p><code>bxplaywright mcp</code> starts <a href="https://github.com/microsoft/playwright-mcp">Playwright's MCP server</a>, so Claude, Cursor, VS Code and any other MCP client can drive a browser. It runs the driver that bx-playwright manages, with the configured browser (<code>--browser=chromium</code> by default, unless you pass <code>--browser</code>), so there is no Node.js project to install.</p>
@@ -286,7 +295,7 @@ claude mcp add playwright -- bxplaywright mcp --headless
 
 	
 	
-		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 16, 2026, 2&#x3a;00&#x3a;09 PM</span></div>
+		<div class="page-meta"><a href="https://github.com/ortus-boxlang/bx-playwright/edit/development/docs/ai.md" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Edit this page</a><a href="/ai.md" download><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 15v-3l1.5 2 1.5-2v3"/><path d="M14.5 12v4M13 15.5l1.5 1.5 1.5-1.5"/></svg> Download Markdown</a><span class="page-meta__item"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Last updated Oct 17, 2026, 1&#x3a;50&#x3a;03 PM</span></div>
 	
 </article>
 
@@ -318,7 +327,7 @@ claude mcp add playwright -- bxplaywright mcp --headless
 			
 			
 				<aside class="col-xl-2 toc-sidebar d-none d-xl-block">
-					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#snapshots-with-refs">Snapshots with refs</a></li><li class="toc-level-2"><a href="#browser-tools-for-bx-ai">Browser tools for bx-ai</a></li><li class="toc-level-2"><a href="#playwright-mcp">Playwright MCP</a></li><li class="toc-level-2"><a href="#codegen-to-boxlang">Codegen to BoxLang</a></li><li class="toc-level-2"><a href="#self-description">Self description</a></li></ul></nav>
+					<nav class="toc mb-4" aria-label="On this page"><div class="toc-title">On this page</div><ul class="list-unstyled"><li class="toc-level-2"><a href="#snapshots-with-refs">Snapshots with refs</a></li><li class="toc-level-2"><a href="#browser-tools-for-bx-ai">Browser tools for bx-ai</a></li><li class="toc-level-3"><a href="#registered-for-you">Registered for you</a></li><li class="toc-level-2"><a href="#playwright-mcp">Playwright MCP</a></li><li class="toc-level-2"><a href="#codegen-to-boxlang">Codegen to BoxLang</a></li><li class="toc-level-2"><a href="#self-description">Self description</a></li></ul></nav>
 				</aside>
 			
 		</div>
@@ -348,7 +357,7 @@ claude mcp add playwright -- bxplaywright mcp --headless
 	<script src="/assets/highlight-boxlang.c59b5de4.js"></script>
 	<script>hljs.highlightAll();</script>
 	<script src="/assets/code-lines.66ad0c90.js"></script>
-	<script src="/assets/copy-code.5bd76adc.js" defer></script>
+	<script src="/assets/copy-code.a5acc8cc.js" defer></script>
 	<script src="/assets/admonition-collapse.df9b134e.js" defer></script>
 	<script src="/assets/nav-toggle.6bc5dbe8.js" defer></script>
 	<script src="/assets/toc-collapse.cb73e778.js" defer></script>
