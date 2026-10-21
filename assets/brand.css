@@ -1,0 +1,9 @@
+/* BxPlaywright brand tweaks, loaded after the theme stylesheet through bxsites.yaml's extraCss. */
+.brand-logo {
+	height: 40px;
+	width: 40px;
+	padding: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+}

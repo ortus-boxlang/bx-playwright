@@ -37,7 +37,6 @@
 	
 	
 		<link rel="icon" href="/assets/favicon.png">
-		<link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
 	
 
 	
@@ -56,10 +55,10 @@
 	
 	<link rel="stylesheet" href="/assets/vendor/bootstrap/bootstrap.min.css">
 	<link rel="stylesheet" href="/assets/vendor/highlight/github.min.css">
-	<link rel="stylesheet" href="/assets/theme/style.20eb4311.css">
+	<link rel="stylesheet" href="/assets/theme/style.a70338f7.css">
 
 	
-	
+	<link rel="stylesheet" href="/assets/bundle.48a5c226.css">
 
 	
 	
@@ -80,6 +79,17 @@
 					--bxsites-link-hover: color-mix( in srgb, #34D399 85%, white );
 				}
 			
+		</style>
+	
+
+	
+	
+		<style>
+			.bxsites-nav-nested {
+				border-inline-start: 2px solid var(--bxsites-accent, var(--bxsites-border));
+				margin-inline-start: 0.2rem;
+				padding-inline-start: 0.85rem;
+			}
 		</style>
 	
 
@@ -156,9 +166,6 @@
 
 				
 				
-
-				
-				
 					<a
 						class="repo-link"
 						href="https://github.com/ortus-boxlang/bx-playwright"
@@ -191,9 +198,11 @@
 		<div class="row" :class="{ 'bxsites-nav-collapsed' : !navOpen }">
 			
 			<aside class="col-lg-3 col-xl-2 sidebar" id="bxsites-sidebar" x-show="navOpen" x-cloak>
-				<ul class="nav flex-column"><li class="nav-item"><a class="nav-link" href="/index.html">Browser automation and testing for BoxLang</a></li><li class="nav-item"><a class="nav-link" href="/getting-started/index.html">Getting Started</a></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Using bx-playwright</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Using bx-playwright section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested" hidden><li class="nav-item"><a class="nav-link" href="/browsing/index.html">Browsing</a></li><li class="nav-item"><a class="nav-link" href="/assertions/index.html">Assertions</a></li><li class="nav-item"><a class="nav-link" href="/network/index.html">Network and APIs</a></li><li class="nav-item"><a class="nav-link" href="/rendering/index.html">Screenshots, PDFs and Rendering</a></li><li class="nav-item"><a class="nav-link" href="/page-objects/index.html">Page Objects, Components and Macros</a></li><li class="nav-item"><a class="nav-link" href="/quality/index.html">Quality Checks</a></li><li class="nav-item"><a class="nav-link" href="/testing/index.html">Testing</a></li><li class="nav-item"><a class="nav-link" href="/ai/index.html">AI Agents</a></li><li class="nav-item"><a class="nav-link" href="/automation/index.html">Automation Scripts</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Framework Integrations</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Framework Integrations section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested" hidden><li class="nav-item"><a class="nav-link" href="/testbox/index.html">TestBox Browser Testing</a></li><li class="nav-item"><a class="nav-link" href="/web-applications/index.html">BoxLang Web Applications</a></li><li class="nav-item"><a class="nav-link" href="/integrations/index.html">Building on bx-playwright</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Reference</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Reference section"><span class="nav-toggle__icon" aria-hidden="true">▸</span></button></div><ul class="nav flex-column nav--nested" hidden><li class="nav-item"><a class="nav-link" href="/configuration/index.html">Configuration</a></li><li class="nav-item"><a class="nav-link" href="/profiles/index.html">Profiles</a></li><li class="nav-item"><a class="nav-link" href="/cli/index.html">CLI</a></li><li class="nav-item"><a class="nav-link" href="/errors/index.html">Errors</a></li></ul></li></ul>
+				
+				
+				<ul class="nav flex-column"><li class="nav-item"><a class="nav-link" href="/index.html">Browser automation and testing for BoxLang</a></li><li class="nav-item"><a class="nav-link" href="/getting-started/index.html">Getting Started</a></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Using bx-playwright</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Using bx-playwright section"><span class="nav-toggle__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span></button></div><ul class="nav flex-column nav--nested bxsites-nav-nested" hidden><li class="nav-item"><a class="nav-link" href="/browsing/index.html">Browsing</a></li><li class="nav-item"><a class="nav-link" href="/assertions/index.html">Assertions</a></li><li class="nav-item"><a class="nav-link" href="/network/index.html">Network and APIs</a></li><li class="nav-item"><a class="nav-link" href="/rendering/index.html">Screenshots, PDFs and Rendering</a></li><li class="nav-item"><a class="nav-link" href="/page-objects/index.html">Page Objects, Components and Macros</a></li><li class="nav-item"><a class="nav-link" href="/quality/index.html">Quality Checks</a></li><li class="nav-item"><a class="nav-link" href="/testing/index.html">Testing</a></li><li class="nav-item"><a class="nav-link" href="/ai/index.html">AI Agents</a></li><li class="nav-item"><a class="nav-link" href="/automation/index.html">Automation Scripts</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Framework Integrations</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Framework Integrations section"><span class="nav-toggle__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span></button></div><ul class="nav flex-column nav--nested bxsites-nav-nested" hidden><li class="nav-item"><a class="nav-link" href="/testbox/index.html">TestBox Browser Testing</a></li><li class="nav-item"><a class="nav-link" href="/web-applications/index.html">BoxLang Web Applications</a></li><li class="nav-item"><a class="nav-link" href="/integrations/index.html">Building on bx-playwright</a></li></ul></li><li class="nav-item nav-item--group"><div class="nav-group-header"><span class="nav-link disabled">Reference</span><button type="button" class="nav-toggle" aria-expanded="false" aria-label="Toggle Reference section"><span class="nav-toggle__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span></button></div><ul class="nav flex-column nav--nested bxsites-nav-nested" hidden><li class="nav-item"><a class="nav-link" href="/configuration/index.html">Configuration</a></li><li class="nav-item"><a class="nav-link" href="/profiles/index.html">Profiles</a></li><li class="nav-item"><a class="nav-link" href="/cli/index.html">CLI</a></li><li class="nav-item"><a class="nav-link" href="/errors/index.html">Errors</a></li></ul></li></ul>
 				<a class="bxsites-powered-by" href="https://bxsites.io" target="_blank" rel="noopener noreferrer">
-					<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg> <span>Powered by BxSites</span>
+					<img class="bxsites-powered-by__logo" src="/assets/bxsites-logo.svg" alt="" aria-hidden="true"> <span>Powered by BxSites</span>
 				</a>
 			</aside>
 
@@ -205,7 +214,7 @@
 	<article class="page-content">
 		
 		
-			<div class="bxsites-page-actions"><details class="bxsites-page-actions__disclosure"><summary class="bxsites-page-actions__button" aria-label="Page actions"><span>Copy</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg><kbd class="bxsites-page-actions__kbd" aria-hidden="true">C</kbd></summary><div class="bxsites-page-actions__panel"><button type="button" class="bxsites-page-actions__item" data-bxsites-action="print"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Export as PDF</span></button><a class="bxsites-page-actions__item" href="https://github.com/ortus-boxlang/bx-playwright/issues/new?title=Issue%20with%3A%20Page%20Not%20Found" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><span>Report an issue</span></a></div></details></div>
+			<div class="bxsites-page-actions"><details class="bxsites-page-actions__disclosure"><summary class="bxsites-page-actions__button" aria-label="Page actions"><span>Copy</span><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg><kbd class="bxsites-page-actions__kbd" aria-hidden="true">C</kbd></summary><div class="bxsites-page-actions__panel"><button type="button" class="bxsites-page-actions__item" data-bxsites-action="print"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span class="bxsites-page-actions__item-text"><span class="bxsites-page-actions__item-title">Export as PDF</span><span class="bxsites-page-actions__item-hint">Download this page as a PDF</span></span></button></div></details></div>
 		
 		
 		
