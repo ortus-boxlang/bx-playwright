@@ -17,6 +17,7 @@ theme:
     wordmark: "assets/brand/bxplaywright-logo-horizontal.svg"
     wordmarkDark: "assets/brand/bxplaywright-logo-horizontal-dark.svg"
     favicon: "assets/favicon.png"
+extraCss: [assets/brand.css]
 search: true
 imageGallery: true
 mcp: true

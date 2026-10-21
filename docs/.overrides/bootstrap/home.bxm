@@ -1,12 +1,14 @@
 <!---
-	bx-playwright homepage (`docs/index.md` has `layout: home`). Based on the bx-sites bootstrap
-	theme's own home.bxm: the head, header and footer machinery are the theme's, the page content is
-	bx-playwright's. The styling comes from bx-sites' shared assets/home.css. Like the original, this
+	bx-playwright homepage (`docs/index.md` has `layout: home`). It lives in
+	docs/.overrides/bootstrap/, layered over the bx-sites bootstrap theme: the head, header and footer
+	machinery follow the theme's own home layout, the page content is bx-playwright's. The styling comes
+	from this folder's assets/home.css. Like the original, this
 	layout never includes the Markdown body of index.md, which stays for search and llms.txt.
 --->
 <bx:include template="#variables.moduleAssetsDir#/icons.bxm">
 <bx:include template="#variables.moduleAssetsDir#/locale-flags.bxm">
 <bx:include template="includes/site-helpers.bxm">
+<bx:include template="includes/home-helpers.bxm">
 <bx:script>
 	// module spec section 7 - search is fully static/client-side (provider "local") by
 	// default, opt-out via bxsites.json's `search`; `searchProvider.provider` picks a
@@ -91,7 +93,7 @@
 	<link rel="stylesheet" href="#variables.basePath#assets/vendor/bootstrap/bootstrap.min.css">
 	<link rel="stylesheet" href="#variables.basePath#assets/vendor/highlight/github.min.css">
 	<link rel="stylesheet" href="#themeAssetUrl( 'style.css' )#">
-	<link rel="stylesheet" href="#moduleAssetUrl( 'home.css' )#">
+	<link rel="stylesheet" href="#themeAssetUrl( 'home.css' )#">
 	<style>
 		.pw-code{margin:0;padding:18px 20px;font:13.5px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:inherit;white-space:pre;overflow-x:auto;background:transparent}
 		.pw-code .k{color:##00c853}.pw-code .s{color:##0ea5e9}.pw-code .c{opacity:.55}
