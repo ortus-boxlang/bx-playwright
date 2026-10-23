@@ -52,11 +52,36 @@ They use the module settings (`browser`, `headless`, `baseURL`, ...) and share o
 
 For other frameworks, `aiToolDefinitions()` returns `[ { name, description, arguments, handler } ]`, and `models.AiBrowser@bxplaywright` can be used directly.
 
+## Claude Code and Codex plugins
+
+The [BoxLang agent plugins](https://github.com/ortus-boxlang/skills) set up a coding agent in two installs, from the same marketplace:
+
+| Plugin | Gives the agent |
+|---|---|
+| `boxlang-agent-skills` | The seven bx-playwright skills (setup, browsing, assertions, network, rendering, testing, AI), every other BoxLang skill, and the Ortus docs MCP servers |
+| `bx-playwright` (opt-in) | A real browser through `bxplaywright mcp --headless` and, in Claude Code, the `/bx-playwright:doctor` and `/bx-playwright:new-browser-spec` commands |
+
+```bash
+# Claude Code
+claude plugin marketplace add ortus-boxlang/skills
+claude plugin install boxlang-agent-skills@boxlang-agent-skills
+claude plugin install bx-playwright@boxlang-agent-skills
+
+# Codex
+codex plugin marketplace add ortus-boxlang/skills
+codex plugin add boxlang-agent-skills@boxlang-agent-skills
+codex plugin add bx-playwright@boxlang-agent-skills
+```
+
+The `bx-playwright` plugin starts `bxplaywright` from your `PATH`, so install the module and a browser first (`install-bx-module bx-playwright`, then `bxplaywright install`). It is a separate plugin because without the module its server fails to start.
+
+For other agents, `npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright` installs the skills, and the next section registers the MCP server by hand.
+
 ## Playwright MCP
 
 `bxplaywright mcp` starts [Playwright's MCP server](https://github.com/microsoft/playwright-mcp), so Claude, Cursor, VS Code and any other MCP client can drive a browser. It runs the driver that bx-playwright manages, with the configured browser (`--browser=chromium` by default, unless you pass `--browser`), so there is no Node.js project to install.
 
-By default it talks over standard input and output: register the command with your client.
+By default it talks over standard input and output: register the command with your client (the `bx-playwright` plugin above does this for Claude Code and Codex).
 
 ```bash
 # Claude Code

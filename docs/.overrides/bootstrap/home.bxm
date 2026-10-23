@@ -607,7 +607,7 @@
 					<div class="icon">#homeIcon( "check-shield" )#</div>
 					<div>
 						<h3><a href="https://skills.boxlang.io/skills?search=playwright" target="_blank" rel="noopener noreferrer">Official Agent Skills</a></h3>
-						<p><code>npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright</code> teaches Claude Code, Cursor and other coding agents how to set up, browse, assert, mock, render and test with bx-playwright. Browse all seven skills on <a href="https://skills.boxlang.io/skills?search=playwright" target="_blank" rel="noopener noreferrer">skills.boxlang.io</a>.</p>
+						<p><code>npx skills add ortus-boxlang/skills/boxlang-modules/bx-playwright</code> teaches Claude Code, Cursor and other coding agents how to set up, browse, assert, mock, render and test with bx-playwright. Browse all seven skills on <a href="https://skills.boxlang.io/skills?search=playwright" target="_blank" rel="noopener noreferrer">skills.boxlang.io</a>, or install them with the <a href="#variables.basePath#ai/##claude-code-and-codex-plugins">Claude Code and Codex plugins</a>, which can also give the agent a real browser.</p>
 					</div>
 				</div>
 			</div>
