@@ -25,6 +25,8 @@ Fluent browser automation and testing for BoxLang, powered by [Microsoft Playwri
 
 **Documentation:** [bxplaywright.boxlang.io](https://bxplaywright.boxlang.io) (also as [llms.txt](https://bxplaywright.boxlang.io/llms.txt) for AI agents)
 
+**AI agents:** the [Claude Code and Codex plugins](https://bxplaywright.boxlang.io/ai/#claude-code-and-codex-plugins) install the bx-playwright skills and, opt-in, a browser through `bxplaywright mcp`.
+
 ## Install
 
 Two distributions, same module (`playwright`), same API:
